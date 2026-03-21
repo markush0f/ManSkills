@@ -56,11 +56,10 @@ function TreeList({
         return (
           <button
             key={node.path}
-            className={`flex w-full items-center gap-2 rounded-[10px] border border-transparent px-3 py-2 text-left text-sm transition ${
-              isActive
-                ? "border-[var(--border)] bg-white/8 text-[var(--text)]"
-                : "text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]"
-            }`}
+            className={`flex w-full items-center gap-2 rounded-[10px] border border-transparent px-3 py-2 text-left text-sm transition ${isActive
+              ? "border-[var(--border)] bg-white/8 text-[var(--text)]"
+              : "text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]"
+              }`}
             onClick={() => onOpenFile(node.fileId)}
             style={{ paddingLeft: 12 + depth * 16 }}
           >
@@ -79,17 +78,10 @@ export function Sidebar({ activeFileId, files, tree, onOpenFile }: SidebarProps)
   return (
     <aside className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))]`}>
       <div className="border-b border-[var(--border)] px-4 py-4">
-        <div className="mb-3 flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-[#4f8f89]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/18" />
-        </div>
         <div className="flex items-center justify-between">
-          <p className={panelHeaderTitleClass}>Workspace</p>
+          <p className={panelHeaderTitleClass}>AI Skills Management</p>
           <span className="text-xs text-[var(--muted)]">{files.length} files</span>
         </div>
-        <strong className="mt-2 block text-sm font-medium text-[var(--text)]">forja-studio</strong>
-        <p className="mt-1 text-xs text-[var(--muted)]">Estructura del proyecto</p>
       </div>
 
       <div className="flex-1 overflow-auto px-3 py-3">
