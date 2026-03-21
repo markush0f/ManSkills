@@ -3,12 +3,13 @@ import remarkGfm from "remark-gfm";
 
 type MarkdownPreviewProps = {
   content: string;
+  compact?: boolean;
 };
 
-export function MarkdownPreview({ content }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, compact = false }: MarkdownPreviewProps) {
   return (
     <div className="h-full overflow-auto px-6 py-5">
-      <div className="mx-auto max-w-3xl">
+      <div className={compact ? "max-w-none" : "mx-auto max-w-3xl"}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{

@@ -63,7 +63,7 @@ export function EditorWorkspace({
   onOpenFile,
   onUpdateFile,
 }: EditorWorkspaceProps) {
-  const [markdownView, setMarkdownView] = useState<"preview" | "code">("preview");
+  const [markdownView, setMarkdownView] = useState<"preview" | "code" | "split">("preview");
   const lineNumbers = activeFile.content.split("\n");
   const isMarkdown = activeFile.language === "md";
 
@@ -73,8 +73,31 @@ export function EditorWorkspace({
       return;
     }
 
-    setMarkdownView("preview");
+    setMarkdownView("split");
   }, [activeFile.id, isMarkdown]);
+
+  function renderCodeEditor() {
+    return (
+      <div className="grid h-full min-h-0 grid-cols-[60px_minmax(0,1fr)] md:grid-cols-[78px_minmax(0,1fr)]">
+        <div
+          aria-hidden="true"
+          className="flex flex-col select-none border-r border-[var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-5 text-right font-mono text-sm leading-7 text-[rgba(143,154,168,0.76)]"
+        >
+          {lineNumbers.map((_, index) => (
+            <span key={`${activeFile.id}-${index + 1}`}>{index + 1}</span>
+          ))}
+        </div>
+
+        <textarea
+          ref={editorRef}
+          className="h-full w-full resize-none overflow-auto bg-transparent px-6 py-5 font-mono text-[0.92rem] leading-7 text-[var(--ink)] outline-none"
+          onChange={(event) => onUpdateFile(event.currentTarget.value)}
+          spellCheck={false}
+          value={activeFile.content}
+        />
+      </div>
+    );
+  }
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.94),rgba(12,20,27,0.88))]`}>
@@ -108,6 +131,16 @@ export function EditorWorkspace({
             >
               Code
             </button>
+            <button
+              className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
+                markdownView === "split"
+                  ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "text-[var(--muted)] hover:text-[var(--text)]"
+              }`}
+              onClick={() => setMarkdownView("split")}
+            >
+              Split
+            </button>
           </div>
         )}
       </div>
@@ -115,25 +148,17 @@ export function EditorWorkspace({
       <div className="min-h-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(5,10,14,0.42))]">
         {isMarkdown && markdownView === "preview" ? (
           <MarkdownPreview content={activeFile.content} />
-        ) : (
-          <div className="grid h-full min-h-0 grid-cols-[60px_minmax(0,1fr)] md:grid-cols-[78px_minmax(0,1fr)]">
-            <div
-              aria-hidden="true"
-              className="flex flex-col select-none border-r border-[var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-5 text-right font-mono text-sm leading-7 text-[rgba(143,154,168,0.76)]"
-            >
-              {lineNumbers.map((_, index) => (
-                <span key={`${activeFile.id}-${index + 1}`}>{index + 1}</span>
-              ))}
+        ) : isMarkdown && markdownView === "split" ? (
+          <div className="grid h-full min-h-0 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="min-h-0 border-b border-[var(--border)] xl:border-b-0 xl:border-r">
+              {renderCodeEditor()}
             </div>
-
-            <textarea
-              ref={editorRef}
-              className="h-full w-full resize-none overflow-auto bg-transparent px-6 py-5 font-mono text-[0.92rem] leading-7 text-[var(--ink)] outline-none"
-              onChange={(event) => onUpdateFile(event.currentTarget.value)}
-              spellCheck={false}
-              value={activeFile.content}
-            />
+            <div className="min-h-0">
+              <MarkdownPreview content={activeFile.content} compact />
+            </div>
           </div>
+        ) : (
+          renderCodeEditor()
         )}
       </div>
     </section>
