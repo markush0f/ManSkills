@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { initialFiles, initialOpenFileIds } from "../../ide/mockData";
 import type { IdeFile } from "../../ide/types";
 import { buildTree } from "../../ide/utils";
@@ -9,21 +9,12 @@ export function IdeWorkbench() {
   const [files, setFiles] = useState(initialFiles);
   const [openFileIds, setOpenFileIds] = useState<string[]>(initialOpenFileIds);
   const [activeFileId, setActiveFileId] = useState("app");
-  const editorRef = useRef<HTMLTextAreaElement | null>(null);
 
   const activeFile = files.find((file) => file.id === activeFileId) ?? files[0];
   const tree = buildTree(files);
   const openFiles = openFileIds
     .map((fileId) => files.find((file) => file.id === fileId))
     .filter((file): file is IdeFile => Boolean(file));
-
-  useEffect(() => {
-    if (!activeFile) {
-      return;
-    }
-
-    editorRef.current?.focus();
-  }, [activeFile]);
 
   function openFile(fileId: string) {
     if (!openFileIds.includes(fileId)) {
@@ -71,7 +62,6 @@ export function IdeWorkbench() {
         <EditorWorkspace
           activeFile={activeFile}
           activeFileId={activeFileId}
-          editorRef={editorRef}
           onCloseFile={closeFile}
           onOpenFile={openFile}
           onUpdateFile={updateActiveFile}

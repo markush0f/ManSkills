@@ -20,6 +20,7 @@
   --accent-soft-strong: rgba(217, 98, 59, 0.18);
   --ink: #d7e2ec;
   --code-bg: #0f1820;
+  --editor-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(5, 10, 14, 0.42));
 }
 
 html,

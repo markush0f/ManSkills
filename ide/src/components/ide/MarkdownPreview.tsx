@@ -8,7 +8,7 @@ type MarkdownPreviewProps = {
 
 export function MarkdownPreview({ content, compact = false }: MarkdownPreviewProps) {
   return (
-    <div className="h-full overflow-auto px-6 py-5">
+    <div className="h-full overflow-auto bg-[var(--editor-surface)] px-6 py-5">
       <div className={compact ? "max-w-none" : "mx-auto max-w-3xl"}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
