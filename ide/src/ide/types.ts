@@ -1,4 +1,4 @@
-export type Language = "tsx" | "ts" | "css" | "json";
+export type Language = "ts" | "json" | "md";
 
 export type IdeFile = {
   id: string;

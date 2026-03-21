@@ -75,13 +75,17 @@ function TreeList({
 }
 
 export function Sidebar({ activeFileId, files, tree, onOpenFile }: SidebarProps) {
+  const skillCount = tree.filter((node) => node.kind === "folder").length;
+
   return (
     <aside className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))]`}>
       <div className="border-b border-[var(--border)] px-4 py-4">
         <div className="flex items-center justify-between">
           <p className={panelHeaderTitleClass}>AI Skills Management</p>
-          <span className="text-xs text-[var(--muted)]">{files.length} files</span>
+          <span className="text-xs text-[var(--muted)]">{skillCount} skills</span>
         </div>
+        <strong className="mt-2 block text-sm font-medium text-[var(--text)]">Installed Skills</strong>
+        <p className="mt-1 text-xs text-[var(--muted)]">Manifests, prompts and configuration files</p>
       </div>
 
       <div className="flex-1 overflow-auto px-3 py-3">

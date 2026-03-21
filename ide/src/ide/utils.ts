@@ -13,9 +13,8 @@ export function getFileName(path: string) {
 }
 
 export function getLanguageLabel(language: Language) {
-  if (language === "tsx") return "TypeScript React";
   if (language === "ts") return "TypeScript";
-  if (language === "css") return "CSS";
+  if (language === "md") return "Markdown";
   return "JSON";
 }
 
