@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ide",
+  "productName": "Forja IDE",
   "version": "0.1.0",
   "identifier": "com.markus.ide",
   "build": {
@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "ide",
-        "width": 800,
-        "height": 600
+        "title": "Forja IDE",
+        "width": 1440,
+        "height": 920,
+        "minWidth": 1080,
+        "minHeight": 720
       }
     ],
     "security": {

@@ -1,1 +1,63 @@
 @import "tailwindcss";
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+
+  --canvas: #091015;
+  --panel: rgba(16, 24, 32, 0.82);
+  --panel-solid: #121b23;
+  --border: rgba(169, 190, 210, 0.14);
+  --border-strong: rgba(217, 98, 59, 0.36);
+  --text: #e8edf2;
+  --muted: #8f9aa8;
+  --accent: #d9623b;
+  --accent-strong: #ef8e49;
+  --accent-soft: rgba(217, 98, 59, 0.12);
+  --accent-soft-strong: rgba(217, 98, 59, 0.18);
+  --ink: #d7e2ec;
+  --code-bg: #0f1820;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(217, 98, 59, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(79, 143, 137, 0.14), transparent 22%),
+    linear-gradient(180deg, #071016 0%, #0a141b 48%, #0d1820 100%);
+  color: var(--text);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(170, 188, 207, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170, 188, 207, 0.03) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 92%);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+textarea {
+  field-sizing: content;
+}
