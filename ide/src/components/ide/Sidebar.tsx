@@ -77,7 +77,7 @@ function TreeList({
 
 export function Sidebar({ activeFileId, files, tree, onOpenFile }: SidebarProps) {
   return (
-    <aside className={`${shellPanelClass} flex min-h-[calc(100vh-48px)] flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))]`}>
+    <aside className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))]`}>
       <div className="border-b border-[var(--border)] px-4 py-4">
         <div className="mb-3 flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
