@@ -74,11 +74,11 @@ export function IdeWorkbench() {
   }
 
   return (
-    <main className="relative min-h-screen w-full overflow-hidden px-4 py-5 text-[var(--text)] md:px-6 xl:px-5">
-      <div className="pointer-events-none absolute left-[-120px] top-24 h-64 w-64 rounded-full bg-[rgba(217,98,59,0.10)] blur-3xl" />
-      <div className="pointer-events-none absolute right-[-80px] top-8 h-72 w-72 rounded-full bg-[rgba(239,142,73,0.12)] blur-3xl" />
+    <main className="relative min-h-screen w-full overflow-hidden px-3 py-3 text-[var(--text)] md:px-4 md:py-4">
+      <div className="pointer-events-none absolute left-[-140px] top-20 h-72 w-72 rounded-full bg-[rgba(217,98,59,0.12)] blur-3xl" />
+      <div className="pointer-events-none absolute right-[-120px] top-0 h-80 w-80 rounded-full bg-[rgba(79,143,137,0.12)] blur-3xl" />
 
-      <section className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
+      <section className="grid min-h-[calc(100vh-24px)] gap-3 rounded-[24px] border border-[var(--border)] bg-[rgba(6,11,16,0.46)] p-3 shadow-[0_30px_90px_rgba(0,0,0,0.34)] backdrop-blur-xl xl:grid-cols-[320px_minmax(0,1fr)]">
         <Sidebar activeFileId={activeFileId} files={files} onOpenFile={openFile} tree={tree} />
 
         <EditorWorkspace

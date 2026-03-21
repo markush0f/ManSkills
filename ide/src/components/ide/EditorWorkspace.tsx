@@ -26,7 +26,7 @@ function Tabs({
   openFiles: IdeFile[];
 }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="flex items-center gap-2 overflow-x-auto">
       {openFiles.map((file) => {
         const isDirty = file.content !== file.savedContent;
 
@@ -37,9 +37,9 @@ function Tabs({
             onClick={() => onOpenFile(file.id)}
           >
             <span>{getFileName(file.path)}</span>
-            {isDirty && <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />}
+            {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />}
             <span
-              className="text-[var(--muted)]"
+              className="text-[var(--muted)] hover:text-[var(--text)]"
               onClick={(event) => {
                 event.stopPropagation();
                 onCloseFile(file.id);
@@ -68,39 +68,39 @@ export function EditorWorkspace({
   const isDirty = activeFile.content !== activeFile.savedContent;
 
   return (
-    <section className="grid min-w-0 gap-3">
-      <Tabs
-        activeFileId={activeFileId}
-        onCloseFile={onCloseFile}
-        onOpenFile={onOpenFile}
-        openFiles={openFiles}
-      />
+    <section className={`${shellPanelClass} grid min-w-0 overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.94),rgba(12,20,27,0.88))]`}>
+      <div className="flex flex-col gap-3 border-b border-[var(--border)] px-4 py-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <Tabs
+            activeFileId={activeFileId}
+            onCloseFile={onCloseFile}
+            onOpenFile={onOpenFile}
+            openFiles={openFiles}
+          />
 
-      <div className={`${shellPanelClass} min-w-0 overflow-hidden`}>
-        <div className="flex flex-col gap-4 border-b border-[var(--border)] bg-white/4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className={subtleLabelClass}>Archivo activo</p>
-            <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
+            <div className="hidden text-right lg:block">
+              <p className={subtleLabelClass}>Archivo activo</p>
               <strong className="text-sm font-medium text-[var(--text)]">{activeFile.path}</strong>
-              <span
-                className={`rounded-full px-2.5 py-1 text-[11px] ${
-                  isDirty ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "bg-white/5 text-[var(--muted)]"
-                }`}
-              >
-                {isDirty ? "Sin guardar" : "Guardado"}
-              </span>
             </div>
+            <button className={ghostButtonClass} onClick={onSaveFile}>
+              Guardar
+            </button>
           </div>
-
-          <button className={ghostButtonClass} onClick={onSaveFile}>
-            Guardar
-          </button>
         </div>
 
-        <div className="grid min-h-[560px] grid-cols-[56px_minmax(0,1fr)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(15,24,32,0.44))] md:grid-cols-[72px_minmax(0,1fr)]">
+        <div className="flex items-center gap-3 text-xs text-[var(--muted)]">
+          <span className={`rounded-[8px] px-2.5 py-1 ${isDirty ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "bg-white/5"}`}>
+            {isDirty ? "Sin guardar" : "Guardado"}
+          </span>
+          <span className="truncate">{activeFile.path}</span>
+        </div>
+      </div>
+
+      <div className="grid min-h-[calc(100vh-90px)] grid-cols-[60px_minmax(0,1fr)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(5,10,14,0.42))] md:grid-cols-[78px_minmax(0,1fr)]">
           <div
             aria-hidden="true"
-            className="flex flex-col select-none border-r border-[var(--border)] bg-black/14 px-2 py-4 text-right font-mono text-sm leading-7 text-[rgba(143,154,168,0.86)]"
+            className="flex flex-col select-none border-r border-[var(--border)] bg-[rgba(255,255,255,0.02)] px-2 py-5 text-right font-mono text-sm leading-7 text-[rgba(143,154,168,0.76)]"
           >
             {lineNumbers.map((_, index) => (
               <span key={`${activeFile.id}-${index + 1}`}>{index + 1}</span>
@@ -109,12 +109,11 @@ export function EditorWorkspace({
 
           <textarea
             ref={editorRef}
-            className="min-h-[560px] w-full resize-none bg-transparent px-5 py-4 font-mono text-[0.92rem] leading-7 text-[var(--ink)] outline-none"
+            className="min-h-[calc(100vh-90px)] w-full resize-none bg-transparent px-6 py-5 font-mono text-[0.92rem] leading-7 text-[var(--ink)] outline-none"
             onChange={(event) => onUpdateFile(event.currentTarget.value)}
             spellCheck={false}
             value={activeFile.content}
           />
-        </div>
       </div>
     </section>
   );
