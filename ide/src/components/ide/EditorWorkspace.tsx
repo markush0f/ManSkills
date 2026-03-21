@@ -63,13 +63,13 @@ export function EditorWorkspace({
   onOpenFile,
   onUpdateFile,
 }: EditorWorkspaceProps) {
-  const [markdownView, setMarkdownView] = useState<"preview" | "code" | "split">("preview");
+  const [markdownView, setMarkdownView] = useState<"preview" | "markdown" | "split">("split");
   const lineNumbers = activeFile.content.split("\n");
   const isMarkdown = activeFile.language === "md";
 
   useEffect(() => {
     if (!isMarkdown) {
-      setMarkdownView("code");
+      setMarkdownView("markdown");
       return;
     }
 
@@ -112,34 +112,40 @@ export function EditorWorkspace({
         {isMarkdown && (
           <div className="flex items-center gap-1 rounded-[10px] border border-[var(--border)] bg-white/5 p-1">
             <button
+              aria-label="Vista visual"
               className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
                 markdownView === "preview"
                   ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                   : "text-[var(--muted)] hover:text-[var(--text)]"
               }`}
               onClick={() => setMarkdownView("preview")}
+              title="Vista visual"
             >
-              Preview
+              <span aria-hidden="true">◉</span>
             </button>
             <button
+              aria-label="Vista markdown"
               className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
-                markdownView === "code"
+                markdownView === "markdown"
                   ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                   : "text-[var(--muted)] hover:text-[var(--text)]"
               }`}
-              onClick={() => setMarkdownView("code")}
+              onClick={() => setMarkdownView("markdown")}
+              title="Vista markdown"
             >
-              Code
+              <span aria-hidden="true">{"</>"}</span>
             </button>
             <button
+              aria-label="Vista dividida"
               className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
                 markdownView === "split"
                   ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                   : "text-[var(--muted)] hover:text-[var(--text)]"
               }`}
               onClick={() => setMarkdownView("split")}
+              title="Vista dividida"
             >
-              Split
+              <span aria-hidden="true">◫</span>
             </button>
           </div>
         )}
