@@ -5,8 +5,10 @@ import { panelHeaderTitleClass, shellPanelClass } from "./ui";
 type SidebarProps = {
   activeFileId: string;
   files: IdeFile[];
-  tree: TreeNode[];
+  isMarketplaceView: boolean;
   onOpenFile: (fileId: string) => void;
+  onOpenMarketplace: () => void;
+  tree: TreeNode[];
 };
 
 function TreeList({
@@ -56,10 +58,11 @@ function TreeList({
         return (
           <button
             key={node.path}
-            className={`flex w-full items-center gap-2 rounded-[10px] border border-transparent px-3 py-2 text-left text-sm transition ${isActive
-              ? "border-[var(--border)] bg-white/8 text-[var(--text)]"
-              : "text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]"
-              }`}
+            className={`flex w-full items-center gap-2 rounded-[10px] border border-transparent px-3 py-2 text-left text-sm transition ${
+              isActive
+                ? "border-[var(--border)] bg-white/8 text-[var(--text)]"
+                : "text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]"
+            }`}
             onClick={() => onOpenFile(node.fileId)}
             style={{ paddingLeft: 12 + depth * 16 }}
           >
@@ -74,18 +77,60 @@ function TreeList({
   );
 }
 
-export function Sidebar({ activeFileId, files, tree, onOpenFile }: SidebarProps) {
+export function Sidebar({
+  activeFileId,
+  files,
+  isMarketplaceView,
+  onOpenFile,
+  onOpenMarketplace,
+  tree,
+}: SidebarProps) {
   const skillCount = tree.filter((node) => node.kind === "folder").length;
 
   return (
-    <aside className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))]`}>
+    <aside
+      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))]`}
+    >
       <div className="border-b border-[var(--border)] px-4 py-4">
-        <div className="flex items-center justify-between">
-          <p className={panelHeaderTitleClass}>AI Skills Management</p>
-          <span className="text-xs text-[var(--muted)]">{skillCount} skills</span>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className={panelHeaderTitleClass}>AI Skills Management</p>
+            <strong className="mt-2 block text-sm font-medium text-[var(--text)]">Installed Skills</strong>
+            <p className="mt-1 text-xs text-[var(--muted)]">Manifests, prompts and configuration files</p>
+          </div>
+
+          <button
+            aria-label="Marketplace"
+            className={`shrink-0 rounded-[10px] border px-3 py-2 text-xs font-medium transition ${
+              isMarketplaceView
+                ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                : "border-[var(--border)] bg-white/6 text-[var(--text)] hover:border-[var(--border-strong)]"
+            }`}
+            onClick={onOpenMarketplace}
+            title="Marketplace"
+          >
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 16 16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M2.5 5.5h11M4 5.5V4.75A1.75 1.75 0 0 1 5.75 3h4.5A1.75 1.75 0 0 1 12 4.75v.75M3.75 5.5h8.5v6.75A.75.75 0 0 1 11.5 13h-7a.75.75 0 0 1-.75-.75V5.5Z"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.2"
+              />
+            </svg>
+          </button>
         </div>
-        <strong className="mt-2 block text-sm font-medium text-[var(--text)]">Installed Skills</strong>
-        <p className="mt-1 text-xs text-[var(--muted)]">Manifests, prompts and configuration files</p>
+
+        <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-3 text-xs text-[var(--muted)]">
+          <span>{skillCount} skills</span>
+          <span>Explorer</span>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto px-3 py-3">

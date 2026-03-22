@@ -8,6 +8,25 @@ export type IdeFile = {
   savedContent: string;
 };
 
+export type MarketplaceSkillFile = {
+  idSuffix: string;
+  path: string;
+  language: Language;
+  content: string;
+};
+
+export type MarketplaceSkill = {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  summary: string;
+  author: string;
+  downloads: string;
+  rating: string;
+  files: MarketplaceSkillFile[];
+};
+
 export type DiagnosticLevel = "error" | "warning" | "info";
 
 export type Diagnostic = {
