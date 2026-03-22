@@ -21,6 +21,9 @@
   --ink: #d7e2ec;
   --code-bg: #0f1820;
   --editor-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(5, 10, 14, 0.42));
+  --scrollbar-track: rgba(255, 255, 255, 0.04);
+  --scrollbar-thumb: rgba(217, 98, 59, 0.28);
+  --scrollbar-thumb-hover: rgba(239, 142, 73, 0.42);
 }
 
 html,
@@ -61,4 +64,48 @@ textarea {
 
 textarea {
   field-sizing: content;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.monaco-editor .scrollbar,
+.monaco-editor .decorationsOverviewRuler {
+  background: transparent !important;
+}
+
+.monaco-editor .scrollbar .slider {
+  border-radius: 999px !important;
+  background: var(--scrollbar-thumb) !important;
+}
+
+.monaco-editor .scrollbar .slider:hover {
+  background: var(--scrollbar-thumb-hover) !important;
 }

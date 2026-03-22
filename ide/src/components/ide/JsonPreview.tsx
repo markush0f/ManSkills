@@ -1,0 +1,95 @@
+type JsonPreviewProps = {
+  content: string;
+  compact?: boolean;
+};
+
+function JsonValue({
+  value,
+  depth = 0,
+}: {
+  value: unknown;
+  depth?: number;
+}) {
+  if (value === null) {
+    return <span className="font-mono text-[#d79432]">null</span>;
+  }
+
+  if (typeof value === "string") {
+    return <span className="font-mono text-[#7cd6d0]">"{value}"</span>;
+  }
+
+  if (typeof value === "number") {
+    return <span className="font-mono text-[#ffb58c]">{value}</span>;
+  }
+
+  if (typeof value === "boolean") {
+    return <span className="font-mono text-[#d9623b]">{String(value)}</span>;
+  }
+
+  if (Array.isArray(value)) {
+    return (
+      <div className="space-y-2">
+        <div className="font-mono text-[var(--muted)]">[{value.length}]</div>
+        <div className="space-y-2 border-l border-[var(--border)] pl-4">
+          {value.map((item, index) => (
+            <div key={`${depth}-${index}`} className="rounded-[12px] border border-[var(--border)] bg-white/4 px-3 py-2">
+              <div className="mb-1 font-mono text-xs text-[var(--muted)]">#{index}</div>
+              <JsonValue depth={depth + 1} value={item} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value);
+
+    return (
+      <div className="space-y-2">
+        <div className="font-mono text-[var(--muted)]">{"{"}{entries.length}{"}"}</div>
+        <div className="space-y-2 border-l border-[var(--border)] pl-4">
+          {entries.map(([key, entryValue]) => (
+            <div key={`${depth}-${key}`} className="rounded-[12px] border border-[var(--border)] bg-white/4 px-3 py-2">
+              <div className="mb-1 font-mono text-sm text-white">{key}</div>
+              <JsonValue depth={depth + 1} value={entryValue} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return <span className="font-mono text-[var(--muted)]">{String(value)}</span>;
+}
+
+export function JsonPreview({ content, compact = false }: JsonPreviewProps) {
+  try {
+    const parsed = JSON.parse(content) as unknown;
+
+    return (
+      <div className="h-full overflow-auto bg-[var(--editor-surface)] px-6 py-5">
+        <div className={compact ? "max-w-none" : "mx-auto max-w-3xl"}>
+          <div className="mb-5">
+            <h2 className="text-2xl font-semibold text-white">JSON Preview</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">Visual structure of the current JSON document</p>
+          </div>
+          <JsonValue value={parsed} />
+        </div>
+      </div>
+    );
+  } catch (error) {
+    return (
+      <div className="h-full overflow-auto bg-[var(--editor-surface)] px-6 py-5">
+        <div className={compact ? "max-w-none" : "mx-auto max-w-3xl"}>
+          <div className="rounded-[14px] border border-[#cf5e4f]/30 bg-[#cf5e4f]/10 px-4 py-4">
+            <h2 className="text-lg font-semibold text-[#ffb3a7]">Invalid JSON</h2>
+            <p className="mt-2 text-sm text-[#ffd2cb]">
+              {error instanceof Error ? error.message : "Unable to parse JSON"}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}

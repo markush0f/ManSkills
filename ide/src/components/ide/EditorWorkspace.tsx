@@ -2,6 +2,7 @@ import Editor from "@monaco-editor/react";
 import { useEffect, useState } from "react";
 import type { IdeFile } from "../../ide/types";
 import { getFileName, getLanguageLabel } from "../../ide/utils";
+import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { shellPanelClass } from "./ui";
 
@@ -70,17 +71,22 @@ export function EditorWorkspace({
   onOpenFile,
   onUpdateFile,
 }: EditorWorkspaceProps) {
-  const [markdownView, setMarkdownView] = useState<"preview" | "markdown" | "split">("split");
+  const [contentView, setContentView] = useState<"preview" | "code" | "split">("code");
   const isMarkdown = activeFile.language === "md";
+  const isJson = activeFile.language === "json";
+  const supportsPreview = isMarkdown || isJson;
+  const previewLabel = isJson ? "Ver JSON formateado" : "Vista visual";
+  const codeLabel = isJson ? "Ver JSON como código" : "Vista código";
+  const splitLabel = isJson ? "Ver JSON formateado y código" : "Vista dividida";
 
   useEffect(() => {
-    if (!isMarkdown) {
-      setMarkdownView("markdown");
+    if (!supportsPreview) {
+      setContentView("code");
       return;
     }
 
-    setMarkdownView("split");
-  }, [activeFile.id, isMarkdown]);
+    setContentView("code");
+  }, [activeFile.id, supportsPreview]);
 
   function getMonacoLanguage() {
     if (activeFile.language === "md") return "markdown";
@@ -161,41 +167,41 @@ export function EditorWorkspace({
           <span className="hidden text-xs text-[var(--muted)] lg:block">
             {getLanguageLabel(activeFile.language)}
           </span>
-          {isMarkdown && (
+          {supportsPreview && (
             <div className="flex items-center gap-1 rounded-[10px] border border-[var(--border)] bg-white/5 p-1">
               <button
-                aria-label="Vista visual"
+                aria-label={codeLabel}
                 className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
-                  markdownView === "preview"
+                  contentView === "code"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
                 }`}
-                onClick={() => setMarkdownView("preview")}
-                title="Vista visual"
-              >
-                <span aria-hidden="true">◉</span>
-              </button>
-              <button
-                aria-label="Vista markdown"
-                className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
-                  markdownView === "markdown"
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--muted)] hover:text-[var(--text)]"
-                }`}
-                onClick={() => setMarkdownView("markdown")}
-                title="Vista markdown"
+                onClick={() => setContentView("code")}
+                title={codeLabel}
               >
                 <span aria-hidden="true">{"</>"}</span>
               </button>
               <button
-                aria-label="Vista dividida"
+                aria-label={previewLabel}
                 className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
-                  markdownView === "split"
+                  contentView === "preview"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
                 }`}
-                onClick={() => setMarkdownView("split")}
-                title="Vista dividida"
+                onClick={() => setContentView("preview")}
+                title={previewLabel}
+              >
+                <span aria-hidden="true">{isJson ? "{}" : "◉"}</span>
+              </button>
+              <button
+                aria-label={splitLabel}
+                className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
+                  contentView === "split"
+                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "text-[var(--muted)] hover:text-[var(--text)]"
+                }`}
+                onClick={() => setContentView("split")}
+                title={splitLabel}
               >
                 <span aria-hidden="true">◫</span>
               </button>
@@ -205,15 +211,23 @@ export function EditorWorkspace({
       </div>
 
       <div className="min-h-0 bg-[var(--editor-surface)]">
-        {isMarkdown && markdownView === "preview" ? (
+        {supportsPreview && contentView === "preview" ? (
+          isMarkdown ? (
           <MarkdownPreview content={activeFile.content} />
-        ) : isMarkdown && markdownView === "split" ? (
+          ) : (
+            <JsonPreview content={activeFile.content} />
+          )
+        ) : supportsPreview && contentView === "split" ? (
           <div className="grid h-full min-h-0 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="min-h-0 border-b border-[var(--border)] xl:border-b-0 xl:border-r">
               {renderCodeEditor()}
             </div>
             <div className="min-h-0">
-              <MarkdownPreview content={activeFile.content} compact />
+              {isMarkdown ? (
+                <MarkdownPreview content={activeFile.content} compact />
+              ) : (
+                <JsonPreview content={activeFile.content} compact />
+              )}
             </div>
           </div>
         ) : (
