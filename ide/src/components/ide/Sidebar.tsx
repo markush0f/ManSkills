@@ -14,6 +14,18 @@ function getFileTone(language?: IdeFile["language"]) {
   return "border-[var(--border)] bg-white/5 text-[var(--muted)]";
 }
 
+function getFileBadgeLabel(language?: IdeFile["language"]) {
+  if (language === "json") {
+    return "{}";
+  }
+
+  if (language === "md") {
+    return "MD";
+  }
+
+  return language?.toUpperCase().slice(0, 2) ?? "--";
+}
+
 type SidebarProps = {
   activeFileId: string;
   compact: boolean;
@@ -95,7 +107,7 @@ function TreeList({
                 compact ? "h-4 w-4" : "h-5 w-5"
               }`}
             >
-              {file?.language.toUpperCase().slice(0, 2)}
+              {getFileBadgeLabel(file?.language)}
             </span>
             <span className="truncate">{getFileName(file?.path ?? node.name)}</span>
           </button>
