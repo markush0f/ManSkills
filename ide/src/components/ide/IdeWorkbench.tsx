@@ -9,7 +9,7 @@ import { Sidebar } from "./Sidebar";
 
 const SIDEBAR_WIDTH_KEY = "skills-ide:sidebar-width";
 const DEFAULT_SIDEBAR_WIDTH = 296;
-const MIN_SIDEBAR_WIDTH = 220;
+const MIN_SIDEBAR_WIDTH = 180;
 const MAX_SIDEBAR_WIDTH = 520;
 const MIN_CONTENT_WIDTH = 480;
 const RESIZER_WIDTH = 6;
@@ -43,6 +43,7 @@ export function IdeWorkbench() {
   const openFiles = openFileIds
     .map((fileId) => files.find((file) => file.id === fileId))
     .filter((file): file is IdeFile => Boolean(file));
+  const isSidebarCompact = sidebarWidth < 250;
   const installedSkillSlugs = new Set(
     files
       .filter((file) => file.path.startsWith("skills/"))
@@ -176,6 +177,7 @@ export function IdeWorkbench() {
         <div className="min-w-0 overflow-hidden">
           <Sidebar
             activeFileId={activeFileId}
+            compact={isSidebarCompact}
             files={files}
             isMarketplaceView={workspaceView === "marketplace"}
             onOpenFile={openFile}

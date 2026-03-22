@@ -78,6 +78,7 @@ export function EditorWorkspace({
   const previewLabel = isJson ? "Ver JSON formateado" : "Vista visual";
   const codeLabel = isJson ? "Ver JSON como código" : "Vista código";
   const splitLabel = isJson ? "Ver JSON formateado y código" : "Vista dividida";
+  const controlsColumnClass = supportsPreview ? "w-[172px] md:w-[220px]" : "w-[72px] md:w-[132px]";
 
   useEffect(() => {
     if (!supportsPreview) {
@@ -153,7 +154,7 @@ export function EditorWorkspace({
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.94),rgba(12,20,27,0.88))]`}>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-stretch border-b border-[var(--border)]">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--border)]">
         <div className="min-w-0 overflow-hidden">
           <TabsBar
             activeFileId={activeFileId}
@@ -163,15 +164,17 @@ export function EditorWorkspace({
           />
         </div>
 
-        <div className="flex items-center gap-3 border-l border-[var(--border)] px-3">
-          <span className="hidden text-xs text-[var(--muted)] lg:block">
+        <div
+          className={`flex shrink-0 items-center justify-end gap-2 border-l border-[var(--border)] bg-[linear-gradient(180deg,rgba(10,16,22,0.98),rgba(12,20,27,0.96))] px-3 ${controlsColumnClass}`}
+        >
+          <span className="hidden text-xs text-[var(--muted)] md:block">
             {getLanguageLabel(activeFile.language)}
           </span>
           {supportsPreview && (
             <div className="flex items-center gap-1 rounded-[10px] border border-[var(--border)] bg-white/5 p-1">
               <button
                 aria-label={codeLabel}
-                className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
+                className={`rounded-[8px] px-2.5 py-1.5 text-xs transition md:px-3 ${
                   contentView === "code"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
@@ -183,7 +186,7 @@ export function EditorWorkspace({
               </button>
               <button
                 aria-label={previewLabel}
-                className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
+                className={`rounded-[8px] px-2.5 py-1.5 text-xs transition md:px-3 ${
                   contentView === "preview"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
@@ -195,7 +198,7 @@ export function EditorWorkspace({
               </button>
               <button
                 aria-label={splitLabel}
-                className={`rounded-[8px] px-3 py-1.5 text-xs transition ${
+                className={`rounded-[8px] px-2.5 py-1.5 text-xs transition md:px-3 ${
                   contentView === "split"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
