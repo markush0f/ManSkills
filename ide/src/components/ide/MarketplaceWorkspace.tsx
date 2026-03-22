@@ -34,11 +34,10 @@ function SkillRow({
 
       <div className="flex items-center justify-start lg:justify-end">
         <button
-          className={`rounded-[8px] px-2.5 py-1.5 text-xs font-medium transition ${
-            installed
+          className={`rounded-[8px] px-2.5 py-1.5 text-xs font-medium transition ${installed
               ? "text-[var(--text)] hover:bg-white/6"
               : "text-[var(--muted)] hover:bg-white/6 hover:text-[var(--text)]"
-          }`}
+            }`}
           onClick={() => onInstallSkill(skill)}
         >
           {installed ? "Abrir" : "Instalar"}
