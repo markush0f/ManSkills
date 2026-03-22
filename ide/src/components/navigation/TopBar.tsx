@@ -1,4 +1,4 @@
-import { accentButtonClass } from "./ui";
+import { accentButtonClass } from "../shared/ui";
 
 type TopBarProps = {
   onNewFile: () => void;

@@ -1,6 +1,8 @@
 import type { IdeFile, TreeNode } from "../../ide/types";
 import { getFileName } from "../../ide/utils";
-import { panelHeaderTitleClass, shellPanelClass } from "./ui";
+import { useIde } from "../../contexts/IdeContext";
+import { useIdeLayout } from "../../contexts/IdeLayoutContext";
+import { panelHeaderTitleClass, shellPanelClass } from "../shared/ui";
 
 function getFileTone(language?: IdeFile["language"]) {
   if (language === "md") {
@@ -25,16 +27,6 @@ function getFileBadgeLabel(language?: IdeFile["language"]) {
 
   return language?.toUpperCase().slice(0, 2) ?? "--";
 }
-
-type SidebarProps = {
-  activeFileId: string;
-  compact: boolean;
-  files: IdeFile[];
-  isMarketplaceView: boolean;
-  onOpenFile: (fileId: string) => void;
-  onOpenMarketplace: () => void;
-  tree: TreeNode[];
-};
 
 function TreeList({
   activeFileId,
@@ -117,15 +109,9 @@ function TreeList({
   );
 }
 
-export function Sidebar({
-  activeFileId,
-  compact,
-  files,
-  isMarketplaceView,
-  onOpenFile,
-  onOpenMarketplace,
-  tree,
-}: SidebarProps) {
+export function Sidebar() {
+  const { activeFileId, files, isMarketplaceView, openFile, openMarketplace, tree } = useIde();
+  const { isSidebarCompact: compact } = useIdeLayout();
   const skillCount = tree.filter((node) => node.kind === "folder").length;
 
   return (
@@ -151,7 +137,7 @@ export function Sidebar({
                 ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
                 : "border-[var(--border)] bg-white/6 text-[var(--text)] hover:border-[var(--border-strong)]"
             } ${compact ? "px-2.5 py-2" : "px-3 py-2 text-xs font-medium"}`}
-            onClick={onOpenMarketplace}
+            onClick={openMarketplace}
             title="Marketplace"
           >
             <svg
@@ -184,7 +170,7 @@ export function Sidebar({
           compact={compact}
           files={files}
           nodes={tree}
-          onOpenFile={onOpenFile}
+          onOpenFile={openFile}
         />
       </div>
     </aside>

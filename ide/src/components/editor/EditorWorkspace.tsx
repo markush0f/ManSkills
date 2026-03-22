@@ -1,19 +1,10 @@
 import Editor from "@monaco-editor/react";
 import { useEffect, useState } from "react";
-import type { IdeFile } from "../../ide/types";
 import { getFileName, getLanguageLabel } from "../../ide/utils";
+import { useIde } from "../../contexts/IdeContext";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
-import { shellPanelClass } from "./ui";
-
-type EditorWorkspaceProps = {
-  activeFile: IdeFile;
-  activeFileId: string;
-  openFiles: IdeFile[];
-  onCloseFile: (fileId: string) => void;
-  onOpenFile: (fileId: string) => void;
-  onUpdateFile: (content: string) => void;
-};
+import { shellPanelClass } from "../shared/ui";
 
 function TabsBar({
   activeFileId,
@@ -24,7 +15,7 @@ function TabsBar({
   activeFileId: string;
   onCloseFile: (fileId: string) => void;
   onOpenFile: (fileId: string) => void;
-  openFiles: IdeFile[];
+  openFiles: ReturnType<typeof useIde>["openFiles"];
 }) {
   return (
     <div className="flex min-w-0 items-center overflow-x-auto">
@@ -63,14 +54,8 @@ function TabsBar({
   );
 }
 
-export function EditorWorkspace({
-  activeFile,
-  activeFileId,
-  openFiles,
-  onCloseFile,
-  onOpenFile,
-  onUpdateFile,
-}: EditorWorkspaceProps) {
+export function EditorWorkspace() {
+  const { activeFile, activeFileId, closeFile, openFile, openFiles, updateActiveFile } = useIde();
   const [contentView, setContentView] = useState<"preview" | "code" | "split">("code");
   const isMarkdown = activeFile.language === "md";
   const isJson = activeFile.language === "json";
@@ -121,7 +106,7 @@ export function EditorWorkspace({
           path={activeFile.path}
           theme="vs-dark"
           value={activeFile.content}
-          onChange={(value) => onUpdateFile(value ?? "")}
+          onChange={(value) => updateActiveFile(value ?? "")}
           beforeMount={(monaco) => {
             monaco.editor.defineTheme("skills-dark", {
               base: "vs-dark",
@@ -158,8 +143,8 @@ export function EditorWorkspace({
         <div className="min-w-0 overflow-hidden">
           <TabsBar
             activeFileId={activeFileId}
-            onCloseFile={onCloseFile}
-            onOpenFile={onOpenFile}
+            onCloseFile={closeFile}
+            onOpenFile={openFile}
             openFiles={openFiles}
           />
         </div>

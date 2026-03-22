@@ -1,7 +1,12 @@
-import { IdeWorkbench } from "./components/ide/IdeWorkbench";
+import { IdeProvider } from "./providers/IdeProvider";
+import { IdeWorkbench } from "./components/layout/IdeWorkbench";
 
 function App() {
-  return <IdeWorkbench />;
+  return (
+    <IdeProvider>
+      <IdeWorkbench />
+    </IdeProvider>
+  );
 }
 
 export default App;

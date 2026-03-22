@@ -1,12 +1,7 @@
 import { useState } from "react";
 import type { MarketplaceSkill } from "../../ide/types";
-import { shellPanelClass } from "./ui";
-
-type MarketplaceWorkspaceProps = {
-  installedSkillSlugs: Set<string>;
-  marketplaceSkills: MarketplaceSkill[];
-  onInstallSkill: (skill: MarketplaceSkill) => void;
-};
+import { useIde } from "../../contexts/IdeContext";
+import { shellPanelClass } from "../shared/ui";
 
 function SkillRow({
   installed,
@@ -47,11 +42,8 @@ function SkillRow({
   );
 }
 
-export function MarketplaceWorkspace({
-  installedSkillSlugs,
-  marketplaceSkills,
-  onInstallSkill,
-}: MarketplaceWorkspaceProps) {
+export function MarketplaceWorkspace() {
+  const { installMarketplaceSkill, installedSkillSlugs, marketplaceSkills } = useIde();
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
   const filteredSkills = marketplaceSkills.filter((skill) => {
@@ -107,7 +99,7 @@ export function MarketplaceWorkspace({
               <SkillRow
                 key={skill.id}
                 installed={installedSkillSlugs.has(skill.slug)}
-                onInstallSkill={onInstallSkill}
+                onInstallSkill={installMarketplaceSkill}
                 skill={skill}
               />
             ))}

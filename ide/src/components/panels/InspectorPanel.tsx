@@ -1,7 +1,7 @@
 import { blueprintItems } from "../../ide/mockData";
 import type { CursorPosition, Diagnostic, IdeFile } from "../../ide/types";
 import { getLanguageLabel } from "../../ide/utils";
-import { panelHeaderTitleClass, shellPanelClass, subtleLabelClass } from "./ui";
+import { panelHeaderTitleClass, shellPanelClass, subtleLabelClass } from "../shared/ui";
 
 type InspectorPanelProps = {
   activeFile: IdeFile;

@@ -1,6 +1,6 @@
 import type { CursorPosition, Diagnostic, IdeFile } from "../../ide/types";
 import { getLanguageLabel } from "../../ide/utils";
-import { shellPanelClass } from "./ui";
+import { shellPanelClass } from "../shared/ui";
 
 type StatusBarProps = {
   activeFile: IdeFile;

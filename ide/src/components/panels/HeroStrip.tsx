@@ -1,4 +1,4 @@
-import { cardClass, subtleLabelClass } from "./ui";
+import { cardClass, subtleLabelClass } from "../shared/ui";
 
 type HeroStripProps = {
   openTabCount: number;
