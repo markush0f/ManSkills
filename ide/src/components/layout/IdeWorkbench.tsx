@@ -34,9 +34,8 @@ export function IdeWorkbench() {
         <div className="flex items-stretch justify-center">
           <button
             aria-label="Redimensionar panel lateral"
-            className={`group flex h-full w-full cursor-col-resize items-center justify-center bg-transparent transition ${
-              isResizing ? "bg-white/4" : "hover:bg-white/[0.03]"
-            }`}
+            className={`group flex h-full w-full cursor-col-resize items-center justify-center bg-transparent transition ${isResizing ? "bg-white/4" : "hover:bg-white/[0.03]"
+              }`}
             onDoubleClick={resetSidebarWidth}
             onPointerDown={(event) => {
               event.preventDefault();
@@ -46,14 +45,14 @@ export function IdeWorkbench() {
             type="button"
           >
             <span
-              className={`h-full w-px transition ${
-                isResizing ? "bg-[var(--accent)]" : "bg-[var(--border)] group-hover:bg-white/18"
-              }`}
+              className={`h-full w-px transition ${isResizing ? "bg-[var(--accent)]" : "bg-[var(--border)] group-hover:bg-white/18"
+                }`}
             />
           </button>
         </div>
 
         <div className="min-w-0 overflow-hidden">
+
           {isMarketplaceView ? <MarketplaceWorkspace /> : <EditorWorkspace />}
         </div>
       </section>

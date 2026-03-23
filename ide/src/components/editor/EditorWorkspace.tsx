@@ -1,5 +1,5 @@
 import Editor from "@monaco-editor/react";
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { getFileName, getLanguageLabel } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
 import { JsonPreview } from "./JsonPreview";
@@ -57,6 +57,7 @@ function TabsBar({
 export function EditorWorkspace() {
   const { activeFile, activeFileId, closeFile, openFile, openFiles, updateActiveFile } = useIde();
   const [contentView, setContentView] = useState<"preview" | "code" | "split">("code");
+  const [draftContent, setDraftContent] = useState(activeFile.content);
   const isMarkdown = activeFile.language === "md";
   const isJson = activeFile.language === "json";
   const supportsPreview = isMarkdown || isJson;
@@ -64,6 +65,7 @@ export function EditorWorkspace() {
   const codeLabel = isJson ? "Ver JSON como código" : "Vista código";
   const splitLabel = isJson ? "Ver JSON formateado y código" : "Vista dividida";
   const controlsColumnClass = supportsPreview ? "w-[172px] md:w-[220px]" : "w-[72px] md:w-[132px]";
+  const deferredContent = useDeferredValue(draftContent);
 
   useEffect(() => {
     if (!supportsPreview) {
@@ -73,6 +75,24 @@ export function EditorWorkspace() {
 
     setContentView("code");
   }, [activeFile.id, supportsPreview]);
+
+  useEffect(() => {
+    setDraftContent(activeFile.content);
+  }, [activeFile.id]);
+
+  useEffect(() => {
+    if (draftContent === activeFile.content) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      updateActiveFile(draftContent);
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeFile.content, draftContent, updateActiveFile]);
 
   function getMonacoLanguage() {
     if (activeFile.language === "md") return "markdown";
@@ -105,8 +125,8 @@ export function EditorWorkspace() {
           }}
           path={activeFile.path}
           theme="vs-dark"
-          value={activeFile.content}
-          onChange={(value) => updateActiveFile(value ?? "")}
+          value={draftContent}
+          onChange={(value) => setDraftContent(value ?? "")}
           beforeMount={(monaco) => {
             monaco.editor.defineTheme("skills-dark", {
               base: "vs-dark",
@@ -201,9 +221,9 @@ export function EditorWorkspace() {
       <div className="min-h-0 bg-[var(--editor-surface)]">
         {supportsPreview && contentView === "preview" ? (
           isMarkdown ? (
-          <MarkdownPreview content={activeFile.content} />
+          <MarkdownPreview content={deferredContent} />
           ) : (
-            <JsonPreview content={activeFile.content} />
+            <JsonPreview content={deferredContent} />
           )
         ) : supportsPreview && contentView === "split" ? (
           <div className="grid h-full min-h-0 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -212,9 +232,9 @@ export function EditorWorkspace() {
             </div>
             <div className="min-h-0">
               {isMarkdown ? (
-                <MarkdownPreview content={activeFile.content} compact />
+                <MarkdownPreview content={deferredContent} compact />
               ) : (
-                <JsonPreview content={activeFile.content} compact />
+                <JsonPreview content={deferredContent} compact />
               )}
             </div>
           </div>
