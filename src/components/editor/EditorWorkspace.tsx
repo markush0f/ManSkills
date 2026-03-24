@@ -1,6 +1,6 @@
 import Editor from "@monaco-editor/react";
 import { useDeferredValue, useEffect, useState } from "react";
-import { getFileName, getLanguageLabel } from "../../ide/utils";
+import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -61,10 +61,6 @@ export function EditorWorkspace() {
   const isMarkdown = activeFile.language === "md";
   const isJson = activeFile.language === "json";
   const supportsPreview = isMarkdown || isJson;
-  const previewLabel = isJson ? "Ver JSON formateado" : "Vista visual";
-  const codeLabel = isJson ? "Ver JSON como código" : "Vista código";
-  const splitLabel = isJson ? "Ver JSON formateado y código" : "Vista dividida";
-  const controlsColumnClass = supportsPreview ? "w-[172px] md:w-[220px]" : "w-[72px] md:w-[132px]";
   const deferredContent = useDeferredValue(draftContent);
 
   useEffect(() => {
@@ -109,6 +105,11 @@ export function EditorWorkspace() {
           language={getMonacoLanguage()}
           options={{
             automaticLayout: true,
+            cursorBlinking: "smooth",
+            cursorSmoothCaretAnimation: "on",
+            cursorStyle: "line-thin",
+            fontFamily: "Cascadia Code, Cascadia Mono, Consolas, SFMono-Regular, monospace",
+            fontLigatures: true,
             fontSize: 14,
             lineHeight: 28,
             minimap: { enabled: false },
@@ -161,63 +162,13 @@ export function EditorWorkspace() {
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
-        <div className="min-w-0 overflow-hidden">
-          <TabsBar
-            activeFileId={activeFileId}
-            onCloseFile={closeFile}
-            onOpenFile={openFile}
-            openFiles={openFiles}
-          />
-        </div>
-
-        <div
-          className={`flex shrink-0 items-center justify-end gap-2 border-l border-[var(--border)] bg-[var(--editor-chrome)] px-3 ${controlsColumnClass}`}
-        >
-          <span className="hidden text-xs text-[var(--muted)] md:block">
-            {getLanguageLabel(activeFile.language)}
-          </span>
-          {supportsPreview && (
-            <div className="flex items-center gap-1 rounded-[8px] border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
-              <button
-                aria-label={codeLabel}
-                className={`rounded-[6px] px-2.5 py-1.5 text-xs transition md:px-3 ${
-                  contentView === "code"
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--muted)] hover:text-[var(--text)]"
-                }`}
-                onClick={() => setContentView("code")}
-                title={codeLabel}
-              >
-                <span aria-hidden="true">{"</>"}</span>
-              </button>
-              <button
-                aria-label={previewLabel}
-                className={`rounded-[6px] px-2.5 py-1.5 text-xs transition md:px-3 ${
-                  contentView === "preview"
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--muted)] hover:text-[var(--text)]"
-                }`}
-                onClick={() => setContentView("preview")}
-                title={previewLabel}
-              >
-                <span aria-hidden="true">{isJson ? "{}" : "◉"}</span>
-              </button>
-              <button
-                aria-label={splitLabel}
-                className={`rounded-[6px] px-2.5 py-1.5 text-xs transition md:px-3 ${
-                  contentView === "split"
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--muted)] hover:text-[var(--text)]"
-                }`}
-                onClick={() => setContentView("split")}
-                title={splitLabel}
-              >
-                <span aria-hidden="true">◫</span>
-              </button>
-            </div>
-          )}
-        </div>
+      <div className="min-w-0 overflow-hidden border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
+        <TabsBar
+          activeFileId={activeFileId}
+          onCloseFile={closeFile}
+          onOpenFile={openFile}
+          openFiles={openFiles}
+        />
       </div>
 
       <div className="min-h-0 bg-[var(--editor-surface)]">
