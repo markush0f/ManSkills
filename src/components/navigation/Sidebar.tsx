@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../ide/types";
 import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
@@ -131,47 +133,59 @@ function countSystemSkillNodes(nodes: SystemSkillTreeNode[]): number {
 function SystemSkillTreeList({
   compact,
   depth = 0,
+  expandedNodeIds,
   nodes,
   onOpenSkill,
   openingSkillId,
+  onToggleNode,
 }: {
   compact: boolean;
+  expandedNodeIds: Set<string>;
   nodes: SystemSkillTreeNode[];
   onOpenSkill: (skill: SystemSkill) => void;
   openingSkillId: string | null;
+  onToggleNode: (nodeId: string) => void;
   depth?: number;
 }) {
   return (
     <>
       {nodes.map((node) => {
         if (node.kind === "root" || node.kind === "directory") {
+          const isExpanded = expandedNodeIds.has(node.id);
+
           return (
             <div key={node.id} className="space-y-1.5">
-              <div
-                className={`flex items-center rounded-[10px] font-medium text-[var(--text)] ${
+              <button
+                className={`flex w-full items-center rounded-[10px] font-medium text-[var(--text)] transition hover:bg-white/5 ${
                   compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-3 py-2 text-sm"
                 }`}
+                onClick={() => onToggleNode(node.id)}
                 style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
                 title={node.path}
+                type="button"
               >
                 <span
                   className={`inline-flex items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--accent)] ${
                     compact ? "h-4 w-4" : "h-5 w-5"
                   }`}
                 >
-                  {node.kind === "root" ? "R" : "+"}
+                  {isExpanded ? "-" : "+"}
                 </span>
                 <span className="truncate">{node.name}</span>
-              </div>
-              <div className="space-y-1">
-                <SystemSkillTreeList
-                  compact={compact}
-                  depth={depth + 1}
-                  nodes={node.children}
-                  onOpenSkill={onOpenSkill}
-                  openingSkillId={openingSkillId}
-                />
-              </div>
+              </button>
+              {isExpanded && (
+                <div className="space-y-1">
+                  <SystemSkillTreeList
+                    compact={compact}
+                    depth={depth + 1}
+                    expandedNodeIds={expandedNodeIds}
+                    nodes={node.children}
+                    onOpenSkill={onOpenSkill}
+                    openingSkillId={openingSkillId}
+                    onToggleNode={onToggleNode}
+                  />
+                </div>
+              )}
             </div>
           );
         }
@@ -222,6 +236,7 @@ export function Sidebar() {
     tree,
   } = useIde();
   const { isSidebarCompact: compact } = useIdeLayout();
+  const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(() => new Set());
   const hasSystemSkillTree = !systemSkillsLoading && !systemSkillsError;
   const fallbackSkillCount = new Set(
     files
@@ -230,6 +245,20 @@ export function Sidebar() {
       .filter(Boolean),
   ).size;
   const skillCount = hasSystemSkillTree ? countSystemSkillNodes(systemSkillTree) : fallbackSkillCount;
+
+  function toggleSystemSkillNode(nodeId: string) {
+    setExpandedSystemSkillNodeIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+
+      return next;
+    });
+  }
 
   return (
     <aside
@@ -287,9 +316,11 @@ export function Sidebar() {
             systemSkillTree.length > 0 ? (
               <SystemSkillTreeList
                 compact={compact}
+                expandedNodeIds={expandedSystemSkillNodeIds}
                 nodes={systemSkillTree}
                 onOpenSkill={openSystemSkill}
                 openingSkillId={openingSystemSkillId}
+                onToggleNode={toggleSystemSkillNode}
               />
             ) : (
               <p className="text-xs text-[var(--muted)]">No se encontraron skills con manifiesto `SKILL.md`.</p>
