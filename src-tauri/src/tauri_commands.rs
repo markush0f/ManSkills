@@ -1,11 +1,18 @@
 use crate::{
-    models::{SkillScanResponse, SystemSkillContentResponse},
+    models::{SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse},
     services::SkillService,
 };
 
 #[tauri::command]
 pub fn scan_system_skills(scan_roots: Option<Vec<String>>) -> Result<SkillScanResponse, String> {
     SkillService::new().scan(scan_roots)
+}
+
+#[tauri::command]
+pub fn scan_system_skills_tree(
+    scan_roots: Option<Vec<String>>,
+) -> Result<SkillTreeResponse, String> {
+    SkillService::new().scan_tree(scan_roots)
 }
 
 #[tauri::command]
