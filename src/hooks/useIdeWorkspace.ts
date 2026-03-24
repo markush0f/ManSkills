@@ -5,9 +5,10 @@ import { initialFiles, initialOpenFileIds } from "../ide/mockData";
 import type {
   IdeFile,
   MarketplaceSkill,
-  SkillScanResponse,
+  SkillTreeResponse,
   SystemSkill,
   SystemSkillContentResponse,
+  SystemSkillTreeNode,
 } from "../ide/types";
 import { buildTree } from "../ide/utils";
 
@@ -31,12 +32,20 @@ function getSystemSkillMainFileId(skill: SystemSkill) {
   return `system-skill:${skill.id}:SKILL.md`;
 }
 
+function flattenSystemSkillTree(nodes: SystemSkillTreeNode[]): SystemSkill[] {
+  return nodes.flatMap((node) => {
+    const currentSkill = node.skill ? [node.skill] : [];
+    return [...currentSkill, ...flattenSystemSkillTree(node.children)];
+  });
+}
+
 export function useIdeWorkspace() {
   const [files, setFiles] = useState(initialFiles);
   const [openFileIds, setOpenFileIds] = useState<string[]>(initialOpenFileIds);
   const [activeFileId, setActiveFileId] = useState(initialOpenFileIds[0] ?? initialFiles[0]?.id ?? "");
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
   const [systemSkills, setSystemSkills] = useState<SystemSkill[]>([]);
+  const [systemSkillTree, setSystemSkillTree] = useState<SystemSkillTreeNode[]>([]);
   const [systemSkillsLoading, setSystemSkillsLoading] = useState(true);
   const [systemSkillsError, setSystemSkillsError] = useState<string | null>(null);
   const [systemSkillScanMs, setSystemSkillScanMs] = useState<number | null>(null);
@@ -60,14 +69,17 @@ export function useIdeWorkspace() {
     setSystemSkillsLoading(true);
     setSystemSkillsError(null);
 
-    invoke<SkillScanResponse>("scan_system_skills")
+    invoke<SkillTreeResponse>("scan_system_skills_tree")
       .then((response) => {
         if (cancelled) {
           return;
         }
 
+        const nextSystemSkills = flattenSystemSkillTree(response.roots);
+
         startTransition(() => {
-          setSystemSkills(response.skills);
+          setSystemSkillTree(response.roots);
+          setSystemSkills(nextSystemSkills);
           setSystemSkillScanMs(response.durationMs);
           setSystemSkillsLoading(false);
         });
@@ -78,6 +90,7 @@ export function useIdeWorkspace() {
         }
 
         console.error("Failed to scan system skills", error);
+        setSystemSkillTree([]);
         setSystemSkills([]);
         setSystemSkillScanMs(null);
         setSystemSkillsError("No se pudieron cargar las skills del sistema.");
@@ -220,6 +233,7 @@ export function useIdeWorkspace() {
     systemSkills,
     systemSkillsError,
     systemSkillsLoading,
+    systemSkillTree,
     tree,
     updateActiveFile,
     workspaceView,

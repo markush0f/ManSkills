@@ -1,4 +1,4 @@
-import type { IdeFile, SystemSkill, TreeNode } from "../../ide/types";
+import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../ide/types";
 import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
@@ -121,6 +121,91 @@ function getSystemSkillSourceLabel(source: SystemSkill["source"]) {
   return "System";
 }
 
+function countSystemSkillNodes(nodes: SystemSkillTreeNode[]): number {
+  return nodes.reduce((total, node) => {
+    const current = node.kind === "skill" ? 1 : 0;
+    return total + current + countSystemSkillNodes(node.children);
+  }, 0);
+}
+
+function SystemSkillTreeList({
+  compact,
+  depth = 0,
+  nodes,
+  onOpenSkill,
+  openingSkillId,
+}: {
+  compact: boolean;
+  nodes: SystemSkillTreeNode[];
+  onOpenSkill: (skill: SystemSkill) => void;
+  openingSkillId: string | null;
+  depth?: number;
+}) {
+  return (
+    <>
+      {nodes.map((node) => {
+        if (node.kind === "root" || node.kind === "directory") {
+          return (
+            <div key={node.id} className="space-y-1.5">
+              <div
+                className={`flex items-center rounded-[10px] font-medium text-[var(--text)] ${
+                  compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-3 py-2 text-sm"
+                }`}
+                style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
+                title={node.path}
+              >
+                <span
+                  className={`inline-flex items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--accent)] ${
+                    compact ? "h-4 w-4" : "h-5 w-5"
+                  }`}
+                >
+                  {node.kind === "root" ? "R" : "+"}
+                </span>
+                <span className="truncate">{node.name}</span>
+              </div>
+              <div className="space-y-1">
+                <SystemSkillTreeList
+                  compact={compact}
+                  depth={depth + 1}
+                  nodes={node.children}
+                  onOpenSkill={onOpenSkill}
+                  openingSkillId={openingSkillId}
+                />
+              </div>
+            </div>
+          );
+        }
+
+        const skill = node.skill;
+        if (!skill) {
+          return null;
+        }
+
+        return (
+          <button
+            key={node.id}
+            className={`flex w-full items-center justify-between gap-2 rounded-[10px] border border-transparent text-left transition hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)] ${
+              compact ? "px-2 py-1.5 text-[13px]" : "px-3 py-2 text-sm"
+            } text-[var(--muted)]`}
+            onClick={() => onOpenSkill(skill)}
+            style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
+            title={skill.manifestPath}
+            type="button"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-[var(--text)]">{node.name}</p>
+              {!compact && <p className="truncate text-[10px] text-[var(--muted)]">{skill.rootPath}</p>}
+            </div>
+            <span className="shrink-0 rounded-full border border-[var(--border)] bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+              {openingSkillId === skill.id ? "Loading" : getSystemSkillSourceLabel(skill.source)}
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
 function SystemSkillList({
   compact,
   onOpenSkill,
@@ -179,10 +264,18 @@ export function Sidebar() {
     systemSkills,
     systemSkillsError,
     systemSkillsLoading,
+    systemSkillTree,
     tree,
   } = useIde();
   const { isSidebarCompact: compact } = useIdeLayout();
-  const skillCount = tree.filter((node) => node.kind === "folder").length;
+  const hasSystemSkillTree = !systemSkillsLoading && !systemSkillsError;
+  const fallbackSkillCount = new Set(
+    files
+      .filter((file) => file.path.startsWith("skills/"))
+      .map((file) => file.path.split("/")[1])
+      .filter(Boolean),
+  ).size;
+  const skillCount = hasSystemSkillTree ? countSystemSkillNodes(systemSkillTree) : fallbackSkillCount;
 
   return (
     <aside
@@ -236,13 +329,26 @@ export function Sidebar() {
 
       <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-3 py-3"}`}>
         <div className="space-y-4">
-          <TreeList
-            activeFileId={activeFileId}
-            compact={compact}
-            files={files}
-            nodes={tree}
-            onOpenFile={openFile}
-          />
+          {hasSystemSkillTree ? (
+            systemSkillTree.length > 0 ? (
+              <SystemSkillTreeList
+                compact={compact}
+                nodes={systemSkillTree}
+                onOpenSkill={openSystemSkill}
+                openingSkillId={openingSystemSkillId}
+              />
+            ) : (
+              <p className="text-xs text-[var(--muted)]">No se encontraron skills con manifiesto `SKILL.md`.</p>
+            )
+          ) : (
+            <TreeList
+              activeFileId={activeFileId}
+              compact={compact}
+              files={files}
+              nodes={tree}
+              onOpenFile={openFile}
+            />
+          )}
 
           <section className="border-t border-[var(--border)] pt-3">
             <div className="flex items-center justify-between gap-3">

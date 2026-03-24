@@ -57,6 +57,23 @@ export type SystemSkillContentResponse = {
   files: SystemSkillFile[];
 };
 
+export type SystemSkillTreeNodeKind = "root" | "directory" | "skill";
+
+export type SystemSkillTreeNode = {
+  id: string;
+  name: string;
+  path: string;
+  kind: SystemSkillTreeNodeKind;
+  skill: SystemSkill | null;
+  children: SystemSkillTreeNode[];
+};
+
+export type SkillTreeResponse = {
+  roots: SystemSkillTreeNode[];
+  scannedRoots: string[];
+  durationMs: number;
+};
+
 export type DiagnosticLevel = "error" | "warning" | "info";
 
 export type Diagnostic = {
