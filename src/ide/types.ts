@@ -1,4 +1,4 @@
-export type Language = "ts" | "json" | "md";
+export type Language = "ts" | "json" | "md" | "txt";
 
 export type IdeFile = {
   id: string;
@@ -43,6 +43,18 @@ export type SkillScanResponse = {
   skills: SystemSkill[];
   scannedRoots: string[];
   durationMs: number;
+};
+
+export type SystemSkillFile = {
+  id: string;
+  relativePath: string;
+  language: Language;
+  content: string;
+};
+
+export type SystemSkillContentResponse = {
+  rootPath: string;
+  files: SystemSkillFile[];
 };
 
 export type DiagnosticLevel = "error" | "warning" | "info";

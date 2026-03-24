@@ -97,6 +97,7 @@ export function EditorWorkspace() {
   function getMonacoLanguage() {
     if (activeFile.language === "md") return "markdown";
     if (activeFile.language === "ts") return "typescript";
+    if (activeFile.language === "txt") return "plaintext";
     return "json";
   }
 

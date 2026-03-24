@@ -123,18 +123,24 @@ function getSystemSkillSourceLabel(source: SystemSkill["source"]) {
 
 function SystemSkillList({
   compact,
+  onOpenSkill,
+  openingSkillId,
   skills,
 }: {
   compact: boolean;
+  onOpenSkill: (skill: SystemSkill) => void;
+  openingSkillId: string | null;
   skills: SystemSkill[];
 }) {
   return (
     <div className="space-y-1.5">
       {skills.map((skill) => (
-        <article
+        <button
           key={skill.id}
-          className={`rounded-[12px] border border-[var(--border)] bg-white/[0.03] ${compact ? "px-2 py-2" : "px-3 py-2.5"}`}
+          className={`w-full rounded-[12px] border border-[var(--border)] bg-white/[0.03] text-left transition hover:border-[var(--border-strong)] hover:bg-white/[0.05] ${compact ? "px-2 py-2" : "px-3 py-2.5"}`}
+          onClick={() => onOpenSkill(skill)}
           title={skill.manifestPath}
+          type="button"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -147,14 +153,14 @@ function SystemSkillList({
             </div>
 
             <span className="shrink-0 rounded-full border border-[var(--border)] bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
-              {getSystemSkillSourceLabel(skill.source)}
+              {openingSkillId === skill.id ? "Loading" : getSystemSkillSourceLabel(skill.source)}
             </span>
           </div>
 
           {!compact && (
             <p className="mt-2 truncate font-mono text-[10px] text-[var(--muted)]">{skill.rootPath}</p>
           )}
-        </article>
+        </button>
       ))}
     </div>
   );
@@ -167,6 +173,8 @@ export function Sidebar() {
     isMarketplaceView,
     openFile,
     openMarketplace,
+    openSystemSkill,
+    openingSystemSkillId,
     systemSkillScanMs,
     systemSkills,
     systemSkillsError,
@@ -257,6 +265,8 @@ export function Sidebar() {
               ) : systemSkills.length > 0 ? (
                 <SystemSkillList
                   compact={compact}
+                  onOpenSkill={openSystemSkill}
+                  openingSkillId={openingSystemSkillId}
                   skills={systemSkills}
                 />
               ) : (
