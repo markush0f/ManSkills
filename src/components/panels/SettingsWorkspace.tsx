@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
 import type { SystemSkillTreeNode } from "../../ide/types";
+import { CheckboxInput, NumberInput, SelectInput, TextInput } from "../shared/formControls";
 import { shellPanelClass } from "../shared/ui";
 
 type SettingsCategory = "text" | "cursor" | "display" | "workspace";
@@ -80,12 +81,12 @@ function SettingRow({
   label: string;
 }) {
   return (
-    <div className="grid gap-3 border-t border-[var(--border)] px-4 py-3 xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start">
+    <div className="border-t border-l-2 border-t-[var(--border)] border-l-transparent px-4 py-3 transition focus-within:border-l-[#2aa9ff] focus-within:bg-white/[0.02]">
       <div className="min-w-0">
         <p className="text-[13px] text-[var(--text)]">{label}</p>
         <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">{description}</p>
       </div>
-      <div className="flex min-w-0 items-center justify-start xl:justify-end">{children}</div>
+      <div className="mt-3 flex min-w-0 items-center">{children}</div>
     </div>
   );
 }
@@ -104,11 +105,9 @@ function CheckboxSetting({
   return (
     <SettingRow description={description} label={label}>
       <label className="inline-flex items-center gap-2 text-[12px] text-[var(--text)]">
-        <input
+        <CheckboxInput
           checked={checked}
-          className="h-4 w-4 border border-[var(--border)] bg-transparent accent-[var(--accent)]"
-          onChange={(event) => onChange(event.target.checked)}
-          type="checkbox"
+          onChange={onChange}
         />
         <span>{checked ? "Enabled" : "Disabled"}</span>
       </label>
@@ -131,8 +130,8 @@ function SelectSetting<T extends string>({
 }) {
   return (
     <SettingRow description={description} label={label}>
-      <select
-        className="w-full max-w-[180px] border border-[var(--border)] bg-[rgba(255,255,255,0.02)] px-2.5 py-1.5 text-[12px] text-[var(--text)] outline-none transition focus:border-[var(--border-strong)]"
+      <SelectInput
+        className="max-w-[180px]"
         onChange={(event) => onChange(event.target.value as T)}
         value={value}
       >
@@ -141,7 +140,7 @@ function SelectSetting<T extends string>({
             {option.label}
           </option>
         ))}
-      </select>
+      </SelectInput>
     </SettingRow>
   );
 }
@@ -163,12 +162,11 @@ function NumberSetting({
 }) {
   return (
     <SettingRow description={description} label={label}>
-      <input
-        className="w-full max-w-[92px] border border-[var(--border)] bg-[rgba(255,255,255,0.02)] px-2.5 py-1.5 text-[12px] text-[var(--text)] outline-none transition focus:border-[var(--border-strong)]"
+      <NumberInput
+        className="max-w-[92px]"
         max={max}
         min={min}
-        onChange={(event) => onChange(Number(event.target.value))}
-        type="number"
+        onValueChange={onChange}
         value={value}
       />
     </SettingRow>
@@ -183,9 +181,9 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <div className="grid gap-3 border-t border-[var(--border)] px-4 py-3 xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start">
+    <div className="border-t border-l-2 border-t-[var(--border)] border-l-transparent px-4 py-3">
       <p className="text-[13px] text-[var(--text)]">{label}</p>
-      <p className="truncate text-[12px] text-[var(--muted)] xl:text-right">{value}</p>
+      <p className="mt-3 truncate text-[12px] text-[var(--muted)]">{value}</p>
     </div>
   );
 }
@@ -252,8 +250,8 @@ export function SettingsWorkspace() {
       <div className="grid min-h-0 xl:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="border-b border-[var(--border)] xl:border-b-0 xl:border-r">
           <div className="border-b border-[var(--border)] px-3 py-3">
-            <input
-              className="h-8 w-full border border-[var(--border)] bg-[rgba(255,255,255,0.02)] px-3 text-[12px] text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--border-strong)]"
+            <TextInput
+              className="h-8"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search settings"
               value={query}

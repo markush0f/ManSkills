@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { MarketplaceSkill } from "../../ide/types";
 import { useIde } from "../../contexts/IdeContext";
+import { TextInput } from "../shared/formControls";
 import { shellPanelClass } from "../shared/ui";
 
 function SkillRow({
@@ -62,8 +63,8 @@ export function MarketplaceWorkspace() {
       <div className="min-h-0 overflow-auto">
         <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[rgba(8,13,18,0.94)] px-5 py-3 backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <input
-              className="h-9 w-full rounded-[6px] border border-[var(--border)] bg-transparent px-3 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--border-strong)] lg:max-w-sm"
+            <TextInput
+              className="text-sm lg:max-w-sm"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Filtrar skills"
               value={query}
