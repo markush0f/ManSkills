@@ -1,14 +1,15 @@
-name: Build Desktop
+name: Release Desktop
 
 on:
   push:
-    branches:
-      - "**"
-  workflow_dispatch:
+    tags:
+      - "*"
 
 jobs:
-  build:
-    name: Build ${{ matrix.platform_name }}
+  release:
+    name: Release ${{ matrix.platform_name }}
+    permissions:
+      contents: write
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -16,10 +17,8 @@ jobs:
         include:
           - os: ubuntu-22.04
             platform_name: Linux
-            artifact_name: tauri-linux-bundles
           - os: windows-latest
             platform_name: Windows
-            artifact_name: tauri-windows-bundles
 
     steps:
       - name: Checkout repository
@@ -48,12 +47,14 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Tauri app
-        run: npm run tauri build
-
-      - name: Upload bundled artifacts
-        uses: actions/upload-artifact@v4
+      - name: Build and publish Tauri release
+        uses: tauri-apps/tauri-action@v0.6.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ matrix.artifact_name }}
-          path: src-tauri/target/release/bundle
-          if-no-files-found: error
+          tagName: ${{ github.ref_name }}
+          releaseName: Forja IDE ${{ github.ref_name }}
+          releaseBody: |
+            Release automatica generada desde el tag `${{ github.ref_name }}`.
+          releaseDraft: false
+          prerelease: false
