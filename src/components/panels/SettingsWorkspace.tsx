@@ -41,14 +41,19 @@ function CategoryButton({
 }) {
   return (
     <button
-      className={`w-full border-l px-3 py-2 text-left text-[12px] transition ${
+      className={`flex w-full items-center gap-2 border-l px-3 py-2.5 text-left text-[12px] transition ${
         active
-          ? "border-[var(--accent)] bg-white/[0.03] text-[var(--text)]"
+          ? "border-[var(--accent)] bg-[linear-gradient(90deg,rgba(217,98,59,0.14),rgba(255,255,255,0.02))] text-[var(--text)]"
           : "border-transparent text-[var(--muted)] hover:bg-white/[0.02] hover:text-[var(--text)]"
       }`}
       onClick={onClick}
       type="button"
     >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${
+          active ? "bg-[var(--accent)]" : "bg-white/20"
+        }`}
+      />
       {label}
     </button>
   );
@@ -56,16 +61,11 @@ function CategoryButton({
 
 function Section({
   children,
-  title,
 }: {
   children: React.ReactNode;
-  title: string;
 }) {
   return (
-    <section className="border-b border-[var(--border)] pb-2">
-      <div className="px-4 py-3">
-        <h2 className="text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">{title}</h2>
-      </div>
+    <section className="overflow-hidden rounded-[12px] border border-[var(--border)] bg-white/[0.015]">
       <div>{children}</div>
     </section>
   );
@@ -74,14 +74,16 @@ function Section({
 function SettingRow({
   children,
   description,
+  isFirst = false,
   label,
 }: {
   children: React.ReactNode;
   description: string;
+  isFirst?: boolean;
   label: string;
 }) {
   return (
-    <div className="border-t border-l-2 border-t-[var(--border)] border-l-transparent px-4 py-3 transition focus-within:border-l-[#2aa9ff] focus-within:bg-white/[0.02]">
+    <div className={`${isFirst ? "" : "border-t border-t-[var(--border)] "}border-l-2 border-l-transparent px-4 py-3 transition hover:bg-white/[0.015] focus-within:border-l-[#2aa9ff] focus-within:bg-white/[0.03]`}>
       <div className="min-w-0">
         <p className="text-[13px] text-[var(--text)]">{label}</p>
         <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">{description}</p>
@@ -94,16 +96,18 @@ function SettingRow({
 function CheckboxSetting({
   checked,
   description,
+  isFirst,
   label,
   onChange,
 }: {
   checked: boolean;
   description: string;
+  isFirst?: boolean;
   label: string;
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <SettingRow description={description} label={label}>
+    <SettingRow description={description} isFirst={isFirst} label={label}>
       <label className="inline-flex items-center gap-2 text-[12px] text-[var(--text)]">
         <CheckboxInput
           checked={checked}
@@ -117,19 +121,21 @@ function CheckboxSetting({
 
 function SelectSetting<T extends string>({
   description,
+  isFirst,
   label,
   onChange,
   options,
   value,
 }: {
   description: string;
+  isFirst?: boolean;
   label: string;
   onChange: (value: T) => void;
   options: Array<{ label: string; value: T }>;
   value: T;
 }) {
   return (
-    <SettingRow description={description} label={label}>
+    <SettingRow description={description} isFirst={isFirst} label={label}>
       <SelectInput
         className="max-w-[180px]"
         onChange={(event) => onChange(event.target.value as T)}
@@ -147,6 +153,7 @@ function SelectSetting<T extends string>({
 
 function NumberSetting({
   description,
+  isFirst,
   label,
   max,
   min,
@@ -154,6 +161,7 @@ function NumberSetting({
   value,
 }: {
   description: string;
+  isFirst?: boolean;
   label: string;
   max: number;
   min: number;
@@ -161,7 +169,7 @@ function NumberSetting({
   value: number;
 }) {
   return (
-    <SettingRow description={description} label={label}>
+    <SettingRow description={description} isFirst={isFirst} label={label}>
       <NumberInput
         className="max-w-[92px]"
         max={max}
@@ -183,7 +191,7 @@ function InfoRow({
   return (
     <div className="border-t border-l-2 border-t-[var(--border)] border-l-transparent px-4 py-3">
       <p className="text-[13px] text-[var(--text)]">{label}</p>
-      <p className="mt-3 truncate text-[12px] text-[var(--muted)]">{value}</p>
+      <p className="mt-2 truncate text-[12px] text-[var(--muted)]">{value}</p>
     </div>
   );
 }
@@ -240,22 +248,36 @@ export function SettingsWorkspace() {
 
   return (
     <section
-      className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}
+      className={`${shellPanelClass} min-h-0 min-w-0 overflow-hidden`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
-      <div className="border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)] px-4 py-3">
-        <p className="text-[11px] text-[var(--muted)]">Settings</p>
-      </div>
-
-      <div className="grid min-h-0 xl:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="border-b border-[var(--border)] xl:border-b-0 xl:border-r">
+      <div className="grid h-full min-h-0 xl:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="border-b border-[var(--border)] bg-white/[0.015] xl:border-b-0 xl:border-r">
           <div className="border-b border-[var(--border)] px-3 py-3">
-            <TextInput
-              className="h-8"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search settings"
-              value={query}
-            />
+            <div className="relative">
+              <TextInput
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search settings"
+                value={query}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-center text-[var(--muted)]">
+                <svg
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M7.25 11.5a4.25 4.25 0 1 0 0-8.5 4.25 4.25 0 0 0 0 8.5ZM10.5 10.5 13 13"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.3"
+                  />
+                </svg>
+              </span>
+            </div>
           </div>
 
           <div className="py-2">
@@ -272,7 +294,7 @@ export function SettingsWorkspace() {
 
         <div className="min-h-0 overflow-auto">
           <div className="px-4 py-4">
-            <div className="border border-[var(--border)] bg-transparent">
+            <div className="rounded-[14px] border border-[var(--border)] bg-white/[0.015]">
               <div className="border-b border-[var(--border)] px-4 py-3">
                 <h1 className="text-[14px] text-[var(--text)]">
                   {SETTINGS_CATEGORIES.find((category) => category.id === selectedCategory)?.label}
@@ -283,10 +305,11 @@ export function SettingsWorkspace() {
               </div>
 
               {showTextSection && (
-                <Section title="Text Editor">
+                <Section>
                   {matchesSearch(query, "Editor: Font Size", "Tamano base del codigo dentro de Monaco.") && (
                     <NumberSetting
                       description="Tamano base del codigo dentro de Monaco."
+                      isFirst
                       label="Editor: Font Size"
                       max={20}
                       min={12}
@@ -326,11 +349,12 @@ export function SettingsWorkspace() {
               )}
 
               {showCursorSection && (
-                <Section title="Cursor">
+                <Section>
                   {matchesSearch(query, "Editor: Smooth Caret Animation", "Suaviza el movimiento del cursor.") && (
                     <CheckboxSetting
                       checked={preferences.cursorAnimation}
                       description="Suaviza el movimiento del cursor mientras escribes."
+                      isFirst
                       label="Editor: Smooth Caret Animation"
                       onChange={(value) => updatePreferences({ cursorAnimation: value })}
                     />
@@ -369,11 +393,12 @@ export function SettingsWorkspace() {
               )}
 
               {showDisplaySection && (
-                <Section title="Display">
+                <Section>
                   {matchesSearch(query, "Editor: Minimap", "Activa el minimap lateral.") && (
                     <CheckboxSetting
                       checked={preferences.minimap}
                       description="Activa el minimap lateral de Monaco."
+                      isFirst
                       label="Editor: Minimap"
                       onChange={(value) => updatePreferences({ minimap: value })}
                     />
@@ -433,7 +458,7 @@ export function SettingsWorkspace() {
               )}
 
               {showWorkspaceSection && (
-                <Section title="Workspace">
+                <Section>
                   {matchesSearch(query, "Workbench: Sidebar Width", "Ancho actual del panel lateral.") && (
                     <div className="grid gap-3 border-t border-[var(--border)] px-4 py-3 xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start">
                       <div className="min-w-0">

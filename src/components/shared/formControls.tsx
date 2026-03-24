@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, SelectHTMLAttributes } from "react";
 
 const controlBaseClass =
-  "w-full border border-[var(--border)] bg-transparent text-[12px] text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[rgba(255,255,255,0.16)]";
+  "w-full rounded-[10px] border border-[var(--border)] bg-white/[0.03] text-[12px] text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--border-strong)] focus:bg-white/[0.05]";
 
 function joinClasses(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -15,7 +15,7 @@ export function TextInput({
     <input
       className={joinClasses(
         controlBaseClass,
-        "h-8 px-2.5",
+        "h-9 px-3",
         className,
       )}
       {...props}
@@ -42,7 +42,7 @@ export function NumberInput({
     <input
       className={joinClasses(
         controlBaseClass,
-        "ui-number-input h-8 px-2.5",
+        "ui-number-input h-9 px-3",
         className,
       )}
       max={max}
@@ -71,14 +71,14 @@ export function SelectInput({
       <select
         className={joinClasses(
           controlBaseClass,
-          "h-8 appearance-none px-2.5 pr-8",
+          "h-9 appearance-none px-3 pr-10",
         )}
         {...props}
       >
         {children}
       </select>
 
-      <span className="pointer-events-none absolute inset-y-0 right-0 flex w-8 items-center justify-center border-l border-[var(--border)] text-[var(--muted)]">
+      <span className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-center border-l border-[var(--border)] text-[var(--muted)]">
         <svg
           aria-hidden="true"
           className="h-3.5 w-3.5"
@@ -112,10 +112,10 @@ export function CheckboxInput({
     <button
       aria-checked={checked}
       className={joinClasses(
-        `grid h-4 w-4 place-items-center border transition ${
+        `grid h-4.5 w-4.5 place-items-center rounded-[5px] border transition ${
           checked
             ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-            : "border-[var(--border)] bg-transparent text-transparent"
+            : "border-[var(--border)] bg-white/[0.03] text-transparent"
         }`,
         className,
       )}
