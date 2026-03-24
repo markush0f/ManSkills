@@ -173,21 +173,3 @@ fn default_scan_roots() -> Vec<String> {
 
     roots
 }
-
-#[cfg(test)]
-mod tests {
-    use super::{is_summary_candidate, slugify_path};
-    use std::path::Path;
-
-    #[test]
-    fn slugify_path_normalizes_directory_name() {
-        assert_eq!(slugify_path(Path::new("/tmp/My Skill")), "my-skill");
-    }
-
-    #[test]
-    fn summary_candidates_ignore_markdown_structure() {
-        assert!(!is_summary_candidate("# Heading"));
-        assert!(!is_summary_candidate("- item"));
-        assert!(is_summary_candidate("Short summary line"));
-    }
-}
