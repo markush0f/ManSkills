@@ -27,6 +27,24 @@ export type MarketplaceSkill = {
   files: MarketplaceSkillFile[];
 };
 
+export type SystemSkillSource = "managed" | "workspace" | "system";
+
+export type SystemSkill = {
+  id: string;
+  slug: string;
+  name: string;
+  summary: string;
+  manifestPath: string;
+  rootPath: string;
+  source: SystemSkillSource | string;
+};
+
+export type SkillScanResponse = {
+  skills: SystemSkill[];
+  scannedRoots: string[];
+  durationMs: number;
+};
+
 export type DiagnosticLevel = "error" | "warning" | "info";
 
 export type Diagnostic = {

@@ -1,4 +1,4 @@
-import type { IdeFile, TreeNode } from "../../ide/types";
+import type { IdeFile, SystemSkill, TreeNode } from "../../ide/types";
 import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
@@ -109,8 +109,70 @@ function TreeList({
   );
 }
 
+function getSystemSkillSourceLabel(source: SystemSkill["source"]) {
+  if (source === "managed") {
+    return "Managed";
+  }
+
+  if (source === "workspace") {
+    return "Workspace";
+  }
+
+  return "System";
+}
+
+function SystemSkillList({
+  compact,
+  skills,
+}: {
+  compact: boolean;
+  skills: SystemSkill[];
+}) {
+  return (
+    <div className="space-y-1.5">
+      {skills.map((skill) => (
+        <article
+          key={skill.id}
+          className={`rounded-[12px] border border-[var(--border)] bg-white/[0.03] ${compact ? "px-2 py-2" : "px-3 py-2.5"}`}
+          title={skill.manifestPath}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className={`truncate font-medium text-[var(--text)] ${compact ? "text-[12px]" : "text-sm"}`}>
+                {skill.name}
+              </p>
+              {!compact && (
+                <p className="mt-1 line-clamp-2 text-xs text-[var(--muted)]">{skill.summary}</p>
+              )}
+            </div>
+
+            <span className="shrink-0 rounded-full border border-[var(--border)] bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+              {getSystemSkillSourceLabel(skill.source)}
+            </span>
+          </div>
+
+          {!compact && (
+            <p className="mt-2 truncate font-mono text-[10px] text-[var(--muted)]">{skill.rootPath}</p>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export function Sidebar() {
-  const { activeFileId, files, isMarketplaceView, openFile, openMarketplace, tree } = useIde();
+  const {
+    activeFileId,
+    files,
+    isMarketplaceView,
+    openFile,
+    openMarketplace,
+    systemSkillScanMs,
+    systemSkills,
+    systemSkillsError,
+    systemSkillsLoading,
+    tree,
+  } = useIde();
   const { isSidebarCompact: compact } = useIdeLayout();
   const skillCount = tree.filter((node) => node.kind === "folder").length;
 
@@ -159,19 +221,50 @@ export function Sidebar() {
         </div>
 
         <div className={`flex items-center justify-between border-t border-[var(--border)] text-xs text-[var(--muted)] ${compact ? "mt-3 pt-2" : "mt-4 pt-3"}`}>
-          <span>{skillCount} skills</span>
-          {!compact && <span>Explorer</span>}
+          <span>{skillCount} instaladas</span>
+          {!compact && <span>{systemSkills.length} sistema</span>}
         </div>
       </div>
 
       <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-3 py-3"}`}>
-        <TreeList
-          activeFileId={activeFileId}
-          compact={compact}
-          files={files}
-          nodes={tree}
-          onOpenFile={openFile}
-        />
+        <div className="space-y-4">
+          <TreeList
+            activeFileId={activeFileId}
+            compact={compact}
+            files={files}
+            nodes={tree}
+            onOpenFile={openFile}
+          />
+
+          <section className="border-t border-[var(--border)] pt-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">System Scan</p>
+                <strong className={`mt-1 block text-[var(--text)] ${compact ? "text-[12px]" : "text-sm"}`}>
+                  Skills detectadas
+                </strong>
+              </div>
+              {!compact && systemSkillScanMs !== null && (
+                <span className="text-[11px] text-[var(--muted)]">{systemSkillScanMs} ms</span>
+              )}
+            </div>
+
+            <div className="mt-3">
+              {systemSkillsLoading ? (
+                <p className="text-xs text-[var(--muted)]">Escaneando el sistema...</p>
+              ) : systemSkillsError ? (
+                <p className="text-xs text-[#ff9b8f]">{systemSkillsError}</p>
+              ) : systemSkills.length > 0 ? (
+                <SystemSkillList
+                  compact={compact}
+                  skills={systemSkills}
+                />
+              ) : (
+                <p className="text-xs text-[var(--muted)]">No se encontraron skills con manifiesto `SKILL.md`.</p>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </aside>
   );

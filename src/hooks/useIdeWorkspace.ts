@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { startTransition, useEffect, useState } from "react";
 import { marketplaceSkills } from "../ide/marketplaceData";
 import { initialFiles, initialOpenFileIds } from "../ide/mockData";
-import type { IdeFile, MarketplaceSkill } from "../ide/types";
+import type {
+  IdeFile,
+  MarketplaceSkill,
+  SkillScanResponse,
+  SystemSkill,
+} from "../ide/types";
 import { buildTree } from "../ide/utils";
 
 export type WorkspaceView = "editor" | "marketplace";
@@ -11,6 +17,10 @@ export function useIdeWorkspace() {
   const [openFileIds, setOpenFileIds] = useState<string[]>(initialOpenFileIds);
   const [activeFileId, setActiveFileId] = useState(initialOpenFileIds[0] ?? initialFiles[0]?.id ?? "");
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
+  const [systemSkills, setSystemSkills] = useState<SystemSkill[]>([]);
+  const [systemSkillsLoading, setSystemSkillsLoading] = useState(true);
+  const [systemSkillsError, setSystemSkillsError] = useState<string | null>(null);
+  const [systemSkillScanMs, setSystemSkillScanMs] = useState<number | null>(null);
 
   const activeFile = files.find((file) => file.id === activeFileId) ?? files[0];
   const tree = buildTree(files);
@@ -23,6 +33,41 @@ export function useIdeWorkspace() {
       .map((file) => file.path.split("/")[1])
       .filter(Boolean),
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setSystemSkillsLoading(true);
+    setSystemSkillsError(null);
+
+    invoke<SkillScanResponse>("scan_system_skills")
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setSystemSkills(response.skills);
+          setSystemSkillScanMs(response.durationMs);
+          setSystemSkillsLoading(false);
+        });
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        console.error("Failed to scan system skills", error);
+        setSystemSkills([]);
+        setSystemSkillScanMs(null);
+        setSystemSkillsError("No se pudieron cargar las skills del sistema.");
+        setSystemSkillsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function openFile(fileId: string) {
     if (!openFileIds.includes(fileId)) {
@@ -103,6 +148,10 @@ export function useIdeWorkspace() {
     openFile,
     openFiles,
     openMarketplace,
+    systemSkillScanMs,
+    systemSkills,
+    systemSkillsError,
+    systemSkillsLoading,
     tree,
     updateActiveFile,
     workspaceView,
