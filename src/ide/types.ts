@@ -57,7 +57,13 @@ export type SystemSkillContentResponse = {
   files: SystemSkillFile[];
 };
 
-export type SystemSkillTreeNodeKind = "root" | "directory" | "skill";
+export type SystemSkillTreeFile = {
+  id: string;
+  relativePath: string;
+  language: Language;
+};
+
+export type SystemSkillTreeNodeKind = "root" | "directory" | "skill" | "file";
 
 export type SystemSkillTreeNode = {
   id: string;
@@ -65,6 +71,7 @@ export type SystemSkillTreeNode = {
   path: string;
   kind: SystemSkillTreeNodeKind;
   skill: SystemSkill | null;
+  file: SystemSkillTreeFile | null;
   children: SystemSkillTreeNode[];
 };
 

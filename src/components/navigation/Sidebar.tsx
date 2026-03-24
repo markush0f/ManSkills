@@ -135,14 +135,18 @@ function SystemSkillTreeList({
   depth = 0,
   expandedNodeIds,
   nodes,
+  currentSkill,
   onOpenSkill,
+  onOpenSkillFile,
   openingSkillId,
   onToggleNode,
 }: {
   compact: boolean;
   expandedNodeIds: Set<string>;
   nodes: SystemSkillTreeNode[];
+  currentSkill?: SystemSkill;
   onOpenSkill: (skill: SystemSkill) => void;
+  onOpenSkillFile: (skill: SystemSkill, relativePath: string) => void;
   openingSkillId: string | null;
   onToggleNode: (nodeId: string) => void;
   depth?: number;
@@ -180,7 +184,9 @@ function SystemSkillTreeList({
                     depth={depth + 1}
                     expandedNodeIds={expandedNodeIds}
                     nodes={node.children}
+                    currentSkill={currentSkill}
                     onOpenSkill={onOpenSkill}
+                    onOpenSkillFile={onOpenSkillFile}
                     openingSkillId={openingSkillId}
                     onToggleNode={onToggleNode}
                   />
@@ -190,31 +196,95 @@ function SystemSkillTreeList({
           );
         }
 
-        const skill = node.skill;
-        if (!skill) {
-          return null;
+        if (node.kind === "skill") {
+          const skill = node.skill;
+          if (!skill) {
+            return null;
+          }
+
+          const isExpanded = expandedNodeIds.has(node.id);
+
+          return (
+            <div key={node.id} className="space-y-1.5">
+              <div
+                className={`flex items-center gap-2 rounded-[10px] border border-transparent text-left transition hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)] ${
+                  compact ? "px-2 py-1.5 text-[13px]" : "px-3 py-2 text-sm"
+                } text-[var(--muted)]`}
+                style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
+                title={skill.manifestPath}
+              >
+                <button
+                  className={`inline-flex shrink-0 items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--accent)] ${
+                    compact ? "h-4 w-4" : "h-5 w-5"
+                  }`}
+                  onClick={() => onToggleNode(node.id)}
+                  type="button"
+                >
+                  {isExpanded ? "-" : "+"}
+                </button>
+                <button
+                  className="flex min-w-0 flex-1 items-center justify-between gap-2"
+                  onClick={() => onOpenSkill(skill)}
+                  type="button"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[var(--text)]">{node.name}</p>
+                    {!compact && <p className="truncate text-[10px] text-[var(--muted)]">{skill.rootPath}</p>}
+                  </div>
+                  <span className="shrink-0 rounded-full border border-[var(--border)] bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+                    {openingSkillId === skill.id ? "Loading" : getSystemSkillSourceLabel(skill.source)}
+                  </span>
+                </button>
+              </div>
+              {isExpanded && (
+                <div className="space-y-1">
+                  <SystemSkillTreeList
+                    compact={compact}
+                    currentSkill={skill}
+                    depth={depth + 1}
+                    expandedNodeIds={expandedNodeIds}
+                    nodes={node.children}
+                    onOpenSkill={onOpenSkill}
+                    onOpenSkillFile={onOpenSkillFile}
+                    openingSkillId={openingSkillId}
+                    onToggleNode={onToggleNode}
+                  />
+                </div>
+              )}
+            </div>
+          );
         }
 
-        return (
-          <button
-            key={node.id}
-            className={`flex w-full items-center justify-between gap-2 rounded-[10px] border border-transparent text-left transition hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)] ${
-              compact ? "px-2 py-1.5 text-[13px]" : "px-3 py-2 text-sm"
-            } text-[var(--muted)]`}
-            onClick={() => onOpenSkill(skill)}
-            style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
-            title={skill.manifestPath}
-            type="button"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-[var(--text)]">{node.name}</p>
-              {!compact && <p className="truncate text-[10px] text-[var(--muted)]">{skill.rootPath}</p>}
-            </div>
-            <span className="shrink-0 rounded-full border border-[var(--border)] bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
-              {openingSkillId === skill.id ? "Loading" : getSystemSkillSourceLabel(skill.source)}
-            </span>
-          </button>
-        );
+        if (node.kind === "file") {
+          const file = node.file;
+          if (!file || !currentSkill) {
+            return null;
+          }
+
+          return (
+            <button
+              key={node.id}
+              className={`flex w-full items-center gap-2 rounded-[10px] border border-transparent text-left transition text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)] ${
+                compact ? "px-2 py-1.5 text-[13px]" : "px-3 py-2 text-sm"
+              }`}
+              onClick={() => onOpenSkillFile(currentSkill, file.relativePath)}
+              style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
+              title={file.relativePath}
+              type="button"
+            >
+              <span
+                className={`inline-flex items-center justify-center rounded border font-mono text-[10px] ${
+                  getFileTone(file.language)
+                } ${compact ? "h-4 w-4" : "h-5 w-5"}`}
+              >
+                {getFileBadgeLabel(file.language)}
+              </span>
+              <span className="truncate text-[var(--text)]">{node.name}</span>
+            </button>
+          );
+        }
+
+        return null;
       })}
     </>
   );
@@ -228,6 +298,7 @@ export function Sidebar() {
     openFile,
     openMarketplace,
     openSystemSkill,
+    openSystemSkillFile,
     openingSystemSkillId,
     systemSkills,
     systemSkillsError,
@@ -319,6 +390,7 @@ export function Sidebar() {
                 expandedNodeIds={expandedSystemSkillNodeIds}
                 nodes={systemSkillTree}
                 onOpenSkill={openSystemSkill}
+                onOpenSkillFile={openSystemSkillFile}
                 openingSkillId={openingSystemSkillId}
                 onToggleNode={toggleSystemSkillNode}
               />

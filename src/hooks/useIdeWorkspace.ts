@@ -32,6 +32,10 @@ function getSystemSkillMainFileId(skill: SystemSkill) {
   return `system-skill:${skill.id}:SKILL.md`;
 }
 
+function getSystemSkillFileId(skill: SystemSkill, relativePath: string) {
+  return `system-skill:${skill.id}:${relativePath}`;
+}
+
 function flattenSystemSkillTree(nodes: SystemSkillTreeNode[]): SystemSkill[] {
   return nodes.flatMap((node) => {
     const currentSkill = node.skill ? [node.skill] : [];
@@ -170,11 +174,15 @@ export function useIdeWorkspace() {
   }
 
   function openSystemSkill(skill: SystemSkill) {
-    const mainFileId = getSystemSkillMainFileId(skill);
-    const existingMainFile = files.find((file) => file.id === mainFileId);
+    openSystemSkillFile(skill, "SKILL.md");
+  }
 
-    if (existingMainFile) {
-      openFile(existingMainFile.id);
+  function openSystemSkillFile(skill: SystemSkill, relativePath: string) {
+    const targetFileId = getSystemSkillFileId(skill, relativePath);
+    const existingFile = files.find((file) => file.id === targetFileId);
+
+    if (existingFile) {
+      openFile(existingFile.id);
       return;
     }
 
@@ -186,13 +194,16 @@ export function useIdeWorkspace() {
       .then((response) => {
         const workspaceRoot = getSystemSkillWorkspaceRoot(skill);
         const createdFiles: IdeFile[] = response.files.map((file) => ({
-          id: `system-skill:${skill.id}:${file.relativePath}`,
+          id: getSystemSkillFileId(skill, file.relativePath),
           path: `${workspaceRoot}/${file.relativePath}`,
           language: file.language,
           content: file.content,
           savedContent: file.content,
         }));
-        const nextMainFileId = createdFiles.find((file) => file.id === mainFileId)?.id ?? createdFiles[0]?.id;
+        const nextFileId =
+          createdFiles.find((file) => file.id === targetFileId)?.id ??
+          createdFiles.find((file) => file.id === getSystemSkillMainFileId(skill))?.id ??
+          createdFiles[0]?.id;
 
         startTransition(() => {
           setFiles((current) => {
@@ -200,10 +211,10 @@ export function useIdeWorkspace() {
             return [...current, ...createdFiles.filter((file) => !existingIds.has(file.id))];
           });
 
-          if (nextMainFileId) {
-            setOpenFileIds((current) => (current.includes(nextMainFileId) ? current : [...current, nextMainFileId]));
+          if (nextFileId) {
+            setOpenFileIds((current) => (current.includes(nextFileId) ? current : [...current, nextFileId]));
             setWorkspaceView("editor");
-            setActiveFileId(nextMainFileId);
+            setActiveFileId(nextFileId);
           }
         });
       })
@@ -228,6 +239,7 @@ export function useIdeWorkspace() {
     openFiles,
     openMarketplace,
     openSystemSkill,
+    openSystemSkillFile,
     openingSystemSkillId,
     systemSkillScanMs,
     systemSkills,
