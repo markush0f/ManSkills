@@ -333,23 +333,28 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))] text-[13px]`}
+      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(12,19,25,0.98),rgba(10,16,22,0.92))] text-[13px]`}
     >
-      <div className={`border-b border-[var(--border)] ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
+      <div className={`border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
         <div className={`flex items-start justify-between ${compact ? "gap-2" : "gap-3"}`}>
           <div className="min-w-0">
-            <p className={panelHeaderTitleClass}>{compact ? "AI Skills" : "AI Skills Management"}</p>
-            <strong className={`block font-medium text-[var(--text)] ${compact ? "mt-1 text-[12px]" : "mt-2 text-[13px]"}`}>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_12px_rgba(217,98,59,0.5)]" />
+              <p className={panelHeaderTitleClass}>{compact ? "AI Skills" : "AI Skills Management"}</p>
+            </div>
+            <strong className={`block font-medium text-[var(--text)] ${compact ? "mt-1 text-[12px]" : "mt-1 text-[13px]"}`}>
               Installed Skills
             </strong>
             {!compact && (
-              <p className="mt-1 text-[11px] text-[var(--muted)]">Manifests, prompts and configuration files</p>
+              <p className="mt-1 max-w-[18rem] text-[11px] leading-5 text-[var(--muted)]">
+                Manifests, prompts and configuration files
+              </p>
             )}
           </div>
 
           <button
             aria-label="Marketplace"
-            className={`shrink-0 rounded-[10px] border transition ${
+            className={`shrink-0 rounded-[14px] border transition ${
               isMarketplaceView
                 ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
                 : "border-[var(--border)] bg-white/6 text-[var(--text)] hover:border-[var(--border-strong)]"
@@ -381,7 +386,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-3 py-3"}`}>
+      <div className={`flex-1 overflow-auto bg-[linear-gradient(180deg,rgba(255,255,255,0.018),transparent_18%)] ${compact ? "px-2 py-2" : "px-3 py-3"}`}>
         <div className="space-y-4">
           {hasSystemSkillTree ? (
             systemSkillTree.length > 0 ? (

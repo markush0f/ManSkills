@@ -1,23 +1,23 @@
 export const shellPanelClass =
-  "rounded-[18px] border border-[var(--border)] bg-[var(--panel)] shadow-[0_24px_60px_rgba(0,0,0,0.32)] backdrop-blur-xl";
+  "bg-[linear-gradient(180deg,rgba(17,26,35,0.96),rgba(11,18,24,0.92))]";
 
 export const cardClass =
-  "rounded-[26px] border border-[var(--border)] bg-[var(--panel)] px-5 py-5 shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl";
+  "rounded-[24px] border border-[var(--border)] bg-[linear-gradient(180deg,rgba(18,27,36,0.92),rgba(12,19,26,0.9))] px-5 py-5 shadow-[0_18px_44px_rgba(0,0,0,0.24)] ring-1 ring-white/[0.03] backdrop-blur-xl";
 
 export const ghostButtonClass =
-  "inline-flex cursor-pointer items-center justify-center rounded-[10px] border border-[var(--border)] bg-white/5 px-4 py-2.5 text-sm text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/8";
+  "inline-flex cursor-pointer items-center justify-center rounded-[12px] border border-[var(--border)] bg-white/5 px-4 py-2.5 text-sm text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/8";
 
 export const accentButtonClass =
-  "inline-flex cursor-pointer items-center justify-center rounded-[10px] border border-[var(--border-strong)] bg-[linear-gradient(160deg,var(--accent),var(--accent-strong))] px-4 py-2.5 text-sm font-semibold text-[#fff8ef] transition hover:shadow-[0_12px_26px_rgba(217,98,59,0.22)]";
+  "inline-flex cursor-pointer items-center justify-center rounded-[12px] border border-[var(--border-strong)] bg-[linear-gradient(160deg,var(--accent),var(--accent-strong))] px-4 py-2.5 text-sm font-semibold text-[#fff8ef] transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(217,98,59,0.24)]";
 
 export const railButtonClass =
-  "grid h-12 w-12 place-items-center rounded-full border border-[var(--border)] bg-white/5 font-mono text-[11px] tracking-[0.24em] text-[var(--muted)] transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-white/8";
+  "grid h-12 w-12 place-items-center rounded-[16px] border border-[var(--border)] bg-white/5 font-mono text-[11px] tracking-[0.24em] text-[var(--muted)] transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-white/8";
 
 export const railButtonActiveClass =
   "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_10px_24px_rgba(217,98,59,0.16)]";
 
 export const tabClass =
-  "inline-flex items-center gap-2 rounded-[10px] border border-transparent bg-white/4 px-4 py-2.5 text-sm text-[var(--muted)] transition hover:border-[var(--border)] hover:bg-white/6 hover:text-[var(--text)]";
+  "inline-flex items-center gap-2 rounded-[12px] border border-transparent bg-white/4 px-4 py-2.5 text-sm text-[var(--muted)] transition hover:border-[var(--border)] hover:bg-white/6 hover:text-[var(--text)]";
 
 export const tabActiveClass = "border-[var(--border)] bg-white/8 text-[var(--text)]";
 

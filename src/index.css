@@ -21,6 +21,7 @@
   --ink: #d7e2ec;
   --code-bg: #0f1820;
   --editor-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(5, 10, 14, 0.42));
+  --editor-chrome: rgba(11, 18, 24, 0.9);
   --scrollbar-track: rgba(255, 255, 255, 0.04);
   --scrollbar-thumb: rgba(217, 98, 59, 0.28);
   --scrollbar-thumb-hover: rgba(239, 142, 73, 0.42);
@@ -37,9 +38,17 @@ body,
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 18% 16%, rgba(217, 98, 59, 0.16), transparent 18%),
-    radial-gradient(circle at 88% 10%, rgba(79, 143, 137, 0.12), transparent 20%),
+    radial-gradient(circle at 18% 16%, rgba(217, 98, 59, 0.18), transparent 18%),
+    radial-gradient(circle at 88% 10%, rgba(79, 143, 137, 0.14), transparent 20%),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
     linear-gradient(180deg, #050b10 0%, #091118 52%, #0b141c 100%);
+  background-size:
+    auto,
+    auto,
+    26px 26px,
+    26px 26px,
+    auto;
   color: var(--text);
   font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
   background-attachment: fixed;
