@@ -41,7 +41,7 @@ body {
     radial-gradient(circle at 88% 10%, rgba(79, 143, 137, 0.12), transparent 20%),
     linear-gradient(180deg, #050b10 0%, #091118 52%, #0b141c 100%);
   color: var(--text);
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
   background-attachment: fixed;
 }
 

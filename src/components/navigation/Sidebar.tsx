@@ -333,17 +333,17 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))]`}
+      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.96),rgba(12,20,27,0.86))] text-[13px]`}
     >
       <div className={`border-b border-[var(--border)] ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
         <div className={`flex items-start justify-between ${compact ? "gap-2" : "gap-3"}`}>
           <div className="min-w-0">
             <p className={panelHeaderTitleClass}>{compact ? "AI Skills" : "AI Skills Management"}</p>
-            <strong className={`block font-medium text-[var(--text)] ${compact ? "mt-1 text-[13px]" : "mt-2 text-sm"}`}>
+            <strong className={`block font-medium text-[var(--text)] ${compact ? "mt-1 text-[12px]" : "mt-2 text-[13px]"}`}>
               Installed Skills
             </strong>
             {!compact && (
-              <p className="mt-1 text-xs text-[var(--muted)]">Manifests, prompts and configuration files</p>
+              <p className="mt-1 text-[11px] text-[var(--muted)]">Manifests, prompts and configuration files</p>
             )}
           </div>
 
@@ -375,7 +375,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <div className={`flex items-center justify-between border-t border-[var(--border)] text-xs text-[var(--muted)] ${compact ? "mt-3 pt-2" : "mt-4 pt-3"}`}>
+        <div className={`flex items-center justify-between border-t border-[var(--border)] text-[11px] text-[var(--muted)] ${compact ? "mt-3 pt-2" : "mt-4 pt-3"}`}>
           <span>{skillCount} instaladas</span>
           {!compact && <span>{systemSkills.length} sistema</span>}
         </div>

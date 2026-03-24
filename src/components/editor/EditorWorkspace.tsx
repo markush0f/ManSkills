@@ -26,7 +26,7 @@ function TabsBar({
         return (
           <button
             key={file.id}
-            className={`inline-flex h-11 shrink-0 items-center gap-2 border-r border-[var(--border)] px-4 text-sm transition ${
+            className={`inline-flex h-11 shrink-0 items-center gap-2 border-r border-[var(--border)] px-4 text-[13px] transition ${
               isActive
                 ? "bg-[rgba(255,255,255,0.06)] text-[var(--text)]"
                 : "bg-transparent text-[var(--muted)] hover:bg-white/4 hover:text-[var(--text)]"
