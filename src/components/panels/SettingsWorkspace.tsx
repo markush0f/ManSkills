@@ -1,9 +1,14 @@
 import { useState } from "react";
+import { Icon, addCollection } from "@iconify/react";
+import { icons as codiconIcons } from "@iconify-json/codicon";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
 import type { SystemSkillTreeNode } from "../../ide/types";
+import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
 import { CheckboxInput, NumberInput, SelectInput, TextInput } from "../shared/formControls";
 import { shellPanelClass } from "../shared/ui";
+
+addCollection(codiconIcons);
 
 type SettingsCategory = "text" | "cursor" | "display" | "workspace";
 
@@ -198,8 +203,12 @@ function InfoRow({
 
 export function SettingsWorkspace() {
   const {
+    activeFileId,
     activeFile,
+    closeFile,
     openFiles,
+    openFile,
+    openSettings,
     preferences,
     systemSkillScanMs,
     systemSkillTree,
@@ -251,7 +260,41 @@ export function SettingsWorkspace() {
       className={`${shellPanelClass} min-h-0 min-w-0 overflow-hidden`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
-      <div className="grid h-full min-h-0 xl:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+        <div className="min-w-0 overflow-hidden border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
+          <WorkbenchTabsBar
+            activeTabId="__settings__"
+            extraTabs={[
+              {
+                badge: "cfg",
+                id: "__settings__",
+                icon: (
+                  <Icon icon="codicon:settings-gear" className="h-4 w-4" />
+                ),
+                label: "Settings",
+              },
+            ]}
+            fileTabs={openFiles}
+            onCloseTab={(tabId) => {
+              if (tabId === "__settings__") {
+                openFile(activeFileId);
+                return;
+              }
+
+              closeFile(tabId);
+            }}
+            onOpenTab={(tabId) => {
+              if (tabId === "__settings__") {
+                openSettings();
+                return;
+              }
+
+              openFile(tabId);
+            }}
+          />
+        </div>
+
+        <div className="grid min-h-0 xl:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="border-b border-[var(--border)] bg-white/[0.015] xl:border-b-0 xl:border-r">
           <div className="border-b border-[var(--border)] px-3 py-3">
             <div className="relative">
@@ -505,6 +548,7 @@ export function SettingsWorkspace() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   );

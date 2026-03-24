@@ -1,58 +1,10 @@
 import Editor from "@monaco-editor/react";
 import { useDeferredValue, useEffect, useState } from "react";
-import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
+import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { shellPanelClass } from "../shared/ui";
-
-function TabsBar({
-  activeFileId,
-  onCloseFile,
-  onOpenFile,
-  openFiles,
-}: {
-  activeFileId: string;
-  onCloseFile: (fileId: string) => void;
-  onOpenFile: (fileId: string) => void;
-  openFiles: ReturnType<typeof useIde>["openFiles"];
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-1 overflow-x-auto px-2 py-2">
-      {openFiles.map((file) => {
-        const isDirty = file.content !== file.savedContent;
-        const isActive = file.id === activeFileId;
-
-        return (
-          <button
-            key={file.id}
-            className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
-              isActive
-                ? "border-[var(--border)] bg-white/4 text-[var(--text)]"
-                : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/[0.03] hover:text-[var(--text)]"
-            }`}
-            onClick={() => onOpenFile(file.id)}
-          >
-            <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
-              {file.language}
-            </span>
-            <span>{getFileName(file.path)}</span>
-            {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />}
-            <span
-              className="text-[var(--muted)] hover:text-[var(--text)]"
-              onClick={(event) => {
-                event.stopPropagation();
-                onCloseFile(file.id);
-              }}
-            >
-              x
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 export function EditorWorkspace() {
   const { activeFile, activeFileId, closeFile, openFile, openFiles, preferences, updateActiveFile } = useIde();
@@ -171,11 +123,11 @@ export function EditorWorkspace() {
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
       <div className="min-w-0 overflow-hidden border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
-        <TabsBar
-          activeFileId={activeFileId}
-          onCloseFile={closeFile}
-          onOpenFile={openFile}
-          openFiles={openFiles}
+        <WorkbenchTabsBar
+          activeTabId={activeFileId}
+          fileTabs={openFiles}
+          onCloseTab={closeFile}
+          onOpenTab={openFile}
         />
       </div>
 
