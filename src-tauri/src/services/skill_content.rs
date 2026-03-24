@@ -6,7 +6,7 @@ use std::{
 use ignore::WalkBuilder;
 
 use crate::{
-    models::{SystemSkillContentResponse, SystemSkillFile},
+    models::{SystemSkillContentResponse, SystemSkillFile, SystemSkillTreeFile},
     services::support::{
         detect_language, normalize_relative_path, prioritize_skill_manifest, should_skip_directory,
         MAX_FILE_BYTES, MAX_SKILL_FILES,
@@ -38,6 +38,16 @@ impl SkillContentService {
             root_path: root.to_string_lossy().into_owned(),
             files,
         })
+    }
+
+    pub fn list_from_root<P>(&self, root_path: P) -> Result<Vec<SystemSkillTreeFile>, String>
+    where
+        P: AsRef<str>,
+    {
+        let root = PathBuf::from(root_path.as_ref().trim());
+        validate_skill_root(&root)?;
+
+        Ok(self.list_skill_files(&root))
     }
 
     fn load_skill_files(&self, root: &Path) -> Vec<SystemSkillFile> {
@@ -85,6 +95,55 @@ impl SkillContentService {
                 relative_path: relative_path.clone(),
                 language: detect_language(path).to_string(),
                 content,
+            });
+
+            if discovered_files.len() >= MAX_SKILL_FILES {
+                break;
+            }
+        }
+
+        discovered_files
+    }
+
+    fn list_skill_files(&self, root: &Path) -> Vec<SystemSkillTreeFile> {
+        let mut discovered_files = Vec::new();
+
+        for entry_result in WalkBuilder::new(root)
+            .hidden(false)
+            .follow_links(false)
+            .git_ignore(false)
+            .git_global(false)
+            .git_exclude(false)
+            .filter_entry(|entry| !should_skip_directory(entry.path()))
+            .build()
+        {
+            let Ok(entry) = entry_result else {
+                continue;
+            };
+
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+
+            let Ok(relative_path) = path.strip_prefix(root) else {
+                continue;
+            };
+
+            let Ok(metadata) = entry.metadata() else {
+                continue;
+            };
+
+            if metadata.len() > MAX_FILE_BYTES {
+                continue;
+            }
+
+            let relative_path = normalize_relative_path(relative_path);
+
+            discovered_files.push(SystemSkillTreeFile {
+                id: format!("{}:{}", root.to_string_lossy(), relative_path),
+                relative_path,
+                language: detect_language(path).to_string(),
             });
 
             if discovered_files.len() >= MAX_SKILL_FILES {
