@@ -16,7 +16,7 @@ function SkillRow({
     <article className="grid gap-3 border-b border-[var(--border)] px-6 py-4 transition hover:bg-white/[0.03] lg:grid-cols-[minmax(0,1.9fr)_130px_90px_110px] lg:items-center lg:gap-4">
       <div className="min-w-0">
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-[var(--accent)] shadow-[0_0_10px_rgba(217,98,59,0.4)]" />
+          <span className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
           <div className="min-w-0">
             <h2 className="truncate text-sm font-medium text-[var(--text)]">{skill.name}</h2>
             <p className="mt-1 truncate text-xs text-[var(--muted)]">{skill.summary}</p>
@@ -29,7 +29,7 @@ function SkillRow({
 
       <div className="flex items-center justify-start lg:justify-end">
         <button
-          className={`rounded-[8px] px-2.5 py-1.5 text-xs font-medium transition ${installed
+          className={`rounded-[6px] px-2.5 py-1.5 text-xs font-medium transition ${installed
               ? "text-[var(--text)] hover:bg-white/6"
               : "text-[var(--muted)] hover:bg-white/6 hover:text-[var(--text)]"
             }`}
@@ -57,34 +57,21 @@ export function MarketplaceWorkspace() {
 
   return (
     <section
-      className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.98),rgba(12,20,27,0.9))]`}
+      className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}
     >
-      <div className="border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] px-6 py-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_12px_rgba(217,98,59,0.45)]" />
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]">Marketplace</p>
-            </div>
-            <h1 className="mt-1 text-lg font-semibold text-[var(--text)]">AI Skills</h1>
-            <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-              Lista simple de skills instalables para el workspace actual.
-            </p>
-          </div>
-
-          <div className="flex gap-4 text-xs text-[var(--muted)]">
-            <span>{filteredSkills.length} resultados</span>
-            <span>{installedSkillSlugs.size} instaladas</span>
-          </div>
-        </div>
-
-        <div className="mt-4">
+      <div className="border-b border-[var(--border)] px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <input
-            className="h-11 w-full rounded-[14px] border border-[var(--border)] bg-white/[0.03] px-4 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--border-strong)] lg:max-w-sm"
+            className="h-10 w-full rounded-[8px] border border-[var(--border)] bg-transparent px-3.5 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--border-strong)] lg:max-w-sm"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Filtrar por nombre, autor o descripcion"
             value={query}
           />
+
+          <div className="flex gap-4 text-[11px] text-[var(--muted)]">
+            <span>{filteredSkills.length} resultados</span>
+            <span>{installedSkillSlugs.size} instaladas</span>
+          </div>
         </div>
       </div>
 

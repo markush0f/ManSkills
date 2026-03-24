@@ -4,7 +4,7 @@ import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../
 import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
-import { panelHeaderTitleClass, shellPanelClass } from "../shared/ui";
+import { shellPanelClass } from "../shared/ui";
 
 function getFileTone(language?: IdeFile["language"]) {
   if (language === "md") {
@@ -333,34 +333,25 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(12,19,25,0.98),rgba(10,16,22,0.92))] text-[13px]`}
+      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden text-[13px]`}
     >
-      <div className={`border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
-        <div className={`flex items-start justify-between ${compact ? "gap-2" : "gap-3"}`}>
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_12px_rgba(217,98,59,0.5)]" />
-              <p className={panelHeaderTitleClass}>{compact ? "AI Skills" : "AI Skills Management"}</p>
-            </div>
-            <strong className={`block font-medium text-[var(--text)] ${compact ? "mt-1 text-[12px]" : "mt-1 text-[13px]"}`}>
-              Installed Skills
-            </strong>
-            {!compact && (
-              <p className="mt-1 max-w-[18rem] text-[11px] leading-5 text-[var(--muted)]">
-                Manifests, prompts and configuration files
-              </p>
-            )}
+      <div className={`border-b border-[var(--border)] ${compact ? "px-2 py-2" : "px-3 py-2"}`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[11px] text-[var(--muted)]">
+            <span>{skillCount}</span>
+            {!compact && <span className="ml-2">{systemSkills.length} sistema</span>}
           </div>
 
           <button
             aria-label="Marketplace"
-            className={`shrink-0 rounded-[14px] border transition ${
+            className={`shrink-0 rounded-[8px] border transition ${
               isMarketplaceView
                 ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "border-[var(--border)] bg-white/6 text-[var(--text)] hover:border-[var(--border-strong)]"
-            } ${compact ? "px-2.5 py-2" : "px-3 py-2 text-xs font-medium"}`}
+                : "border-[var(--border)] bg-transparent text-[var(--text)] hover:border-[var(--border-strong)] hover:bg-white/4"
+            } ${compact ? "px-2 py-1.5" : "px-2.5 py-1.5 text-[11px]"}`}
             onClick={openMarketplace}
             title="Marketplace"
+            type="button"
           >
             <svg
               aria-hidden="true"
@@ -379,14 +370,9 @@ export function Sidebar() {
             </svg>
           </button>
         </div>
-
-        <div className={`flex items-center justify-between border-t border-[var(--border)] text-[11px] text-[var(--muted)] ${compact ? "mt-3 pt-2" : "mt-4 pt-3"}`}>
-          <span>{skillCount} instaladas</span>
-          {!compact && <span>{systemSkills.length} sistema</span>}
-        </div>
       </div>
 
-      <div className={`flex-1 overflow-auto bg-[linear-gradient(180deg,rgba(255,255,255,0.018),transparent_18%)] ${compact ? "px-2 py-2" : "px-3 py-3"}`}>
+      <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
         <div className="space-y-4">
           {hasSystemSkillTree ? (
             systemSkillTree.length > 0 ? (

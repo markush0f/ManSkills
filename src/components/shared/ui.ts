@@ -1,25 +1,25 @@
 export const shellPanelClass =
-  "bg-[linear-gradient(180deg,rgba(17,26,35,0.96),rgba(11,18,24,0.92))]";
+  "bg-[rgba(12,19,25,0.92)]";
 
 export const cardClass =
-  "rounded-[24px] border border-[var(--border)] bg-[linear-gradient(180deg,rgba(18,27,36,0.92),rgba(12,19,26,0.9))] px-5 py-5 shadow-[0_18px_44px_rgba(0,0,0,0.24)] ring-1 ring-white/[0.03] backdrop-blur-xl";
+  "rounded-[16px] border border-[var(--border)] bg-[rgba(16,24,32,0.9)] px-5 py-5";
 
 export const ghostButtonClass =
-  "inline-flex cursor-pointer items-center justify-center rounded-[12px] border border-[var(--border)] bg-white/5 px-4 py-2.5 text-sm text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/8";
+  "inline-flex cursor-pointer items-center justify-center rounded-[10px] border border-[var(--border)] bg-transparent px-4 py-2.5 text-sm text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/5";
 
 export const accentButtonClass =
-  "inline-flex cursor-pointer items-center justify-center rounded-[12px] border border-[var(--border-strong)] bg-[linear-gradient(160deg,var(--accent),var(--accent-strong))] px-4 py-2.5 text-sm font-semibold text-[#fff8ef] transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(217,98,59,0.24)]";
+  "inline-flex cursor-pointer items-center justify-center rounded-[10px] border border-[var(--border-strong)] bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[#fff8ef] transition hover:bg-[var(--accent-strong)]";
 
 export const railButtonClass =
-  "grid h-12 w-12 place-items-center rounded-[16px] border border-[var(--border)] bg-white/5 font-mono text-[11px] tracking-[0.24em] text-[var(--muted)] transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-white/8";
+  "grid h-12 w-12 place-items-center rounded-[12px] border border-[var(--border)] bg-transparent font-mono text-[11px] tracking-[0.24em] text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:bg-white/5";
 
 export const railButtonActiveClass =
-  "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_10px_24px_rgba(217,98,59,0.16)]";
+  "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]";
 
 export const tabClass =
-  "inline-flex items-center gap-2 rounded-[12px] border border-transparent bg-white/4 px-4 py-2.5 text-sm text-[var(--muted)] transition hover:border-[var(--border)] hover:bg-white/6 hover:text-[var(--text)]";
+  "inline-flex items-center gap-2 rounded-[10px] border border-transparent bg-transparent px-4 py-2.5 text-sm text-[var(--muted)] transition hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]";
 
-export const tabActiveClass = "border-[var(--border)] bg-white/8 text-[var(--text)]";
+export const tabActiveClass = "border-[var(--border)] bg-white/6 text-[var(--text)]";
 
 export const subtleLabelClass =
   "mb-1 text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]";
@@ -28,7 +28,7 @@ export const panelHeaderTitleClass =
   "text-[11px] uppercase tracking-[0.24em] text-[var(--muted)]";
 
 export const listButtonClass =
-  "w-full rounded-[12px] border border-transparent bg-transparent p-3 text-left transition hover:border-[var(--border)] hover:bg-white/6";
+  "w-full rounded-[10px] border border-transparent bg-transparent p-3 text-left transition hover:border-[var(--border)] hover:bg-white/5";
 
 export function getDiagnosticTone(level: "error" | "warning" | "info") {
   if (level === "error") {

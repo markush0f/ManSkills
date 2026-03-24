@@ -37,32 +37,14 @@ body,
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 18% 16%, rgba(217, 98, 59, 0.18), transparent 18%),
-    radial-gradient(circle at 88% 10%, rgba(79, 143, 137, 0.14), transparent 20%),
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(180deg, #050b10 0%, #091118 52%, #0b141c 100%);
-  background-size:
-    auto,
-    auto,
-    26px 26px,
-    26px 26px,
-    auto;
+  background: linear-gradient(180deg, #061016 0%, #091118 52%, #0b141c 100%);
   color: var(--text);
   font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
   background-attachment: fixed;
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 22%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015), transparent 30%);
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 88%);
+  content: none;
 }
 
 button,

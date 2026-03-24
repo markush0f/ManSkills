@@ -26,9 +26,9 @@ function TabsBar({
         return (
           <button
             key={file.id}
-            className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[14px] border px-3.5 text-[13px] transition ${
+            className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
               isActive
-                ? "border-[var(--border-strong)] bg-[linear-gradient(180deg,rgba(217,98,59,0.16),rgba(255,255,255,0.06))] text-[var(--text)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
+                ? "border-[var(--border)] bg-white/6 text-[var(--text)]"
                 : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/4 hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenFile(file.id)}
@@ -159,8 +159,8 @@ export function EditorWorkspace() {
   }
 
   return (
-    <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[linear-gradient(180deg,rgba(10,16,22,0.98),rgba(12,20,27,0.9))]`}>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))]">
+    <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--border)]">
         <div className="min-w-0 overflow-hidden">
           <TabsBar
             activeFileId={activeFileId}
@@ -177,10 +177,10 @@ export function EditorWorkspace() {
             {getLanguageLabel(activeFile.language)}
           </span>
           {supportsPreview && (
-            <div className="flex items-center gap-1 rounded-[14px] border border-[var(--border)] bg-white/5 p-1">
+            <div className="flex items-center gap-1 rounded-[8px] border border-[var(--border)] bg-transparent p-1">
               <button
                 aria-label={codeLabel}
-                className={`rounded-[10px] px-2.5 py-1.5 text-xs transition md:px-3 ${
+                className={`rounded-[6px] px-2.5 py-1.5 text-xs transition md:px-3 ${
                   contentView === "code"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
@@ -192,7 +192,7 @@ export function EditorWorkspace() {
               </button>
               <button
                 aria-label={previewLabel}
-                className={`rounded-[10px] px-2.5 py-1.5 text-xs transition md:px-3 ${
+                className={`rounded-[6px] px-2.5 py-1.5 text-xs transition md:px-3 ${
                   contentView === "preview"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
@@ -204,7 +204,7 @@ export function EditorWorkspace() {
               </button>
               <button
                 aria-label={splitLabel}
-                className={`rounded-[10px] px-2.5 py-1.5 text-xs transition md:px-3 ${
+                className={`rounded-[6px] px-2.5 py-1.5 text-xs transition md:px-3 ${
                   contentView === "split"
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--muted)] hover:text-[var(--text)]"
@@ -219,7 +219,7 @@ export function EditorWorkspace() {
         </div>
       </div>
 
-      <div className="min-h-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.01),transparent_20%),var(--editor-surface)]">
+      <div className="min-h-0 bg-[var(--editor-surface)]">
         {supportsPreview && contentView === "preview" ? (
           isMarkdown ? (
           <MarkdownPreview content={deferredContent} />
