@@ -206,51 +206,6 @@ function SystemSkillTreeList({
   );
 }
 
-function SystemSkillList({
-  compact,
-  onOpenSkill,
-  openingSkillId,
-  skills,
-}: {
-  compact: boolean;
-  onOpenSkill: (skill: SystemSkill) => void;
-  openingSkillId: string | null;
-  skills: SystemSkill[];
-}) {
-  return (
-    <div className="space-y-1.5">
-      {skills.map((skill) => (
-        <button
-          key={skill.id}
-          className={`w-full rounded-[12px] border border-[var(--border)] bg-white/[0.03] text-left transition hover:border-[var(--border-strong)] hover:bg-white/[0.05] ${compact ? "px-2 py-2" : "px-3 py-2.5"}`}
-          onClick={() => onOpenSkill(skill)}
-          title={skill.manifestPath}
-          type="button"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className={`truncate font-medium text-[var(--text)] ${compact ? "text-[12px]" : "text-sm"}`}>
-                {skill.name}
-              </p>
-              {!compact && (
-                <p className="mt-1 line-clamp-2 text-xs text-[var(--muted)]">{skill.summary}</p>
-              )}
-            </div>
-
-            <span className="shrink-0 rounded-full border border-[var(--border)] bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
-              {openingSkillId === skill.id ? "Loading" : getSystemSkillSourceLabel(skill.source)}
-            </span>
-          </div>
-
-          {!compact && (
-            <p className="mt-2 truncate font-mono text-[10px] text-[var(--muted)]">{skill.rootPath}</p>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function Sidebar() {
   const {
     activeFileId,
@@ -260,7 +215,6 @@ export function Sidebar() {
     openMarketplace,
     openSystemSkill,
     openingSystemSkillId,
-    systemSkillScanMs,
     systemSkills,
     systemSkillsError,
     systemSkillsLoading,
@@ -349,37 +303,6 @@ export function Sidebar() {
               onOpenFile={openFile}
             />
           )}
-
-          <section className="border-t border-[var(--border)] pt-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">System Scan</p>
-                <strong className={`mt-1 block text-[var(--text)] ${compact ? "text-[12px]" : "text-sm"}`}>
-                  Skills detectadas
-                </strong>
-              </div>
-              {!compact && systemSkillScanMs !== null && (
-                <span className="text-[11px] text-[var(--muted)]">{systemSkillScanMs} ms</span>
-              )}
-            </div>
-
-            <div className="mt-3">
-              {systemSkillsLoading ? (
-                <p className="text-xs text-[var(--muted)]">Escaneando el sistema...</p>
-              ) : systemSkillsError ? (
-                <p className="text-xs text-[#ff9b8f]">{systemSkillsError}</p>
-              ) : systemSkills.length > 0 ? (
-                <SystemSkillList
-                  compact={compact}
-                  onOpenSkill={openSystemSkill}
-                  openingSkillId={openingSystemSkillId}
-                  skills={systemSkills}
-                />
-              ) : (
-                <p className="text-xs text-[var(--muted)]">No se encontraron skills con manifiesto `SKILL.md`.</p>
-              )}
-            </div>
-          </section>
         </div>
       </div>
     </aside>
