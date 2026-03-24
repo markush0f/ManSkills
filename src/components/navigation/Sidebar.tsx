@@ -123,13 +123,6 @@ function getSystemSkillSourceLabel(source: SystemSkill["source"]) {
   return "System";
 }
 
-function countSystemSkillNodes(nodes: SystemSkillTreeNode[]): number {
-  return nodes.reduce((total, node) => {
-    const current = node.kind === "skill" ? 1 : 0;
-    return total + current + countSystemSkillNodes(node.children);
-  }, 0);
-}
-
 function SystemSkillTreeList({
   compact,
   depth = 0,
@@ -294,13 +287,10 @@ export function Sidebar() {
   const {
     activeFileId,
     files,
-    isMarketplaceView,
     openFile,
-    openMarketplace,
     openSystemSkill,
     openSystemSkillFile,
     openingSystemSkillId,
-    systemSkills,
     systemSkillsError,
     systemSkillsLoading,
     systemSkillTree,
@@ -309,13 +299,6 @@ export function Sidebar() {
   const { isSidebarCompact: compact } = useIdeLayout();
   const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(() => new Set());
   const hasSystemSkillTree = !systemSkillsLoading && !systemSkillsError;
-  const fallbackSkillCount = new Set(
-    files
-      .filter((file) => file.path.startsWith("skills/"))
-      .map((file) => file.path.split("/")[1])
-      .filter(Boolean),
-  ).size;
-  const skillCount = hasSystemSkillTree ? countSystemSkillNodes(systemSkillTree) : fallbackSkillCount;
 
   function toggleSystemSkillNode(nodeId: string) {
     setExpandedSystemSkillNodeIds((current) => {
@@ -335,43 +318,6 @@ export function Sidebar() {
     <aside
       className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden text-[13px]`}
     >
-      <div className={`border-b border-[var(--border)] ${compact ? "px-2 py-2" : "px-3 py-2"}`}>
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-[11px] text-[var(--muted)]">
-            <span>{skillCount}</span>
-            {!compact && <span className="ml-2">{systemSkills.length} sistema</span>}
-          </div>
-
-          <button
-            aria-label="Marketplace"
-            className={`shrink-0 rounded-[8px] border transition ${
-              isMarketplaceView
-                ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "border-[var(--border)] bg-transparent text-[var(--text)] hover:border-[var(--border-strong)] hover:bg-white/4"
-            } ${compact ? "px-2 py-1.5" : "px-2.5 py-1.5 text-[11px]"}`}
-            onClick={openMarketplace}
-            title="Marketplace"
-            type="button"
-          >
-            <svg
-              aria-hidden="true"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 16 16"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2.5 5.5h11M4 5.5V4.75A1.75 1.75 0 0 1 5.75 3h4.5A1.75 1.75 0 0 1 12 4.75v.75M3.75 5.5h8.5v6.75A.75.75 0 0 1 11.5 13h-7a.75.75 0 0 1-.75-.75V5.5Z"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.2"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-
       <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
         <div className="space-y-4">
           {hasSystemSkillTree ? (
