@@ -55,7 +55,7 @@ function TabsBar({
 }
 
 export function EditorWorkspace() {
-  const { activeFile, activeFileId, closeFile, openFile, openFiles, updateActiveFile } = useIde();
+  const { activeFile, activeFileId, closeFile, openFile, openFiles, preferences, updateActiveFile } = useIde();
   const [contentView, setContentView] = useState<"preview" | "code" | "split">("code");
   const [draftContent, setDraftContent] = useState(activeFile.content);
   const isMarkdown = activeFile.language === "md";
@@ -105,11 +105,11 @@ export function EditorWorkspace() {
           language={getMonacoLanguage()}
           options={{
             automaticLayout: true,
-            cursorBlinking: "smooth",
-            cursorSmoothCaretAnimation: "on",
+            cursorBlinking: preferences.cursorAnimation ? "smooth" : "blink",
+            cursorSmoothCaretAnimation: preferences.cursorAnimation ? "on" : "off",
             cursorStyle: "line-thin",
             fontFamily: "Cascadia Code, Cascadia Mono, Consolas, SFMono-Regular, monospace",
-            fontLigatures: true,
+            fontLigatures: preferences.fontLigatures,
             fontSize: 14,
             lineHeight: 28,
             minimap: { enabled: false },
@@ -123,7 +123,7 @@ export function EditorWorkspace() {
               verticalScrollbarSize: 10,
             },
             smoothScrolling: true,
-            wordWrap: activeFile.language === "md" ? "on" : "off",
+            wordWrap: activeFile.language === "md" && preferences.markdownWordWrap ? "on" : "off",
           }}
           path={activeFile.path}
           theme="vs-dark"

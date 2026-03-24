@@ -81,6 +81,12 @@ export type SkillTreeResponse = {
   durationMs: number;
 };
 
+export type IdePreferences = {
+  cursorAnimation: boolean;
+  fontLigatures: boolean;
+  markdownWordWrap: boolean;
+};
+
 export type DiagnosticLevel = "error" | "warning" | "info";
 
 export type Diagnostic = {

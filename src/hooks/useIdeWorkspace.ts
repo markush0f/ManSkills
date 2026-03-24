@@ -4,6 +4,7 @@ import { marketplaceSkills } from "../ide/marketplaceData";
 import { initialFiles, initialOpenFileIds } from "../ide/mockData";
 import type {
   IdeFile,
+  IdePreferences,
   MarketplaceSkill,
   SkillTreeResponse,
   SystemSkill,
@@ -12,7 +13,15 @@ import type {
 } from "../ide/types";
 import { buildTree } from "../ide/utils";
 
-export type WorkspaceView = "editor" | "marketplace";
+export type WorkspaceView = "editor" | "marketplace" | "settings";
+
+const IDE_PREFERENCES_KEY = "skills-ide:preferences";
+
+const DEFAULT_IDE_PREFERENCES: IdePreferences = {
+  cursorAnimation: true,
+  fontLigatures: true,
+  markdownWordWrap: true,
+};
 
 function hashString(value: string) {
   let hash = 0;
@@ -48,6 +57,27 @@ export function useIdeWorkspace() {
   const [openFileIds, setOpenFileIds] = useState<string[]>(initialOpenFileIds);
   const [activeFileId, setActiveFileId] = useState(initialOpenFileIds[0] ?? initialFiles[0]?.id ?? "");
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
+  const [preferences, setPreferences] = useState<IdePreferences>(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_IDE_PREFERENCES;
+    }
+
+    try {
+      const storedValue = window.localStorage.getItem(IDE_PREFERENCES_KEY);
+
+      if (!storedValue) {
+        return DEFAULT_IDE_PREFERENCES;
+      }
+
+      return {
+        ...DEFAULT_IDE_PREFERENCES,
+        ...(JSON.parse(storedValue) as Partial<IdePreferences>),
+      };
+    } catch (error) {
+      console.error("Failed to read IDE preferences", error);
+      return DEFAULT_IDE_PREFERENCES;
+    }
+  });
   const [systemSkills, setSystemSkills] = useState<SystemSkill[]>([]);
   const [systemSkillTree, setSystemSkillTree] = useState<SystemSkillTreeNode[]>([]);
   const [systemSkillsLoading, setSystemSkillsLoading] = useState(true);
@@ -66,6 +96,10 @@ export function useIdeWorkspace() {
       .map((file) => file.path.split("/")[1])
       .filter(Boolean),
   );
+
+  useEffect(() => {
+    window.localStorage.setItem(IDE_PREFERENCES_KEY, JSON.stringify(preferences));
+  }, [preferences]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +153,10 @@ export function useIdeWorkspace() {
     setWorkspaceView("marketplace");
   }
 
+  function openSettings() {
+    setWorkspaceView("settings");
+  }
+
   function closeFile(fileId: string) {
     const nextOpen = openFileIds.filter((currentId) => currentId !== fileId);
 
@@ -144,6 +182,13 @@ export function useIdeWorkspace() {
           : file,
       ),
     );
+  }
+
+  function updatePreferences(nextPreferences: Partial<IdePreferences>) {
+    setPreferences((current) => ({
+      ...current,
+      ...nextPreferences,
+    }));
   }
 
   function installMarketplaceSkill(skill: MarketplaceSkill) {
@@ -234,13 +279,16 @@ export function useIdeWorkspace() {
     installedSkillSlugs,
     installMarketplaceSkill,
     isMarketplaceView: workspaceView === "marketplace",
+    isSettingsView: workspaceView === "settings",
     marketplaceSkills,
     openFile,
     openFiles,
     openMarketplace,
+    openSettings,
     openSystemSkill,
     openSystemSkillFile,
     openingSystemSkillId,
+    preferences,
     systemSkillScanMs,
     systemSkills,
     systemSkillsError,
@@ -248,6 +296,7 @@ export function useIdeWorkspace() {
     systemSkillTree,
     tree,
     updateActiveFile,
+    updatePreferences,
     workspaceView,
   };
 }

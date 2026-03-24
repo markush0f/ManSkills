@@ -3,9 +3,10 @@ import { useIdeLayout } from "../../contexts/IdeLayoutContext";
 import { EditorWorkspace } from "../editor/EditorWorkspace";
 import { Sidebar } from "../navigation/Sidebar";
 import { MarketplaceWorkspace } from "../panels/MarketplaceWorkspace";
+import { SettingsWorkspace } from "../panels/SettingsWorkspace";
 
 export function IdeWorkbench() {
-  const { isMarketplaceView } = useIde();
+  const { isMarketplaceView, isSettingsView } = useIde();
   const {
     isResizing,
     layoutRef,
@@ -51,7 +52,13 @@ export function IdeWorkbench() {
         </div>
 
         <div className="min-w-0 overflow-hidden bg-[rgba(8,13,18,0.9)]">
-          {isMarketplaceView ? <MarketplaceWorkspace /> : <EditorWorkspace />}
+          {isMarketplaceView ? (
+            <MarketplaceWorkspace />
+          ) : isSettingsView ? (
+            <SettingsWorkspace />
+          ) : (
+            <EditorWorkspace />
+          )}
         </div>
       </section>
     </main>

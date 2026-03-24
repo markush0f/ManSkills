@@ -287,7 +287,11 @@ export function Sidebar() {
   const {
     activeFileId,
     files,
+    isMarketplaceView,
+    isSettingsView,
     openFile,
+    openMarketplace,
+    openSettings,
     openSystemSkill,
     openSystemSkillFile,
     openingSystemSkillId,
@@ -343,6 +347,36 @@ export function Sidebar() {
               onOpenFile={openFile}
             />
           )}
+        </div>
+      </div>
+
+      <div className={`border-t border-[var(--border)] ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
+        <div className="space-y-2">
+          <button
+            className={`flex w-full items-center justify-between rounded-[10px] border px-3 py-2 text-left text-sm transition ${
+              isMarketplaceView
+                ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                : "border-[var(--border)] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
+            }`}
+            onClick={openMarketplace}
+            type="button"
+          >
+            <span className="truncate">{compact ? "MK" : "Marketplace"}</span>
+            {!compact && <span className="font-mono text-[10px] uppercase tracking-[0.18em]">Alt</span>}
+          </button>
+
+          <button
+            className={`flex w-full items-center justify-between rounded-[10px] border px-3 py-2 text-left text-sm transition ${
+              isSettingsView
+                ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                : "border-[var(--border)] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
+            }`}
+            onClick={openSettings}
+            type="button"
+          >
+            <span className="truncate">{compact ? "CFG" : "Configuracion"}</span>
+            {!compact && <span className="font-mono text-[10px] uppercase tracking-[0.18em]">Pref</span>}
+          </button>
         </div>
       </div>
     </aside>
