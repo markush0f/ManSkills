@@ -1,4 +1,4 @@
-import type { SystemSkillTreeNode } from "../ide/types";
+import type { SystemSkillTreeNode } from "../types";
 
 export function countSkills(nodes: SystemSkillTreeNode[]): number {
   return nodes.reduce((total, node) => {

@@ -1,4 +1,4 @@
-import type { CursorPosition, Diagnostic, IdeFile } from "../../ide/types";
+import type { CursorPosition, Diagnostic, IdeFile } from "../../types";
 import { getLanguageLabel } from "../../ide/utils";
 import { shellPanelClass } from "../shared/ui";
 

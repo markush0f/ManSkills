@@ -10,7 +10,7 @@ import type {
   SystemSkill,
   SystemSkillContentResponse,
   SystemSkillTreeNode,
-} from "../ide/types";
+} from "../types";
 import { buildTree } from "../ide/utils";
 
 export type WorkspaceView = "editor" | "marketplace" | "settings";

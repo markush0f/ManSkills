@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../ide/types";
+import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../types";
 import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";

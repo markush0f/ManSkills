@@ -1,4 +1,4 @@
-import type { SidebarView } from "../../ide/types";
+import type { SidebarView } from "../../types";
 import { railButtonActiveClass, railButtonClass } from "../shared/ui";
 
 type ActivityRailProps = {

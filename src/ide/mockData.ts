@@ -1,4 +1,4 @@
-import type { IdeFile } from "./types";
+import type { IdeFile } from "../types";
 
 export const initialFiles: IdeFile[] = [
   {

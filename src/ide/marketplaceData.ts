@@ -1,4 +1,4 @@
-import type { MarketplaceSkill } from "./types";
+import type { MarketplaceSkill } from "../types";
 
 type SkillSeed = {
   id: string;

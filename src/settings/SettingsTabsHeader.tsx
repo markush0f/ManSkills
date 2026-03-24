@@ -1,6 +1,6 @@
 import { Icon, addCollection } from "@iconify/react";
 import { icons as codiconIcons } from "@iconify-json/codicon";
-import type { IdeFile } from "../ide/types";
+import type { IdeFile } from "../types";
 import { WorkbenchTabsBar } from "../components/layout/WorkbenchTabsBar";
 
 addCollection(codiconIcons);

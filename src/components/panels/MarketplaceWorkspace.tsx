@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MarketplaceSkill } from "../../ide/types";
+import type { MarketplaceSkill } from "../../types";
 import { useIde } from "../../contexts/IdeContext";
 import { TextInput } from "../shared/formControls";
 import { shellPanelClass } from "../shared/ui";

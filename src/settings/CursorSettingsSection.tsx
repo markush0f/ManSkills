@@ -1,4 +1,4 @@
-import type { IdePreferences } from "../ide/types";
+import type { IdePreferences } from "../types";
 import { matchesSearch } from "./settingsUtils";
 import type { UpdatePreferences } from "./settingsTypes";
 import { CheckboxSetting, Section, SelectSetting } from "./SettingsRows";

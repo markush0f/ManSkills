@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { IdeFile } from "../../ide/types";
+import type { IdeFile } from "../../types";
 import { getFileName } from "../../ide/utils";
 
 type ExtraTab = {

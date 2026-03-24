@@ -5,7 +5,7 @@ import type {
   Language,
   TreeBranch,
   TreeNode,
-} from "./types";
+} from "../types";
 
 export function getFileName(path: string) {
   const parts = path.split("/");
