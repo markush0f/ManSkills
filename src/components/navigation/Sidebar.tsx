@@ -321,6 +321,7 @@ export function Sidebar() {
   return (
     <aside
       className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden text-[13px]`}
+      style={{ fontFamily: "var(--font-soft)" }}
     >
       <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
         <div className="space-y-4">

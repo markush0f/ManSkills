@@ -18,9 +18,20 @@ export type WorkspaceView = "editor" | "marketplace" | "settings";
 const IDE_PREFERENCES_KEY = "skills-ide:preferences";
 
 const DEFAULT_IDE_PREFERENCES: IdePreferences = {
+  bracketPairGuides: true,
   cursorAnimation: true,
+  cursorStyle: "line-thin",
   fontLigatures: true,
+  fontSize: 14,
+  highlightActiveLine: false,
+  lineHeight: 28,
+  lineNumbers: "on",
   markdownWordWrap: true,
+  minimap: false,
+  renderWhitespace: "selection",
+  scrollBeyondLastLine: false,
+  smoothScrolling: true,
+  tabSize: 4,
 };
 
 function hashString(value: string) {
