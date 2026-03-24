@@ -40,7 +40,7 @@ export function MarkdownPreview({ content, compact = false }: MarkdownPreviewPro
               </a>
             ),
             pre: ({ children }) => (
-              <pre className="my-5 overflow-auto rounded-[14px] border border-[var(--border)] bg-black/25 px-4 py-4 font-mono text-sm leading-7 text-[#d9e5ef]">
+              <pre className="my-5 overflow-auto rounded-[10px] border border-[var(--border)] bg-[rgba(0,0,0,0.28)] px-4 py-4 font-mono text-sm leading-7 text-[#d9e5ef]">
                 {children}
               </pre>
             ),
@@ -53,7 +53,7 @@ export function MarkdownPreview({ content, compact = false }: MarkdownPreviewPro
             ),
             hr: () => <hr className="my-6 border-0 border-t border-[var(--border)]" />,
             table: ({ children }) => (
-              <div className="my-5 overflow-auto rounded-[14px] border border-[var(--border)]">
+              <div className="my-5 overflow-auto rounded-[10px] border border-[var(--border)] bg-white/[0.01]">
                 <table className="min-w-full border-collapse text-left text-sm text-[#d6e0ea]">{children}</table>
               </div>
             ),

@@ -7,22 +7,22 @@
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
 
-  --canvas: #091015;
-  --panel: rgba(16, 24, 32, 0.82);
-  --panel-solid: #121b23;
-  --border: rgba(169, 190, 210, 0.14);
+  --canvas: #060d12;
+  --panel: rgba(12, 18, 24, 0.9);
+  --panel-solid: #0d141b;
+  --border: rgba(169, 190, 210, 0.1);
   --border-strong: rgba(217, 98, 59, 0.36);
-  --text: #e8edf2;
-  --muted: #8f9aa8;
+  --text: #e4eaf0;
+  --muted: #7f8a97;
   --accent: #d9623b;
   --accent-strong: #ef8e49;
   --accent-soft: rgba(217, 98, 59, 0.12);
   --accent-soft-strong: rgba(217, 98, 59, 0.18);
   --ink: #d7e2ec;
-  --code-bg: #0f1820;
-  --editor-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(5, 10, 14, 0.42));
-  --editor-chrome: rgba(11, 18, 24, 0.9);
-  --scrollbar-track: rgba(255, 255, 255, 0.04);
+  --code-bg: #091119;
+  --editor-surface: #091119;
+  --editor-chrome: rgba(4, 8, 12, 0.98);
+  --scrollbar-track: rgba(255, 255, 255, 0.03);
   --scrollbar-thumb: rgba(217, 98, 59, 0.28);
   --scrollbar-thumb-hover: rgba(239, 142, 73, 0.42);
 }
@@ -37,7 +37,7 @@ body,
 
 body {
   min-height: 100vh;
-  background: linear-gradient(180deg, #061016 0%, #091118 52%, #0b141c 100%);
+  background: linear-gradient(180deg, #04090d 0%, #070d12 52%, #091117 100%);
   color: var(--text);
   font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
   background-attachment: fixed;

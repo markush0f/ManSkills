@@ -13,7 +13,7 @@ function SkillRow({
   skill: MarketplaceSkill;
 }) {
   return (
-    <article className="grid gap-3 border-b border-[var(--border)] px-6 py-4 transition hover:bg-white/[0.03] lg:grid-cols-[minmax(0,1.9fr)_130px_90px_110px] lg:items-center lg:gap-4">
+    <article className="grid gap-3 border-b border-[var(--border)] px-5 py-3.5 transition hover:bg-white/[0.02] lg:grid-cols-[minmax(0,1.9fr)_130px_90px_110px] lg:items-center lg:gap-4">
       <div className="min-w-0">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
@@ -59,23 +59,23 @@ export function MarketplaceWorkspace() {
     <section
       className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}
     >
-      <div className="border-b border-[var(--border)] px-6 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <input
-            className="h-10 w-full rounded-[8px] border border-[var(--border)] bg-transparent px-3.5 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--border-strong)] lg:max-w-sm"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Filtrar por nombre, autor o descripcion"
-            value={query}
-          />
+      <div className="min-h-0 overflow-auto">
+        <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[rgba(8,13,18,0.94)] px-5 py-3 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <input
+              className="h-9 w-full rounded-[6px] border border-[var(--border)] bg-transparent px-3 text-sm text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--border-strong)] lg:max-w-sm"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Filtrar skills"
+              value={query}
+            />
 
-          <div className="flex gap-4 text-[11px] text-[var(--muted)]">
-            <span>{filteredSkills.length} resultados</span>
-            <span>{installedSkillSlugs.size} instaladas</span>
+            <div className="flex gap-4 text-[11px] text-[var(--muted)]">
+              <span>{filteredSkills.length} resultados</span>
+              <span>{installedSkillSlugs.size} instaladas</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="min-h-0 overflow-auto">
         <div className="hidden border-b border-[var(--border)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[var(--muted)] lg:grid lg:grid-cols-[minmax(0,1.9fr)_130px_90px_110px] lg:gap-4">
           <span>Skill</span>
           <span>Autor</span>

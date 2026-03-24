@@ -28,8 +28,8 @@ function TabsBar({
             key={file.id}
             className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
               isActive
-                ? "border-[var(--border)] bg-white/6 text-[var(--text)]"
-                : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/4 hover:text-[var(--text)]"
+                ? "border-[var(--border)] bg-white/4 text-[var(--text)]"
+                : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/[0.03] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenFile(file.id)}
           >
@@ -134,12 +134,13 @@ export function EditorWorkspace() {
               inherit: true,
               rules: [],
               colors: {
-                "editor.background": "#0f1820",
-                "editorLineNumber.foreground": "#6f7c8a",
+                "editor.background": "#091119",
+                "editorWidget.background": "#091018",
+                "editorLineNumber.foreground": "#62707f",
                 "editorLineNumber.activeForeground": "#c8d3de",
-                "editorGutter.background": "#0f1820",
-                "editorIndentGuide.background1": "#1a2530",
-                "editorIndentGuide.activeBackground1": "#2b3946",
+                "editorGutter.background": "#091119",
+                "editorIndentGuide.background1": "#141d27",
+                "editorIndentGuide.activeBackground1": "#24313d",
               },
             });
           }}
@@ -160,7 +161,7 @@ export function EditorWorkspace() {
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--border)]">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
         <div className="min-w-0 overflow-hidden">
           <TabsBar
             activeFileId={activeFileId}
@@ -177,7 +178,7 @@ export function EditorWorkspace() {
             {getLanguageLabel(activeFile.language)}
           </span>
           {supportsPreview && (
-            <div className="flex items-center gap-1 rounded-[8px] border border-[var(--border)] bg-transparent p-1">
+            <div className="flex items-center gap-1 rounded-[8px] border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-1">
               <button
                 aria-label={codeLabel}
                 className={`rounded-[6px] px-2.5 py-1.5 text-xs transition md:px-3 ${

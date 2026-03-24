@@ -1,5 +1,5 @@
 export const shellPanelClass =
-  "bg-[rgba(12,19,25,0.92)]";
+  "bg-[rgba(4,8,12,0.98)]";
 
 export const cardClass =
   "rounded-[16px] border border-[var(--border)] bg-[rgba(16,24,32,0.9)] px-5 py-5";

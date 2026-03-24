@@ -32,7 +32,7 @@ function JsonValue({
         <div className="font-mono text-[var(--muted)]">[{value.length}]</div>
         <div className="space-y-2 border-l border-[var(--border)] pl-4">
           {value.map((item, index) => (
-            <div key={`${depth}-${index}`} className="rounded-[12px] border border-[var(--border)] bg-white/4 px-3 py-2">
+            <div key={`${depth}-${index}`} className="rounded-[8px] border border-[var(--border)] bg-white/[0.03] px-3 py-2">
               <div className="mb-1 font-mono text-xs text-[var(--muted)]">#{index}</div>
               <JsonValue depth={depth + 1} value={item} />
             </div>
@@ -50,7 +50,7 @@ function JsonValue({
         <div className="font-mono text-[var(--muted)]">{"{"}{entries.length}{"}"}</div>
         <div className="space-y-2 border-l border-[var(--border)] pl-4">
           {entries.map(([key, entryValue]) => (
-            <div key={`${depth}-${key}`} className="rounded-[12px] border border-[var(--border)] bg-white/4 px-3 py-2">
+            <div key={`${depth}-${key}`} className="rounded-[8px] border border-[var(--border)] bg-white/[0.03] px-3 py-2">
               <div className="mb-1 font-mono text-sm text-white">{key}</div>
               <JsonValue depth={depth + 1} value={entryValue} />
             </div>
@@ -82,7 +82,7 @@ export function JsonPreview({ content, compact = false }: JsonPreviewProps) {
     return (
       <div className="h-full overflow-auto bg-[var(--editor-surface)] px-6 py-5">
         <div className={compact ? "max-w-none" : "mx-auto max-w-3xl"}>
-          <div className="rounded-[14px] border border-[#cf5e4f]/30 bg-[#cf5e4f]/10 px-4 py-4">
+          <div className="rounded-[10px] border border-[#cf5e4f]/30 bg-[#cf5e4f]/10 px-4 py-4">
             <h2 className="text-lg font-semibold text-[#ffb3a7]">Invalid JSON</h2>
             <p className="mt-2 text-sm text-[#ffd2cb]">
               {error instanceof Error ? error.message : "Unable to parse JSON"}

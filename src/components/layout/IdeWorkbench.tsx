@@ -19,12 +19,12 @@ export function IdeWorkbench() {
     <main className="relative h-screen w-full overflow-hidden text-[var(--text)]">
       <section
         ref={layoutRef}
-        className="grid h-screen w-full bg-[rgba(8,13,18,0.86)]"
+        className="grid h-screen w-full bg-[rgba(6,10,14,0.94)]"
         style={{
           gridTemplateColumns: `${sidebarWidth}px ${resizerWidth}px minmax(0, 1fr)`,
         }}
       >
-        <div className="min-w-0 overflow-hidden border-r border-[var(--border)] bg-[rgba(10,16,22,0.9)]">
+        <div className="min-w-0 overflow-hidden border-r border-[var(--border)] bg-[rgba(8,13,18,0.96)]">
           <Sidebar />
         </div>
 
@@ -50,7 +50,7 @@ export function IdeWorkbench() {
           </button>
         </div>
 
-        <div className="min-w-0 overflow-hidden bg-[rgba(9,15,20,0.72)]">
+        <div className="min-w-0 overflow-hidden bg-[rgba(8,13,18,0.9)]">
           {isMarketplaceView ? <MarketplaceWorkspace /> : <EditorWorkspace />}
         </div>
       </section>
