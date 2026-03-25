@@ -61,7 +61,7 @@ export function SettingsWorkspace() {
       className={`${shellPanelClass} min-h-0 min-w-0 overflow-hidden`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
-      <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+      <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-[radial-gradient(circle_at_top_right,rgba(138,108,230,0.06),transparent_24%)]">
         <SettingsTabsHeader
           activeFileId={activeFileId}
           closeFile={closeFile}

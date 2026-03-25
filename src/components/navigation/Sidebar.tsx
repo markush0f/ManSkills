@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 
 import { SidebarFooter } from "./sidebar/SidebarFooter";
 import { LocalTreeList } from "./sidebar/LocalTreeList";
@@ -29,13 +29,18 @@ export function Sidebar() {
   const { isSidebarCompact: compact } = useIdeLayout();
   const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const fileById = useMemo(() => new Map(files.map((file) => [file.id, file] as const)), [files]);
   const hasSystemSkillTree = !systemSkillsLoading && !systemSkillsError;
   const filteredSystemSkillTree = useMemo(
-    () => filterSystemSkillTreeNodes(systemSkillTree, query),
-    [query, systemSkillTree],
+    () => filterSystemSkillTreeNodes(systemSkillTree, deferredQuery),
+    [deferredQuery, systemSkillTree],
   );
-  const filteredTree = useMemo(() => filterTreeNodes(tree, files, query), [files, query, tree]);
-  const searchActive = query.trim().length > 0;
+  const filteredTree = useMemo(
+    () => filterTreeNodes(tree, fileById, deferredQuery),
+    [deferredQuery, fileById, tree],
+  );
+  const searchActive = deferredQuery.trim().length > 0;
 
   function toggleSystemSkillNode(nodeId: string) {
     setExpandedSystemSkillNodeIds((current) => {
@@ -53,13 +58,13 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden text-[13px]`}
+      className={`${shellPanelClass} relative flex h-full min-h-0 flex-col overflow-hidden text-[13px] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-24 before:bg-[linear-gradient(180deg,rgba(138,108,230,0.08),transparent)] before:content-['']`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
       <SidebarSearch query={query} setQuery={setQuery} />
 
-      <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
-        <div className="space-y-4">
+      <div className={`relative z-[1] flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
+        <div className="space-y-4 rounded-[14px] border border-white/[0.03] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           {hasSystemSkillTree ? (
             filteredSystemSkillTree.length > 0 ? (
               <SystemSkillTreeList
@@ -83,7 +88,7 @@ export function Sidebar() {
             <LocalTreeList
               activeFileId={activeFileId}
               compact={compact}
-              files={files}
+              fileById={fileById}
               nodes={filteredTree}
               onOpenFile={openFile}
             />

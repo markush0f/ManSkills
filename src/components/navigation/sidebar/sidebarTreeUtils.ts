@@ -46,7 +46,11 @@ export function matchesSidebarQuery(query: string, ...values: Array<string | und
   return values.some((value) => value?.toLowerCase().includes(normalizedQuery));
 }
 
-export function filterTreeNodes(nodes: TreeNode[], files: IdeFile[], query: string): TreeNode[] {
+export function filterTreeNodes(
+  nodes: TreeNode[],
+  fileById: ReadonlyMap<string, IdeFile>,
+  query: string,
+): TreeNode[] {
   const normalizedQuery = query.trim();
 
   if (normalizedQuery.length === 0) {
@@ -55,7 +59,7 @@ export function filterTreeNodes(nodes: TreeNode[], files: IdeFile[], query: stri
 
   return nodes.reduce<TreeNode[]>((filteredNodes, node) => {
     if (node.kind === "file") {
-      const file = files.find((entry) => entry.id === node.fileId);
+      const file = fileById.get(node.fileId);
 
       if (matchesSidebarQuery(normalizedQuery, node.name, node.path, file?.path)) {
         filteredNodes.push(node);
@@ -64,7 +68,7 @@ export function filterTreeNodes(nodes: TreeNode[], files: IdeFile[], query: stri
       return filteredNodes;
     }
 
-    const filteredChildren = filterTreeNodes(node.children, files, normalizedQuery);
+    const filteredChildren = filterTreeNodes(node.children, fileById, normalizedQuery);
 
     if (matchesSidebarQuery(normalizedQuery, node.name, node.path) || filteredChildren.length > 0) {
       filteredNodes.push({ ...node, children: filteredChildren });

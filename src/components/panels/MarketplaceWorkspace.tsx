@@ -14,10 +14,10 @@ function SkillRow({
   skill: MarketplaceSkill;
 }) {
   return (
-    <article className="grid gap-3 border-b border-[var(--border)] px-5 py-3.5 transition hover:bg-white/[0.02] lg:grid-cols-[minmax(0,1.9fr)_130px_90px_110px] lg:items-center lg:gap-4">
+    <article className="grid gap-3 border-b border-[var(--border)] px-5 py-3.5 transition hover:bg-[linear-gradient(90deg,rgba(138,108,230,0.05),rgba(255,255,255,0.015))] lg:grid-cols-[minmax(0,1.9fr)_130px_90px_110px] lg:items-center lg:gap-4">
       <div className="min-w-0">
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
+          <span className="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full bg-[var(--accent)] shadow-[0_0_12px_rgba(217,98,59,0.38)]" />
           <div className="min-w-0">
             <h2 className="truncate text-sm font-medium text-[var(--text)]">{skill.name}</h2>
             <p className="mt-1 truncate text-xs text-[var(--muted)]">{skill.summary}</p>
@@ -61,7 +61,7 @@ export function MarketplaceWorkspace() {
       className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}
     >
       <div className="min-h-0 overflow-auto">
-        <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[rgba(8,13,18,0.94)] px-5 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(12,18,25,0.97),rgba(8,13,18,0.94))] px-5 py-3 backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TextInput
               className="text-sm lg:max-w-sm"

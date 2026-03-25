@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { marketplaceSkills } from "../ide/marketplaceData";
 import { initialFiles, initialOpenFileIds } from "../ide/mockData";
 import type {
@@ -138,16 +138,30 @@ export function useIdeWorkspace() {
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
 
-  const activeFile = files.find((file) => file.id === activeFileId) ?? files[0];
-  const tree = buildTree(files);
-  const openFiles = openFileIds
-    .map((fileId) => files.find((file) => file.id === fileId))
-    .filter((file): file is IdeFile => Boolean(file));
-  const installedSkillSlugs = new Set(
-    files
-      .filter((file) => file.path.startsWith("skills/"))
-      .map((file) => file.path.split("/")[1])
-      .filter(Boolean),
+  const fileById = useMemo(() => new Map(files.map((file) => [file.id, file] as const)), [files]);
+  const systemSkillByRootPath = useMemo(
+    () => new Map(systemSkills.map((skill) => [skill.rootPath, skill] as const)),
+    [systemSkills],
+  );
+  const activeFile = fileById.get(activeFileId) ?? files[0];
+  const tree = useMemo(() => buildTree(files), [files]);
+  const openFiles = useMemo(
+    () => openFileIds.map((fileId) => fileById.get(fileId)).filter((file): file is IdeFile => Boolean(file)),
+    [fileById, openFileIds],
+  );
+  const installedSkillSlugs = useMemo(
+    () =>
+      new Set(
+        files
+          .filter((file) => file.path.startsWith("skills/"))
+          .map((file) => file.path.split("/")[1])
+          .filter(Boolean),
+      ),
+    [files],
+  );
+  const hasUnsavedChanges = useMemo(
+    () => files.some((file) => file.content !== file.savedContent),
+    [files],
   );
 
   useEffect(() => {
@@ -159,7 +173,6 @@ export function useIdeWorkspace() {
   }, [activeFileId]);
 
   useEffect(() => {
-    const hasUnsavedChanges = files.some((file) => file.content !== file.savedContent);
     const baseTitle = "Skills management";
 
     if (typeof document === "undefined") {
@@ -167,7 +180,7 @@ export function useIdeWorkspace() {
     }
 
     document.title = hasUnsavedChanges ? `• ${baseTitle}` : baseTitle;
-  }, [files]);
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     let cancelled = false;
@@ -297,7 +310,7 @@ export function useIdeWorkspace() {
       return Promise.resolve();
     }
 
-    const activeSkill = systemSkills.find((skill) => skill.rootPath === activeFile.rootPath);
+    const activeSkill = systemSkillByRootPath.get(activeFile.rootPath);
     const fileToSave = activeFile;
     const contentToSave = nextContent ?? fileToSave.content;
 
@@ -373,7 +386,7 @@ export function useIdeWorkspace() {
 
   function openSystemSkillFile(skill: SystemSkill, relativePath: string) {
     const targetFileId = getSystemSkillFileId(skill, relativePath);
-    const existingFile = files.find((file) => file.id === targetFileId);
+    const existingFile = fileById.get(targetFileId);
 
     if (existingFile) {
       openFile(existingFile.id);

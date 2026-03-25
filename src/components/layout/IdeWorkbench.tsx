@@ -20,12 +20,12 @@ export function IdeWorkbench() {
     <main className="relative h-screen w-full overflow-hidden text-[var(--text)]">
       <section
         ref={layoutRef}
-        className="grid h-screen w-full bg-[rgba(6,10,14,0.94)]"
+        className="grid h-screen w-full bg-[linear-gradient(180deg,rgba(6,10,14,0.96),rgba(8,13,19,0.98))]"
         style={{
           gridTemplateColumns: `${sidebarWidth}px ${resizerWidth}px minmax(0, 1fr)`,
         }}
       >
-        <div className="min-w-0 overflow-hidden border-r border-[var(--border)] bg-[rgba(8,13,18,0.96)]">
+        <div className="min-w-0 overflow-hidden border-r border-[var(--border)] bg-[linear-gradient(180deg,rgba(9,14,19,0.98),rgba(7,11,16,0.98))] shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
           <Sidebar />
         </div>
 
@@ -33,7 +33,7 @@ export function IdeWorkbench() {
           <button
             aria-label="Redimensionar panel lateral"
             className={`group flex h-full w-full cursor-col-resize items-center justify-center bg-transparent transition ${
-              isResizing ? "bg-white/4" : "hover:bg-white/[0.03]"
+              isResizing ? "bg-white/4" : "hover:bg-white/[0.025]"
             }`}
             onDoubleClick={resetSidebarWidth}
             onPointerDown={(event) => {
@@ -45,13 +45,13 @@ export function IdeWorkbench() {
           >
             <span
               className={`h-full w-px transition ${
-                isResizing ? "bg-[var(--accent)]" : "bg-[var(--border)] group-hover:bg-white/18"
+                isResizing ? "bg-[var(--accent)]" : "bg-[var(--border-soft)] group-hover:bg-white/18"
               }`}
             />
           </button>
         </div>
 
-        <div className="min-w-0 overflow-hidden bg-[rgba(8,13,18,0.9)]">
+        <div className="min-w-0 overflow-hidden bg-[linear-gradient(180deg,rgba(8,13,18,0.92),rgba(9,14,19,0.96))]">
           {isMarketplaceView ? (
             <MarketplaceWorkspace />
           ) : isSettingsView ? (

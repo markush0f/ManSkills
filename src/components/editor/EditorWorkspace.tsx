@@ -2,15 +2,43 @@ import { Icon, addCollection } from "@iconify/react";
 import { icons as codiconIcons } from "@iconify-json/codicon";
 import Editor from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useEffectEvent, useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
 import { matchesSaveShortcut } from "../../ide/utils";
+import type { IdeFile, SaveShortcut } from "../../types";
 import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { shellPanelClass } from "../shared/ui";
 
 addCollection(codiconIcons);
+
+type ContentView = "preview" | "code" | "split";
+
+const PREVIEW_MODES: Array<{ icon: string; label: string; mode: ContentView }> = [
+  { icon: "codicon:code", label: "Code", mode: "code" },
+  { icon: "codicon:open-preview", label: "Preview", mode: "preview" },
+  { icon: "codicon:split-horizontal", label: "Split", mode: "split" },
+];
+
+function getMonacoLanguage(language: IdeFile["language"]) {
+  if (language === "md") return "markdown";
+  if (language === "ts") return "typescript";
+  if (language === "txt") return "plaintext";
+  return "json";
+}
+
+function buildSaveKeybinding(shortcut: SaveShortcut, monaco: typeof Monaco) {
+  if (shortcut === "mod+shift+s") {
+    return monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS;
+  }
+
+  if (shortcut === "alt+s") {
+    return monaco.KeyMod.Alt | monaco.KeyCode.KeyS;
+  }
+
+  return monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS;
+}
 
 export function EditorWorkspace() {
   const {
@@ -25,7 +53,7 @@ export function EditorWorkspace() {
     saveActiveFile,
     updateActiveFile,
   } = useIde();
-  const [contentView, setContentView] = useState<"preview" | "code" | "split">("code");
+  const [contentView, setContentView] = useState<ContentView>("code");
   const [draftContent, setDraftContent] = useState(activeFile.content);
   const isMarkdown = activeFile.language === "md";
   const isJson = activeFile.language === "json";
@@ -62,45 +90,30 @@ export function EditorWorkspace() {
     };
   }, [activeFile.content, draftContent, updateActiveFile]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.repeat || !canSaveActiveFile || isSavingActiveFile) {
-        return;
-      }
-
-      if (!matchesSaveShortcut(event, preferences.saveShortcut)) {
-        return;
-      }
-
-      event.preventDefault();
-      void saveActiveFile(draftContent);
+  const handleWindowSaveShortcut = useEffectEvent((event: KeyboardEvent) => {
+    if (event.repeat || !canSaveActiveFile || isSavingActiveFile) {
+      return;
     }
 
-    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    if (!matchesSaveShortcut(event, preferences.saveShortcut)) {
+      return;
+    }
+
+    event.preventDefault();
+    void saveActiveFile(draftContent);
+  });
+
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => {
+      handleWindowSaveShortcut(event);
+    };
+
+    window.addEventListener("keydown", listener, { capture: true });
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown, { capture: true });
+      window.removeEventListener("keydown", listener, { capture: true });
     };
-  }, [canSaveActiveFile, draftContent, isSavingActiveFile, preferences.saveShortcut, saveActiveFile]);
-
-  function getMonacoLanguage() {
-    if (activeFile.language === "md") return "markdown";
-    if (activeFile.language === "ts") return "typescript";
-    if (activeFile.language === "txt") return "plaintext";
-    return "json";
-  }
-
-  function buildSaveKeybinding(monaco: typeof Monaco) {
-    if (preferences.saveShortcut === "mod+shift+s") {
-      return monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS;
-    }
-
-    if (preferences.saveShortcut === "alt+s") {
-      return monaco.KeyMod.Alt | monaco.KeyCode.KeyS;
-    }
-
-    return monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS;
-  }
+  }, []);
 
   function renderPreviewModeButton(
     mode: "code" | "preview" | "split",
@@ -130,7 +143,7 @@ export function EditorWorkspace() {
       <div className="h-full min-h-0 bg-[var(--editor-surface)]">
         <Editor
           height="100%"
-          language={getMonacoLanguage()}
+          language={getMonacoLanguage(activeFile.language)}
           options={{
             automaticLayout: true,
             bracketPairColorization: { enabled: preferences.bracketPairGuides },
@@ -195,7 +208,7 @@ export function EditorWorkspace() {
                 verticalScrollbarSize: 10,
               },
             });
-            editor.addCommand(buildSaveKeybinding(monaco), () => {
+            editor.addCommand(buildSaveKeybinding(preferences.saveShortcut, monaco), () => {
               if (!canSaveActiveFile || isSavingActiveFile) {
                 return;
               }
@@ -210,7 +223,7 @@ export function EditorWorkspace() {
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
-      <div className="flex min-w-0 items-center justify-between border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
+      <div className="flex min-w-0 items-center justify-between border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(11,16,22,0.96),rgba(6,10,14,0.96))] shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
         <div className="min-w-0 flex-1 overflow-hidden">
           <WorkbenchTabsBar
             activeTabId={activeFileId}
@@ -221,10 +234,10 @@ export function EditorWorkspace() {
         </div>
         <div className="flex shrink-0 items-center gap-2 px-2">
           {supportsPreview && (
-            <div className="flex items-center gap-1">
-              {renderPreviewModeButton("code", "Code", "codicon:code")}
-              {renderPreviewModeButton("preview", "Preview", "codicon:open-preview")}
-              {renderPreviewModeButton("split", "Split", "codicon:split-horizontal")}
+            <div className="flex items-center gap-1 rounded-[9px] border border-white/[0.04] bg-white/[0.02] p-1">
+              {PREVIEW_MODES.map(({ icon, label, mode }) =>
+                renderPreviewModeButton(mode, label, icon),
+              )}
             </div>
           )}
           {activeFileSaveError && (

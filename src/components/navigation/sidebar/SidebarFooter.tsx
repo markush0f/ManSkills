@@ -25,8 +25,8 @@ function FooterButton({
     <button
       className={`flex w-full items-center justify-between rounded-[10px] border px-3 py-2 text-left text-sm transition ${
         active
-          ? "border-[var(--violet-border)] bg-[var(--violet-soft)] text-[var(--violet-strong)]"
-          : "border-[var(--border)] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
+          ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,var(--violet-soft-strong),rgba(255,255,255,0.03))] text-[var(--violet-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          : "border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
       }`}
       onClick={onClick}
       type="button"

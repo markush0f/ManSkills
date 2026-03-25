@@ -6,7 +6,7 @@ type LocalTreeListProps = {
   activeFileId: string;
   compact: boolean;
   depth?: number;
-  files: IdeFile[];
+  fileById: ReadonlyMap<string, IdeFile>;
   nodes: TreeNode[];
   onOpenFile: (fileId: string) => void;
 };
@@ -15,7 +15,7 @@ export function LocalTreeList({
   activeFileId,
   compact,
   depth = 0,
-  files,
+  fileById,
   nodes,
   onOpenFile,
 }: LocalTreeListProps) {
@@ -46,7 +46,7 @@ export function LocalTreeList({
                   activeFileId={activeFileId}
                   compact={compact}
                   depth={depth + 1}
-                  files={files}
+                  fileById={fileById}
                   nodes={node.children}
                   onOpenFile={onOpenFile}
                 />
@@ -55,7 +55,7 @@ export function LocalTreeList({
           );
         }
 
-        const file = files.find((entry) => entry.id === node.fileId);
+        const file = fileById.get(node.fileId);
         const isActive = activeFileId === node.fileId;
 
         return (

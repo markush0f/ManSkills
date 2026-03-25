@@ -8,10 +8,12 @@
   -webkit-text-size-adjust: 100%;
 
   --canvas: #060d12;
-  --panel: rgba(12, 18, 24, 0.9);
+  --panel: rgba(11, 17, 23, 0.9);
   --panel-solid: #0d141b;
+  --panel-elevated: rgba(14, 22, 30, 0.94);
   --border: rgba(169, 190, 210, 0.1);
   --border-strong: rgba(217, 98, 59, 0.36);
+  --border-soft: rgba(255, 255, 255, 0.05);
   --text: #e4eaf0;
   --muted: #7f8a97;
   --accent: #d9623b;
@@ -23,6 +25,8 @@
   --violet-soft: rgba(138, 108, 230, 0.12);
   --violet-soft-strong: rgba(138, 108, 230, 0.18);
   --violet-border: rgba(138, 108, 230, 0.34);
+  --glow-violet: rgba(138, 108, 230, 0.16);
+  --glow-accent: rgba(217, 98, 59, 0.14);
   --ink: #d7e2ec;
   --font-soft: "Segoe UI Variable", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
   --font-code: "Fira Code", "Cascadia Code", "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
@@ -44,7 +48,10 @@ body,
 
 body {
   min-height: 100vh;
-  background: linear-gradient(180deg, #04090d 0%, #070d12 52%, #091117 100%);
+  background:
+    radial-gradient(circle at top left, rgba(138, 108, 230, 0.08), transparent 26%),
+    radial-gradient(circle at top right, rgba(217, 98, 59, 0.08), transparent 24%),
+    linear-gradient(180deg, #04090d 0%, #070d12 52%, #091117 100%);
   color: var(--text);
   font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
   background-attachment: fixed;
