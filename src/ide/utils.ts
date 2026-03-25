@@ -3,6 +3,7 @@ import type {
   DiagnosticLevel,
   IdeFile,
   Language,
+  SaveShortcut,
   TreeBranch,
   TreeNode,
 } from "../types";
@@ -138,4 +139,34 @@ export function getCursorPosition(text: string, offset: number) {
     line: lines.length,
     column: currentLine.length + 1,
   };
+}
+
+export function getSaveShortcutLabel(shortcut: SaveShortcut) {
+  if (shortcut === "mod+shift+s") {
+    return "Ctrl/Cmd + Shift + S";
+  }
+
+  if (shortcut === "alt+s") {
+    return "Alt + S";
+  }
+
+  return "Ctrl/Cmd + S";
+}
+
+export function matchesSaveShortcut(event: KeyboardEvent, shortcut: SaveShortcut) {
+  const key = event.key.toLowerCase();
+
+  if (key !== "s") {
+    return false;
+  }
+
+  if (shortcut === "mod+shift+s") {
+    return (event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey;
+  }
+
+  if (shortcut === "alt+s") {
+    return event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
+  }
+
+  return (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey;
 }

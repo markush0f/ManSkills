@@ -55,7 +55,7 @@ export function WorkbenchTabsBar({
               {file.language}
             </span>
             <span className="text-[14px]">{getFileName(file.path)}</span>
-            {isDirty && <span className=" rounded-full bg-[var(--accent)]" />}
+            {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />}
             <span
               className="hover:cursor-pointer inline-flex h-4 w-4 items-center justify-center text-[var(--muted)] hover:text-[var(--text)]"
               onClick={(event) => {

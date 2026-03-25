@@ -109,11 +109,13 @@ export function SettingsWorkspace() {
               <WorkspaceSettingsSection
                 activeFilePath={activeFile.path}
                 openTabsCount={openFiles.length}
+                preferences={preferences}
                 query={query}
                 resetSidebarWidth={resetSidebarWidth}
                 sidebarWidth={sidebarWidth}
                 systemSkillCount={systemSkillCount}
                 systemSkillScanMs={systemSkillScanMs}
+                updatePreferences={updatePreferences}
               />
             )}
           </SettingsContentPanel>

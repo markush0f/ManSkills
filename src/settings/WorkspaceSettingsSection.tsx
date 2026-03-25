@@ -1,14 +1,19 @@
+import type { IdePreferences } from "../types";
 import { InfoRow, Section } from "./SettingsRows";
+import type { UpdatePreferences } from "./settingsTypes";
 import { matchesSearch } from "./settingsUtils";
+import { SelectSetting } from "./SettingsRows";
 
 type WorkspaceSettingsSectionProps = {
   activeFilePath: string;
   openTabsCount: number;
+  preferences: IdePreferences;
   query: string;
   resetSidebarWidth: () => void;
   sidebarWidth: number;
   systemSkillCount: number;
   systemSkillScanMs: number | null;
+  updatePreferences: UpdatePreferences;
 };
 
 export function hasWorkspaceSettingsResults(
@@ -19,6 +24,7 @@ export function hasWorkspaceSettingsResults(
   systemSkillScanMs: number | null,
 ) {
   return (
+    matchesSearch(query, "Workbench: Save Shortcut", "Atajo de teclado para guardar archivos editables.") ||
     matchesSearch(query, "Workbench: Sidebar Width", "Ancho actual del panel lateral.") ||
     matchesSearch(query, "Workspace: Active File", activeFilePath) ||
     matchesSearch(query, "Workspace: Open Tabs", String(openTabsCount)) ||
@@ -34,11 +40,13 @@ function formatScanDuration(systemSkillScanMs: number | null) {
 export function WorkspaceSettingsSection({
   activeFilePath,
   openTabsCount,
+  preferences,
   query,
   resetSidebarWidth,
   sidebarWidth,
   systemSkillCount,
   systemSkillScanMs,
+  updatePreferences,
 }: WorkspaceSettingsSectionProps) {
   if (!hasWorkspaceSettingsResults(query, activeFilePath, openTabsCount, systemSkillCount, systemSkillScanMs)) {
     return null;
@@ -48,8 +56,22 @@ export function WorkspaceSettingsSection({
 
   return (
     <Section>
+      {matchesSearch(query, "Workbench: Save Shortcut", "Atajo de teclado para guardar archivos editables.") && (
+        <SelectSetting
+          description="Atajo de teclado para guardar archivos editables del backend."
+          isFirst
+          label="Workbench: Save Shortcut"
+          onChange={(value) => updatePreferences({ saveShortcut: value })}
+          options={[
+            { label: "Ctrl/Cmd + S", value: "mod+s" },
+            { label: "Ctrl/Cmd + Shift + S", value: "mod+shift+s" },
+            { label: "Alt + S", value: "alt+s" },
+          ]}
+          value={preferences.saveShortcut}
+        />
+      )}
       {matchesSearch(query, "Workbench: Sidebar Width", "Ancho actual del panel lateral.") && (
-        <div className="grid gap-3 px-4 py-3 xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start">
+        <div className="grid gap-3 border-t border-[var(--border)] px-4 py-3 xl:grid-cols-[minmax(0,1fr)_180px] xl:items-start">
           <div className="min-w-0">
             <p className="text-[13px] text-[var(--text)]">Workbench: Sidebar Width</p>
             <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">

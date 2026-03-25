@@ -1,8 +1,10 @@
 import { Icon, addCollection } from "@iconify/react";
 import { icons as codiconIcons } from "@iconify-json/codicon";
 import Editor from "@monaco-editor/react";
+import type * as Monaco from "monaco-editor";
 import { useDeferredValue, useEffect, useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
+import { getSaveShortcutLabel, matchesSaveShortcut } from "../../ide/utils";
 import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -32,6 +34,7 @@ export function EditorWorkspace() {
   const canSaveActiveFile =
     Boolean(activeFile?.isWritable && activeFile.rootPath && activeFile.relativePath) &&
     activeFile.content !== activeFile.savedContent;
+  const saveShortcutLabel = getSaveShortcutLabel(preferences.saveShortcut);
 
   useEffect(() => {
     if (!supportsPreview) {
@@ -60,11 +63,44 @@ export function EditorWorkspace() {
     };
   }, [activeFile.content, draftContent, updateActiveFile]);
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.repeat || !canSaveActiveFile || isSavingActiveFile) {
+        return;
+      }
+
+      if (!matchesSaveShortcut(event, preferences.saveShortcut)) {
+        return;
+      }
+
+      event.preventDefault();
+      void saveActiveFile(draftContent);
+    }
+
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, [canSaveActiveFile, draftContent, isSavingActiveFile, preferences.saveShortcut, saveActiveFile]);
+
   function getMonacoLanguage() {
     if (activeFile.language === "md") return "markdown";
     if (activeFile.language === "ts") return "typescript";
     if (activeFile.language === "txt") return "plaintext";
     return "json";
+  }
+
+  function buildSaveKeybinding(monaco: typeof Monaco) {
+    if (preferences.saveShortcut === "mod+shift+s") {
+      return monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyS;
+    }
+
+    if (preferences.saveShortcut === "alt+s") {
+      return monaco.KeyMod.Alt | monaco.KeyCode.KeyS;
+    }
+
+    return monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS;
   }
 
   function renderCodeEditor() {
@@ -137,6 +173,13 @@ export function EditorWorkspace() {
                 verticalScrollbarSize: 10,
               },
             });
+            editor.addCommand(buildSaveKeybinding(monaco), () => {
+              if (!canSaveActiveFile || isSavingActiveFile) {
+                return;
+              }
+
+              void saveActiveFile(editor.getValue());
+            });
           }}
         />
       </div>
@@ -169,12 +212,17 @@ export function EditorWorkspace() {
               }`}
               disabled={!canSaveActiveFile || isSavingActiveFile}
               onClick={() => {
-                void saveActiveFile();
+                void saveActiveFile(draftContent);
               }}
               type="button"
             >
               <Icon icon="codicon:save" className="h-3.5 w-3.5" />
               <span>{isSavingActiveFile ? "Saving" : "Save"}</span>
+              {!isSavingActiveFile && (
+                <span className="rounded border border-[var(--border)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+                  {saveShortcutLabel}
+                </span>
+              )}
             </button>
           )}
         </div>

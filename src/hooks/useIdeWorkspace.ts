@@ -29,6 +29,7 @@ const DEFAULT_IDE_PREFERENCES: IdePreferences = {
   markdownWordWrap: true,
   minimap: false,
   renderWhitespace: "selection",
+  saveShortcut: "mod+s",
   scrollBeyondLastLine: false,
   smoothScrolling: true,
   tabSize: 4,
@@ -158,6 +159,17 @@ export function useIdeWorkspace() {
   }, [activeFileId]);
 
   useEffect(() => {
+    const hasUnsavedChanges = files.some((file) => file.content !== file.savedContent);
+    const baseTitle = "Skills management";
+
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    document.title = hasUnsavedChanges ? `• ${baseTitle}` : baseTitle;
+  }, [files]);
+
+  useEffect(() => {
     let cancelled = false;
 
     setSystemSkillsLoading(true);
@@ -280,13 +292,14 @@ export function useIdeWorkspace() {
     }));
   }
 
-  function saveActiveFile() {
+  function saveActiveFile(nextContent?: string) {
     if (!activeFile?.isWritable || !activeFile.rootPath || !activeFile.relativePath) {
       return Promise.resolve();
     }
 
     const activeSkill = systemSkills.find((skill) => skill.rootPath === activeFile.rootPath);
     const fileToSave = activeFile;
+    const contentToSave = nextContent ?? fileToSave.content;
 
     setIsSavingActiveFile(true);
     setActiveFileSaveError(null);
@@ -294,7 +307,7 @@ export function useIdeWorkspace() {
     return invoke("save_system_skill_file", {
       rootPath: fileToSave.rootPath,
       relativePath: fileToSave.relativePath,
-      content: fileToSave.content,
+      content: contentToSave,
     })
       .then(async () => {
         setFiles((current) =>
@@ -302,7 +315,8 @@ export function useIdeWorkspace() {
             file.id === fileToSave.id
               ? {
                   ...file,
-                  savedContent: file.content,
+                  content: contentToSave,
+                  savedContent: contentToSave,
                 }
               : file,
           ),

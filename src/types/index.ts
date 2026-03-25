@@ -7,6 +7,7 @@ export type { IdePreferences } from "./ide-preferences";
 export type { Language } from "./language";
 export type { MarketplaceSkill } from "./marketplace-skill";
 export type { MarketplaceSkillFile } from "./marketplace-skill-file";
+export type { SaveShortcut } from "./save-shortcut";
 export type { SidebarView } from "./sidebar-view";
 export type { SkillScanResponse } from "./skill-scan-response";
 export type { SkillTreeResponse } from "./skill-tree-response";
