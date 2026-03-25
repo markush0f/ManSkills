@@ -63,6 +63,45 @@ function flattenSystemSkillTree(nodes: SystemSkillTreeNode[]): SystemSkill[] {
   });
 }
 
+function buildSystemSkillFiles(
+  skill: SystemSkill,
+  response: SystemSkillContentResponse,
+): IdeFile[] {
+  const workspaceRoot = getSystemSkillWorkspaceRoot(skill);
+
+  return response.files.map((file) => ({
+    id: getSystemSkillFileId(skill, file.relativePath),
+    path: `${workspaceRoot}/${file.relativePath}`,
+    language: file.language,
+    content: file.content,
+    savedContent: file.content,
+    rootPath: response.rootPath,
+    relativePath: file.relativePath,
+    isWritable: true,
+  }));
+}
+
+function mergeRefreshedSystemSkillFiles(currentFiles: IdeFile[], refreshedFiles: IdeFile[]): IdeFile[] {
+  const refreshedFileMap = new Map(refreshedFiles.map((file) => [file.id, file]));
+
+  return currentFiles.map((file) => {
+    const refreshedFile = refreshedFileMap.get(file.id);
+
+    if (!refreshedFile) {
+      return file;
+    }
+
+    if (file.content !== file.savedContent) {
+      return {
+        ...file,
+        savedContent: refreshedFile.savedContent,
+      };
+    }
+
+    return refreshedFile;
+  });
+}
+
 export function useIdeWorkspace() {
   const [files, setFiles] = useState(initialFiles);
   const [openFileIds, setOpenFileIds] = useState<string[]>(initialOpenFileIds);
@@ -124,20 +163,13 @@ export function useIdeWorkspace() {
     setSystemSkillsLoading(true);
     setSystemSkillsError(null);
 
-    invoke<SkillTreeResponse>("scan_system_skills_tree")
+    fetchSystemSkillTree()
       .then((response) => {
         if (cancelled) {
           return;
         }
 
-        const nextSystemSkills = flattenSystemSkillTree(response.roots);
-
-        startTransition(() => {
-          setSystemSkillTree(response.roots);
-          setSystemSkills(nextSystemSkills);
-          setSystemSkillScanMs(response.durationMs);
-          setSystemSkillsLoading(false);
-        });
+        applySystemSkillTree(response);
       })
       .catch((error) => {
         if (cancelled) {
@@ -156,6 +188,46 @@ export function useIdeWorkspace() {
       cancelled = true;
     };
   }, []);
+
+  function applySystemSkillTree(response: SkillTreeResponse) {
+    const nextSystemSkills = flattenSystemSkillTree(response.roots);
+
+    startTransition(() => {
+      setSystemSkillTree(response.roots);
+      setSystemSkills(nextSystemSkills);
+      setSystemSkillScanMs(response.durationMs);
+      setSystemSkillsLoading(false);
+    });
+  }
+
+  function fetchSystemSkillTree() {
+    return invoke<SkillTreeResponse>("scan_system_skills_tree");
+  }
+
+  function refreshSystemSkillTree() {
+    return fetchSystemSkillTree().then((response) => {
+      applySystemSkillTree(response);
+      return response;
+    });
+  }
+
+  function loadSystemSkillFiles(skill: SystemSkill) {
+    return invoke<SystemSkillContentResponse>("load_system_skill", {
+      rootPath: skill.rootPath,
+    });
+  }
+
+  function refreshSystemSkillFiles(skill: SystemSkill) {
+    return loadSystemSkillFiles(skill).then((response) => {
+      const refreshedFiles = buildSystemSkillFiles(skill, response);
+
+      startTransition(() => {
+        setFiles((current) => mergeRefreshedSystemSkillFiles(current, refreshedFiles));
+      });
+
+      return response;
+    });
+  }
 
   function openFile(fileId: string) {
     if (!openFileIds.includes(fileId)) {
@@ -213,18 +285,21 @@ export function useIdeWorkspace() {
       return Promise.resolve();
     }
 
+    const activeSkill = systemSkills.find((skill) => skill.rootPath === activeFile.rootPath);
+    const fileToSave = activeFile;
+
     setIsSavingActiveFile(true);
     setActiveFileSaveError(null);
 
     return invoke("save_system_skill_file", {
-      rootPath: activeFile.rootPath,
-      relativePath: activeFile.relativePath,
-      content: activeFile.content,
+      rootPath: fileToSave.rootPath,
+      relativePath: fileToSave.relativePath,
+      content: fileToSave.content,
     })
-      .then(() => {
+      .then(async () => {
         setFiles((current) =>
           current.map((file) =>
-            file.id === activeFile.id
+            file.id === fileToSave.id
               ? {
                   ...file,
                   savedContent: file.content,
@@ -232,9 +307,21 @@ export function useIdeWorkspace() {
               : file,
           ),
         );
+
+        if (!activeSkill) {
+          return;
+        }
+
+        try {
+          await refreshSystemSkillFiles(activeSkill);
+          await refreshSystemSkillTree();
+        } catch (error) {
+          console.error(`Saved file but failed to refresh skill: ${fileToSave.path}`, error);
+          setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
+        }
       })
       .catch((error) => {
-        console.error(`Failed to save system skill file: ${activeFile.path}`, error);
+        console.error(`Failed to save system skill file: ${fileToSave.path}`, error);
         setActiveFileSaveError("No se pudo guardar el archivo.");
       })
       .finally(() => {
@@ -284,21 +371,9 @@ export function useIdeWorkspace() {
 
     setOpeningSystemSkillId(skill.id);
 
-    invoke<SystemSkillContentResponse>("load_system_skill", {
-      rootPath: skill.rootPath,
-    })
+    loadSystemSkillFiles(skill)
       .then((response) => {
-        const workspaceRoot = getSystemSkillWorkspaceRoot(skill);
-        const createdFiles: IdeFile[] = response.files.map((file) => ({
-          id: getSystemSkillFileId(skill, file.relativePath),
-          path: `${workspaceRoot}/${file.relativePath}`,
-          language: file.language,
-          content: file.content,
-          savedContent: file.content,
-          rootPath: response.rootPath,
-          relativePath: file.relativePath,
-          isWritable: true,
-        }));
+        const createdFiles = buildSystemSkillFiles(skill, response);
         const nextFileId =
           createdFiles.find((file) => file.id === targetFileId)?.id ??
           createdFiles.find((file) => file.id === getSystemSkillMainFileId(skill))?.id ??
