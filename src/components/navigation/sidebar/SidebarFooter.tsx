@@ -1,3 +1,8 @@
+import { Icon, addCollection } from "@iconify/react";
+import { icons as codiconIcons } from "@iconify-json/codicon";
+
+addCollection(codiconIcons);
+
 type SidebarFooterProps = {
   compact: boolean;
   isMarketplaceView: boolean;
@@ -8,43 +13,39 @@ type SidebarFooterProps = {
 
 function FooterButton({
   active,
-  compact,
+  icon,
   label,
   onClick,
-  shortLabel,
-  suffix,
   tone,
 }: {
   active: boolean;
-  compact: boolean;
+  icon: string;
   label: string;
   onClick: () => void;
-  shortLabel: string;
-  suffix: string;
   tone: "accent" | "cyan" | "violet";
 }) {
-  const dotTone =
+  const iconTone =
     tone === "accent"
-      ? "bg-[var(--accent)]"
+      ? "text-[var(--accent)]"
       : tone === "cyan"
-        ? "bg-[var(--cyan)]"
-        : "bg-[var(--violet)]";
+        ? "text-[var(--cyan)]"
+        : "text-[var(--violet)]";
 
   return (
     <button
-      className={`flex w-full items-center justify-between rounded-[10px] border px-3 py-2 text-left text-sm transition ${
+      aria-label={label}
+      className={`inline-flex h-10 w-full items-center justify-center rounded-[10px] border transition ${
         active
           ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,var(--violet-soft-strong),rgba(255,255,255,0.03))] text-[var(--violet-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
           : "border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
       }`}
       onClick={onClick}
+      title={label}
       type="button"
     >
-      <span className="inline-flex min-w-0 items-center gap-2 truncate">
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotTone}`} />
-        <span className="truncate">{compact ? shortLabel : label}</span>
+      <span className={`inline-flex h-4 w-4 items-center justify-center ${iconTone}`}>
+        <Icon icon={icon} className="h-3.5 w-3.5" />
       </span>
-      {!compact && <span className="font-mono text-[10px] uppercase tracking-[0.18em]">{suffix}</span>}
     </button>
   );
 }
@@ -58,23 +59,19 @@ export function SidebarFooter({
 }: SidebarFooterProps) {
   return (
     <div className={`border-t border-[var(--border)] ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
-      <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
         <FooterButton
           active={isMarketplaceView}
-          compact={compact}
+          icon="codicon:extensions"
           label="Marketplace"
           onClick={openMarketplace}
-          shortLabel="MK"
-          suffix="Alt"
           tone="accent"
         />
         <FooterButton
           active={isSettingsView}
-          compact={compact}
+          icon="codicon:settings-gear"
           label="Configuracion"
           onClick={openSettings}
-          shortLabel="CFG"
-          suffix="Pref"
           tone="cyan"
         />
       </div>

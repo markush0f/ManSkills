@@ -68,7 +68,7 @@ export function Sidebar() {
       <div
         className={`relative z-[1] flex-1 overflow-auto border-r border-[var(--border)] ${compact ? "px-2 pb-2 pt-0" : "px-2 pb-2 pt-0"}`}
       >
-        <div className="space-y-4 rounded-b-[14px] border-x border-b border-white/[0.03] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="space-y-4 rounded-b-[14px] border-x border-b border-white/[0.03] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-1.5 pb-1.5 pt-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           {hasSystemSkillTree ? (
             filteredSystemSkillTree.length > 0 ? (
               <SystemSkillTreeList
