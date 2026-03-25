@@ -1,0 +1,104 @@
+import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../../types";
+
+export function getFileTone(language?: IdeFile["language"]) {
+  if (language === "md") {
+    return "border-[#d79432]/25 bg-[#d79432]/10 text-[#ffd08b]";
+  }
+
+  if (language === "json") {
+    return "border-[#4f8f89]/25 bg-[#4f8f89]/10 text-[#9dd8d1]";
+  }
+
+  return "border-[var(--border)] bg-white/5 text-[var(--muted)]";
+}
+
+export function getFileBadgeLabel(language?: IdeFile["language"]) {
+  if (language === "json") {
+    return "{}";
+  }
+
+  if (language === "md") {
+    return "MD";
+  }
+
+  return language?.toUpperCase().slice(0, 2) ?? "--";
+}
+
+export function getSystemSkillSourceLabel(source: SystemSkill["source"]) {
+  if (source === "managed") {
+    return "Managed";
+  }
+
+  if (source === "workspace") {
+    return "Workspace";
+  }
+
+  return "System";
+}
+
+export function matchesSidebarQuery(query: string, ...values: Array<string | undefined>) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (normalizedQuery.length === 0) {
+    return true;
+  }
+
+  return values.some((value) => value?.toLowerCase().includes(normalizedQuery));
+}
+
+export function filterTreeNodes(nodes: TreeNode[], files: IdeFile[], query: string): TreeNode[] {
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery.length === 0) {
+    return nodes;
+  }
+
+  return nodes.reduce<TreeNode[]>((filteredNodes, node) => {
+    if (node.kind === "file") {
+      const file = files.find((entry) => entry.id === node.fileId);
+
+      if (matchesSidebarQuery(normalizedQuery, node.name, node.path, file?.path)) {
+        filteredNodes.push(node);
+      }
+
+      return filteredNodes;
+    }
+
+    const filteredChildren = filterTreeNodes(node.children, files, normalizedQuery);
+
+    if (matchesSidebarQuery(normalizedQuery, node.name, node.path) || filteredChildren.length > 0) {
+      filteredNodes.push({ ...node, children: filteredChildren });
+    }
+
+    return filteredNodes;
+  }, []);
+}
+
+export function filterSystemSkillTreeNodes(nodes: SystemSkillTreeNode[], query: string): SystemSkillTreeNode[] {
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery.length === 0) {
+    return nodes;
+  }
+
+  return nodes.reduce<SystemSkillTreeNode[]>((filteredNodes, node) => {
+    const filteredChildren = filterSystemSkillTreeNodes(node.children, normalizedQuery);
+
+    const nodeMatches = matchesSidebarQuery(
+      normalizedQuery,
+      node.name,
+      node.path,
+      node.skill?.name,
+      node.skill?.summary,
+      node.skill?.rootPath,
+      node.skill?.manifestPath,
+      node.file?.relativePath,
+    );
+
+    if (nodeMatches || filteredChildren.length > 0) {
+      filteredNodes.push({ ...node, children: filteredChildren });
+    }
+
+    return filteredNodes;
+  }, []);
+}
