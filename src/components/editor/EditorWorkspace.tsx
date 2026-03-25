@@ -223,7 +223,7 @@ export function EditorWorkspace() {
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
-      <div className="flex min-w-0 items-center justify-between border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(11,16,22,0.96),rgba(6,10,14,0.96))] shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
+      <div className="flex min-w-0 items-center justify-between border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
         <div className="min-w-0 flex-1 overflow-hidden">
           <WorkbenchTabsBar
             activeTabId={activeFileId}

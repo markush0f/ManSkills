@@ -13,6 +13,7 @@ function FooterButton({
   onClick,
   shortLabel,
   suffix,
+  tone,
 }: {
   active: boolean;
   compact: boolean;
@@ -20,7 +21,15 @@ function FooterButton({
   onClick: () => void;
   shortLabel: string;
   suffix: string;
+  tone: "accent" | "cyan" | "violet";
 }) {
+  const dotTone =
+    tone === "accent"
+      ? "bg-[var(--accent)]"
+      : tone === "cyan"
+        ? "bg-[var(--cyan)]"
+        : "bg-[var(--violet)]";
+
   return (
     <button
       className={`flex w-full items-center justify-between rounded-[10px] border px-3 py-2 text-left text-sm transition ${
@@ -31,7 +40,10 @@ function FooterButton({
       onClick={onClick}
       type="button"
     >
-      <span className="truncate">{compact ? shortLabel : label}</span>
+      <span className="inline-flex min-w-0 items-center gap-2 truncate">
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotTone}`} />
+        <span className="truncate">{compact ? shortLabel : label}</span>
+      </span>
       {!compact && <span className="font-mono text-[10px] uppercase tracking-[0.18em]">{suffix}</span>}
     </button>
   );
@@ -54,6 +66,7 @@ export function SidebarFooter({
           onClick={openMarketplace}
           shortLabel="MK"
           suffix="Alt"
+          tone="accent"
         />
         <FooterButton
           active={isSettingsView}
@@ -62,6 +75,7 @@ export function SidebarFooter({
           onClick={openSettings}
           shortLabel="CFG"
           suffix="Pref"
+          tone="cyan"
         />
       </div>
     </div>
