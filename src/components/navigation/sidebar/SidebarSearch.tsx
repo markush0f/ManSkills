@@ -16,7 +16,7 @@ export function SidebarSearch({ query, setQuery }: SidebarSearchProps) {
         <Icon icon="codicon:search" className="h-3.5 w-3.5" />
       </span>
       <TextInput
-        className="h-10 rounded-[12px] border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] pl-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+        className="h-10 rounded-[12px] border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.015))] pl-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_0_0_1px_rgba(0,0,0,0.06)]"
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Search tree"
         value={query}

@@ -34,9 +34,9 @@ function FooterButton({
   return (
     <button
       aria-label={label}
-      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-[12px] px-3 transition ${
+      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-[13px] px-3 transition ${
         active
-          ? "bg-[linear-gradient(180deg,var(--violet-soft-strong),rgba(255,255,255,0.03))] text-[var(--violet-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          ? "bg-[linear-gradient(180deg,var(--violet-soft-strong),rgba(255,255,255,0.03))] text-[var(--violet-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(138,108,230,0.06)]"
           : "bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
       }`}
       onClick={onClick}
@@ -70,7 +70,7 @@ export function SidebarFooter({
       <div
         className={
           isHeader
-            ? "flex items-center gap-2"
+            ? "flex items-center gap-1.5"
             : "flex items-center justify-center gap-2 rounded-[14px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
         }
       >

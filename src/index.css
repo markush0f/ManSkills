@@ -11,6 +11,7 @@
   --panel: rgba(11, 17, 23, 0.9);
   --panel-solid: #0d141b;
   --panel-elevated: rgba(14, 22, 30, 0.94);
+  --panel-tint: rgba(255, 255, 255, 0.018);
   --border: rgba(169, 190, 210, 0.1);
   --border-strong: rgba(217, 98, 59, 0.36);
   --border-soft: rgba(255, 255, 255, 0.05);
@@ -32,11 +33,16 @@
   --ink: #d7e2ec;
   --font-soft: "Segoe UI Variable", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
   --font-code: "Fira Code", "Cascadia Code", "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
-  --code-bg: #091119;
-  --editor-surface: #091119;
+  --sidebar-surface: #08111a;
+  --editor-surface: #0b1520;
+  --code-bg: var(--editor-surface);
+  --workbench-surface: #071019;
+  --sidebar-bg: linear-gradient(180deg, rgba(8, 17, 26, 0.99), rgba(6, 12, 19, 0.99));
+  --editor-bg: linear-gradient(180deg, rgba(11, 21, 32, 0.99), rgba(9, 18, 28, 0.99));
   --app-header-height: 56px;
   --editor-chrome: rgba(4, 8, 12, 0.98);
   --topbar-bg: linear-gradient(180deg, rgba(11, 16, 22, 0.96), rgba(6, 10, 14, 0.96));
+  --topbar-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.02);
   --scrollbar-track: rgba(255, 255, 255, 0.03);
   --scrollbar-thumb: rgba(217, 98, 59, 0.28);
   --scrollbar-thumb-hover: rgba(239, 142, 73, 0.42);
@@ -55,6 +61,7 @@ body {
   background:
     radial-gradient(circle at top left, rgba(138, 108, 230, 0.08), transparent 26%),
     radial-gradient(circle at top right, rgba(217, 98, 59, 0.08), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(79, 168, 199, 0.05), transparent 20%),
     linear-gradient(180deg, #04090d 0%, #070d12 52%, #091117 100%);
   color: var(--text);
   font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;

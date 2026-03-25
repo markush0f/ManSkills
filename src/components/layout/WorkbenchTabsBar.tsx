@@ -35,7 +35,7 @@ export function WorkbenchTabsBar({
   onOpenTab,
 }: WorkbenchTabsBarProps) {
   return (
-    <div className="flex h-full min-w-0 items-center gap-1 overflow-x-auto px-2 py-1.5">
+    <div className="flex h-full min-w-0 items-center gap-1.5 overflow-x-auto px-2 py-1.5">
       {fileTabs.map((file) => {
         const isDirty = file.content !== file.savedContent;
         const isActive = file.id === activeTabId;
@@ -43,10 +43,10 @@ export function WorkbenchTabsBar({
         return (
           <button
             key={file.id}
-            className={`relative inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
+            className={`relative inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[13px] transition ${
               isActive
                 ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,rgba(138,108,230,0.16),rgba(255,255,255,0.03))] text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] hover:text-[var(--text)]"
+                : "border-transparent bg-transparent text-[var(--muted)] hover:border-white/[0.04] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(file.id)}
             type="button"
@@ -80,10 +80,10 @@ export function WorkbenchTabsBar({
         return (
           <button
             key={tab.id}
-            className={`relative inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
+            className={`relative inline-flex h-10 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[13px] transition ${
               isActive
                 ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,rgba(138,108,230,0.16),rgba(255,255,255,0.03))] text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] hover:text-[var(--text)]"
+                : "border-transparent bg-transparent text-[var(--muted)] hover:border-white/[0.04] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(tab.id)}
             type="button"

@@ -184,18 +184,18 @@ export function EditorWorkspace() {
               inherit: true,
               rules: [],
               colors: {
-                "editor.background": "#091119",
+                "editor.background": "#0b1520",
                 "editorCursor.foreground": "#a78bfa",
                 "editor.selectionBackground": "#8a6ce633",
                 "editor.inactiveSelectionBackground": "#8a6ce61f",
-                "editor.lineHighlightBackground": "#120f1d",
+                "editor.lineHighlightBackground": "#111c28",
                 "editor.lineHighlightBorder": "#8a6ce629",
-                "editorWidget.background": "#091018",
-                "editorLineNumber.foreground": "#62707f",
+                "editorWidget.background": "#0e1823",
+                "editorLineNumber.foreground": "#7a889a",
                 "editorLineNumber.activeForeground": "#c6b8ff",
-                "editorGutter.background": "#091119",
-                "editorIndentGuide.background1": "#141d27",
-                "editorIndentGuide.activeBackground1": "#46356f",
+                "editorGutter.background": "#0b1520",
+                "editorIndentGuide.background1": "#1b2632",
+                "editorIndentGuide.activeBackground1": "#584592",
               },
             });
           }}
@@ -222,8 +222,8 @@ export function EditorWorkspace() {
   }
 
   return (
-    <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
-      <div className="flex h-[var(--app-header-height)] min-w-0 items-center justify-between border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
+    <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[image:var(--editor-bg)]`}>
+      <div className="flex h-[var(--app-header-height)] min-w-0 items-center justify-between border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
         <div className="min-w-0 flex-1 overflow-hidden">
           <WorkbenchTabsBar
             activeTabId={activeFileId}
@@ -234,7 +234,7 @@ export function EditorWorkspace() {
         </div>
         <div className="flex shrink-0 items-center gap-2 px-2">
           {supportsPreview && (
-            <div className="flex items-center gap-1 rounded-[9px] border border-white/[0.04] bg-white/[0.02] p-1">
+            <div className="flex items-center gap-1 rounded-[10px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.01))] p-1">
               {PREVIEW_MODES.map(({ icon, label, mode }) =>
                 renderPreviewModeButton(mode, label, icon),
               )}
