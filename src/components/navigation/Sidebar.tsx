@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { Icon, addCollection } from "@iconify/react";
+import { icons as codiconIcons } from "@iconify-json/codicon";
+import { useMemo, useState } from "react";
 
 import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../types";
 import { getFileName } from "../../ide/utils";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
+import { TextInput } from "../shared/formControls";
 import { shellPanelClass } from "../shared/ui";
+
+addCollection(codiconIcons);
 
 function getFileTone(language?: IdeFile["language"]) {
   if (language === "md") {
@@ -28,6 +33,73 @@ function getFileBadgeLabel(language?: IdeFile["language"]) {
   }
 
   return language?.toUpperCase().slice(0, 2) ?? "--";
+}
+
+function matchesSidebarQuery(query: string, ...values: Array<string | undefined>) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (normalizedQuery.length === 0) {
+    return true;
+  }
+
+  return values.some((value) => value?.toLowerCase().includes(normalizedQuery));
+}
+
+function filterTreeNodes(nodes: TreeNode[], files: IdeFile[], query: string): TreeNode[] {
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery.length === 0) {
+    return nodes;
+  }
+
+  return nodes.reduce<TreeNode[]>((filteredNodes, node) => {
+    if (node.kind === "file") {
+      const file = files.find((entry) => entry.id === node.fileId);
+
+      if (matchesSidebarQuery(normalizedQuery, node.name, node.path, file?.path)) {
+        filteredNodes.push(node);
+      }
+
+      return filteredNodes;
+    }
+
+    const filteredChildren = filterTreeNodes(node.children, files, normalizedQuery);
+
+    if (matchesSidebarQuery(normalizedQuery, node.name, node.path) || filteredChildren.length > 0) {
+      filteredNodes.push({ ...node, children: filteredChildren });
+    }
+
+    return filteredNodes;
+  }, []);
+}
+
+function filterSystemSkillTreeNodes(nodes: SystemSkillTreeNode[], query: string): SystemSkillTreeNode[] {
+  const normalizedQuery = query.trim();
+
+  if (normalizedQuery.length === 0) {
+    return nodes;
+  }
+
+  return nodes.reduce<SystemSkillTreeNode[]>((filteredNodes, node) => {
+    const filteredChildren = filterSystemSkillTreeNodes(node.children, normalizedQuery);
+
+    const nodeMatches = matchesSidebarQuery(
+      normalizedQuery,
+      node.name,
+      node.path,
+      node.skill?.name,
+      node.skill?.summary,
+      node.skill?.rootPath,
+      node.skill?.manifestPath,
+      node.file?.relativePath,
+    );
+
+    if (nodeMatches || filteredChildren.length > 0) {
+      filteredNodes.push({ ...node, children: filteredChildren });
+    }
+
+    return filteredNodes;
+  }, []);
 }
 
 function TreeList({
@@ -132,6 +204,7 @@ function SystemSkillTreeList({
   onOpenSkill,
   onOpenSkillFile,
   openingSkillId,
+  searchActive,
   onToggleNode,
 }: {
   compact: boolean;
@@ -141,6 +214,7 @@ function SystemSkillTreeList({
   onOpenSkill: (skill: SystemSkill) => void;
   onOpenSkillFile: (skill: SystemSkill, relativePath: string) => void;
   openingSkillId: string | null;
+  searchActive: boolean;
   onToggleNode: (nodeId: string) => void;
   depth?: number;
 }) {
@@ -148,7 +222,7 @@ function SystemSkillTreeList({
     <>
       {nodes.map((node) => {
         if (node.kind === "root" || node.kind === "directory") {
-          const isExpanded = expandedNodeIds.has(node.id);
+          const isExpanded = searchActive || expandedNodeIds.has(node.id);
 
           return (
             <div key={node.id} className="space-y-1.5">
@@ -181,6 +255,7 @@ function SystemSkillTreeList({
                     onOpenSkill={onOpenSkill}
                     onOpenSkillFile={onOpenSkillFile}
                     openingSkillId={openingSkillId}
+                    searchActive={searchActive}
                     onToggleNode={onToggleNode}
                   />
                 </div>
@@ -195,7 +270,7 @@ function SystemSkillTreeList({
             return null;
           }
 
-          const isExpanded = expandedNodeIds.has(node.id);
+          const isExpanded = searchActive || expandedNodeIds.has(node.id);
 
           return (
             <div key={node.id} className="space-y-1.5">
@@ -240,6 +315,7 @@ function SystemSkillTreeList({
                     onOpenSkill={onOpenSkill}
                     onOpenSkillFile={onOpenSkillFile}
                     openingSkillId={openingSkillId}
+                    searchActive={searchActive}
                     onToggleNode={onToggleNode}
                   />
                 </div>
@@ -302,7 +378,14 @@ export function Sidebar() {
   } = useIde();
   const { isSidebarCompact: compact } = useIdeLayout();
   const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(() => new Set());
+  const [query, setQuery] = useState("");
   const hasSystemSkillTree = !systemSkillsLoading && !systemSkillsError;
+  const filteredSystemSkillTree = useMemo(
+    () => filterSystemSkillTreeNodes(systemSkillTree, query),
+    [query, systemSkillTree],
+  );
+  const filteredTree = useMemo(() => filterTreeNodes(tree, files, query), [files, query, tree]);
+  const searchActive = query.trim().length > 0;
 
   function toggleSystemSkillNode(nodeId: string) {
     setExpandedSystemSkillNodeIds((current) => {
@@ -323,28 +406,47 @@ export function Sidebar() {
       className={`${shellPanelClass} flex h-full min-h-0 flex-col overflow-hidden text-[13px]`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
+      <div className="border-b border-[var(--border)] px-2 py-2">
+        <div className="relative">
+          <span className="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-[var(--muted)]">
+            <Icon icon="codicon:search" className="h-3.5 w-3.5" />
+          </span>
+          <TextInput
+            className="pl-9"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search tree"
+            value={query}
+          />
+        </div>
+      </div>
+
       <div className={`flex-1 overflow-auto ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
         <div className="space-y-4">
           {hasSystemSkillTree ? (
-            systemSkillTree.length > 0 ? (
+            filteredSystemSkillTree.length > 0 ? (
               <SystemSkillTreeList
                 compact={compact}
                 expandedNodeIds={expandedSystemSkillNodeIds}
-                nodes={systemSkillTree}
+                nodes={filteredSystemSkillTree}
                 onOpenSkill={openSystemSkill}
                 onOpenSkillFile={openSystemSkillFile}
                 openingSkillId={openingSystemSkillId}
+                searchActive={searchActive}
                 onToggleNode={toggleSystemSkillNode}
               />
             ) : (
-              <p className="text-xs text-[var(--muted)]">No se encontraron skills con manifiesto `SKILL.md`.</p>
+              <p className="text-xs text-[var(--muted)]">
+                {searchActive
+                  ? "No hay resultados para esa busqueda."
+                  : "No se encontraron skills con manifiesto `SKILL.md`."}
+              </p>
             )
           ) : (
             <TreeList
               activeFileId={activeFileId}
               compact={compact}
               files={files}
-              nodes={tree}
+              nodes={filteredTree}
               onOpenFile={openFile}
             />
           )}
