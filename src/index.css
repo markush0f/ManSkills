@@ -34,6 +34,7 @@
   --font-code: "Fira Code", "Cascadia Code", "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
   --code-bg: #091119;
   --editor-surface: #091119;
+  --app-header-height: 56px;
   --editor-chrome: rgba(4, 8, 12, 0.98);
   --topbar-bg: linear-gradient(180deg, rgba(11, 16, 22, 0.96), rgba(6, 10, 14, 0.96));
   --scrollbar-track: rgba(255, 255, 255, 0.03);

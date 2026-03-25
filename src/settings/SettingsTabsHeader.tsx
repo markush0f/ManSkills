@@ -21,7 +21,7 @@ export function SettingsTabsHeader({
   openSettings,
 }: SettingsTabsHeaderProps) {
   return (
-    <div className="min-w-0 overflow-hidden border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
+    <div className="min-w-0 overflow-hidden border-b border-[var(--border)] bg-[image:var(--topbar-bg)]">
       <WorkbenchTabsBar
         activeTabId="__settings__"
         extraTabs={[

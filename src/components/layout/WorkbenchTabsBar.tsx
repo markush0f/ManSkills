@@ -35,7 +35,7 @@ export function WorkbenchTabsBar({
   onOpenTab,
 }: WorkbenchTabsBarProps) {
   return (
-    <div className="flex min-w-0 items-center gap-1 overflow-x-auto px-2 py-1.5">
+    <div className="flex h-full min-w-0 items-center gap-1 overflow-x-auto px-2 py-1.5">
       {fileTabs.map((file) => {
         const isDirty = file.content !== file.savedContent;
         const isActive = file.id === activeTabId;
