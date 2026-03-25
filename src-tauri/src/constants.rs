@@ -1,5 +1,9 @@
 mod managed_skill_source_patterns;
+mod provider_scan_root_env_keys;
+mod provider_scan_root_home_directories;
 mod skipped_directory_names;
 
 pub use managed_skill_source_patterns::MANAGED_SKILL_SOURCE_PATTERNS;
+pub use provider_scan_root_env_keys::PROVIDER_SCAN_ROOT_ENV_KEYS;
+pub use provider_scan_root_home_directories::PROVIDER_SCAN_ROOT_HOME_DIRECTORIES;
 pub use skipped_directory_names::SKIPPED_DIRECTORY_NAMES;

@@ -3,7 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::constants::{MANAGED_SKILL_SOURCE_PATTERNS, SKIPPED_DIRECTORY_NAMES};
+use crate::constants::{
+    MANAGED_SKILL_SOURCE_PATTERNS, PROVIDER_SCAN_ROOT_ENV_KEYS,
+    PROVIDER_SCAN_ROOT_HOME_DIRECTORIES, SKIPPED_DIRECTORY_NAMES,
+};
 
 pub const SKILL_MANIFEST_NAME: &str = "SKILL.md";
 pub const PREVIEW_BYTES: u64 = 16 * 1024;
@@ -147,16 +150,18 @@ fn default_scan_roots() -> Vec<String> {
 
     if let Some(home_dir) = dirs::home_dir() {
         roots.push(home_dir.to_string_lossy().into_owned());
+
+        for relative_directory in PROVIDER_SCAN_ROOT_HOME_DIRECTORIES {
+            roots.push(
+                home_dir
+                    .join(relative_directory)
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        }
     }
 
-    for env_key in [
-        "CODEX_HOME",
-        "XDG_CONFIG_HOME",
-        "XDG_DATA_HOME",
-        "APPDATA",
-        "LOCALAPPDATA",
-        "PROGRAMDATA",
-    ] {
+    for env_key in PROVIDER_SCAN_ROOT_ENV_KEYS {
         if let Ok(value) = std::env::var(env_key) {
             roots.push(value);
         }
