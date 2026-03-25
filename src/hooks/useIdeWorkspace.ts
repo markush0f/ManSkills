@@ -309,7 +309,7 @@ export function useIdeWorkspace() {
       relativePath: fileToSave.relativePath,
       content: contentToSave,
     })
-      .then(async () => {
+      .then(() => {
         setFiles((current) =>
           current.map((file) =>
             file.id === fileToSave.id
@@ -322,23 +322,20 @@ export function useIdeWorkspace() {
           ),
         );
 
-        if (!activeSkill) {
-          return;
-        }
+        setIsSavingActiveFile(false);
 
-        try {
-          await refreshSystemSkillFiles(activeSkill);
-          await refreshSystemSkillTree();
-        } catch (error) {
-          console.error(`Saved file but failed to refresh skill: ${fileToSave.path}`, error);
-          setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
+        if (activeSkill) {
+          void refreshSystemSkillFiles(activeSkill)
+            .then(() => refreshSystemSkillTree())
+            .catch((error) => {
+              console.error(`Saved file but failed to refresh skill: ${fileToSave.path}`, error);
+              setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
+            });
         }
       })
       .catch((error) => {
         console.error(`Failed to save system skill file: ${fileToSave.path}`, error);
         setActiveFileSaveError("No se pudo guardar el archivo.");
-      })
-      .finally(() => {
         setIsSavingActiveFile(false);
       });
   }

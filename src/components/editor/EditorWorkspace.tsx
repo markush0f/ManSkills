@@ -4,7 +4,7 @@ import Editor from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import { useDeferredValue, useEffect, useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
-import { getSaveShortcutLabel, matchesSaveShortcut } from "../../ide/utils";
+import { matchesSaveShortcut } from "../../ide/utils";
 import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -34,7 +34,6 @@ export function EditorWorkspace() {
   const canSaveActiveFile =
     Boolean(activeFile?.isWritable && activeFile.rootPath && activeFile.relativePath) &&
     activeFile.content !== activeFile.savedContent;
-  const saveShortcutLabel = getSaveShortcutLabel(preferences.saveShortcut);
 
   useEffect(() => {
     if (!supportsPreview) {
@@ -101,6 +100,29 @@ export function EditorWorkspace() {
     }
 
     return monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS;
+  }
+
+  function renderPreviewModeButton(
+    mode: "code" | "preview" | "split",
+    label: string,
+    icon: string,
+  ) {
+    const isActive = contentView === mode;
+
+    return (
+      <button
+        className={`inline-flex h-7 items-center rounded-[7px] border px-2.5 text-[11px] transition ${
+          isActive
+            ? "border-[var(--violet-border)] bg-[var(--violet-soft)] text-[var(--text)]"
+            : "border-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/[0.03] hover:text-[var(--text)]"
+        }`}
+        onClick={() => setContentView(mode)}
+        title={label}
+        type="button"
+      >
+        <Icon icon={icon} className="h-3.5 w-3.5" />
+      </button>
+    );
   }
 
   function renderCodeEditor() {
@@ -198,32 +220,17 @@ export function EditorWorkspace() {
           />
         </div>
         <div className="flex shrink-0 items-center gap-2 px-2">
+          {supportsPreview && (
+            <div className="flex items-center gap-1">
+              {renderPreviewModeButton("code", "Code", "codicon:code")}
+              {renderPreviewModeButton("preview", "Preview", "codicon:open-preview")}
+              {renderPreviewModeButton("split", "Split", "codicon:split-horizontal")}
+            </div>
+          )}
           {activeFileSaveError && (
             <span className="max-w-[220px] truncate text-[11px] text-[#ffb3a7]">
               {activeFileSaveError}
             </span>
-          )}
-          {activeFile.isWritable && (
-            <button
-              className={`inline-flex h-8 items-center gap-1.5 rounded-[8px] border px-2.5 text-[12px] transition ${
-                canSaveActiveFile && !isSavingActiveFile
-                  ? "border-[var(--violet-border)] bg-[var(--violet-soft)] text-[var(--text)] hover:bg-[var(--violet-soft-strong)]"
-                  : "border-[var(--border)] text-[var(--muted)]"
-              }`}
-              disabled={!canSaveActiveFile || isSavingActiveFile}
-              onClick={() => {
-                void saveActiveFile(draftContent);
-              }}
-              type="button"
-            >
-              <Icon icon="codicon:save" className="h-3.5 w-3.5" />
-              <span>{isSavingActiveFile ? "Saving" : "Save"}</span>
-              {!isSavingActiveFile && (
-                <span className="rounded border border-[var(--border)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
-                  {saveShortcutLabel}
-                </span>
-              )}
-            </button>
           )}
         </div>
       </div>
