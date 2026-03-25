@@ -14,7 +14,7 @@ function CategoryButton({
     <button
       className={`flex w-full items-center gap-2 border-l px-3 py-2.5 text-left text-[12px] transition ${
         active
-          ? "border-[var(--accent)] bg-[linear-gradient(90deg,rgba(217,98,59,0.14),rgba(255,255,255,0.02))] text-[var(--text)]"
+          ? "border-[var(--violet)] bg-[linear-gradient(90deg,rgba(138,108,230,0.14),rgba(255,255,255,0.02))] text-[var(--text)]"
           : "border-transparent text-[var(--muted)] hover:bg-white/[0.02] hover:text-[var(--text)]"
       }`}
       onClick={onClick}
@@ -22,7 +22,7 @@ function CategoryButton({
     >
       <span
         className={`h-1.5 w-1.5 rounded-full ${
-          active ? "bg-[var(--accent)]" : "bg-white/20"
+          active ? "bg-[var(--violet)]" : "bg-white/20"
         }`}
       />
       {label}

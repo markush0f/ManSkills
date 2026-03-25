@@ -25,7 +25,7 @@ function SettingRow({
   label: string;
 }) {
   return (
-    <div className={`${isFirst ? "" : "border-t border-t-[var(--border)] "}border-l-2 border-l-transparent px-4 py-3 transition hover:bg-white/[0.015] focus-within:border-l-[#2aa9ff] focus-within:bg-white/[0.03]`}>
+    <div className={`${isFirst ? "" : "border-t border-t-[var(--border)] "}border-l-2 border-l-transparent px-4 py-3 transition hover:bg-white/[0.015] focus-within:border-l-[var(--violet)] focus-within:bg-[var(--violet-soft)]`}>
       <div className="min-w-0">
         <p className="text-[13px] text-[var(--text)]">{label}</p>
         <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">{description}</p>

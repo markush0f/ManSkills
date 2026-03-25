@@ -1,6 +1,16 @@
+import { Icon, addCollection } from "@iconify/react";
+import { icons as codiconIcons } from "@iconify-json/codicon";
 import type { ReactNode } from "react";
 import type { IdeFile } from "../../types";
 import { getFileName } from "../../ide/utils";
+
+addCollection(codiconIcons);
+
+function CloseTabIcon() {
+  return (
+    <Icon icon="codicon:close" className="h-3.5 w-3.5" />
+  );
+}
 
 type ExtraTab = {
   badge: string;
@@ -35,7 +45,7 @@ export function WorkbenchTabsBar({
             key={file.id}
             className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
               isActive
-                ? "border-[var(--border)] bg-white/4 text-[var(--text)]"
+                ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,rgba(138,108,230,0.12),rgba(255,255,255,0.02))] text-[var(--text)]"
                 : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/[0.03] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(file.id)}
@@ -47,13 +57,13 @@ export function WorkbenchTabsBar({
             <span>{getFileName(file.path)}</span>
             {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />}
             <span
-              className="text-[var(--muted)] hover:text-[var(--text)]"
+              className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)] hover:text-[var(--text)]"
               onClick={(event) => {
                 event.stopPropagation();
                 onCloseTab(file.id);
               }}
             >
-              x
+              <CloseTabIcon />
             </span>
           </button>
         );
@@ -67,14 +77,14 @@ export function WorkbenchTabsBar({
             key={tab.id}
             className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
               isActive
-                ? "border-[var(--border)] bg-white/4 text-[var(--text)]"
+                ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,rgba(138,108,230,0.12),rgba(255,255,255,0.02))] text-[var(--text)]"
                 : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/[0.03] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(tab.id)}
             type="button"
           >
             {tab.icon ? (
-              <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)]">
+              <span className={`inline-flex h-4 w-4 items-center justify-center ${isActive ? "text-[var(--violet-strong)]" : "text-[var(--muted)]"}`}>
                 {tab.icon}
               </span>
             ) : (
@@ -84,13 +94,13 @@ export function WorkbenchTabsBar({
             )}
             <span>{tab.label}</span>
             <span
-              className="text-[var(--muted)] hover:text-[var(--text)]"
+              className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)] hover:text-[var(--text)]"
               onClick={(event) => {
                 event.stopPropagation();
                 onCloseTab(tab.id);
               }}
             >
-              x
+              <CloseTabIcon />
             </span>
           </button>
         );

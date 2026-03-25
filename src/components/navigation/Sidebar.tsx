@@ -58,7 +58,7 @@ function TreeList({
                 style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
               >
                 <span
-                  className={`inline-flex items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--accent)] ${
+                  className={`inline-flex items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--violet-strong)] ${
                     compact ? "h-4 w-4" : "h-5 w-5"
                   }`}
                 >
@@ -86,10 +86,10 @@ function TreeList({
         return (
           <button
             key={node.path}
-            className={`flex w-full items-center rounded-[10px] border border-transparent text-left transition ${
-              isActive
-                ? "border-[var(--border-strong)] bg-[linear-gradient(90deg,rgba(217,98,59,0.16),rgba(255,255,255,0.08))] text-[var(--text)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
-                : "text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]"
+              className={`flex w-full items-center rounded-[10px] border border-transparent text-left transition ${
+                isActive
+                  ? "border-[var(--violet-border)] bg-[linear-gradient(90deg,rgba(138,108,230,0.16),rgba(255,255,255,0.06))] text-[var(--text)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
+                  : "text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]"
             } ${compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-3 py-2 text-sm"}`}
             onClick={() => onOpenFile(node.fileId)}
             style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
@@ -162,7 +162,7 @@ function SystemSkillTreeList({
                 type="button"
               >
                 <span
-                  className={`inline-flex items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--accent)] ${
+                  className={`inline-flex items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--violet-strong)] ${
                     compact ? "h-4 w-4" : "h-5 w-5"
                   }`}
                 >
@@ -207,7 +207,7 @@ function SystemSkillTreeList({
                 title={skill.manifestPath}
               >
                 <button
-                  className={`inline-flex shrink-0 items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--accent)] ${
+                  className={`inline-flex shrink-0 items-center justify-center rounded border border-[var(--border)] bg-white/5 font-mono text-[10px] text-[var(--violet-strong)] ${
                     compact ? "h-4 w-4" : "h-5 w-5"
                   }`}
                   onClick={() => onToggleNode(node.id)}
@@ -356,7 +356,7 @@ export function Sidebar() {
           <button
             className={`flex w-full items-center justify-between rounded-[10px] border px-3 py-2 text-left text-sm transition ${
               isMarketplaceView
-                ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                ? "border-[var(--violet-border)] bg-[var(--violet-soft)] text-[var(--violet-strong)]"
                 : "border-[var(--border)] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
             }`}
             onClick={openMarketplace}
@@ -369,7 +369,7 @@ export function Sidebar() {
           <button
             className={`flex w-full items-center justify-between rounded-[10px] border px-3 py-2 text-left text-sm transition ${
               isSettingsView
-                ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                ? "border-[var(--violet-border)] bg-[var(--violet-soft)] text-[var(--violet-strong)]"
                 : "border-[var(--border)] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
             }`}
             onClick={openSettings}

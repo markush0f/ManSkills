@@ -96,12 +96,17 @@ export function EditorWorkspace() {
               rules: [],
               colors: {
                 "editor.background": "#091119",
+                "editorCursor.foreground": "#a78bfa",
+                "editor.selectionBackground": "#8a6ce633",
+                "editor.inactiveSelectionBackground": "#8a6ce61f",
+                "editor.lineHighlightBackground": "#120f1d",
+                "editor.lineHighlightBorder": "#8a6ce629",
                 "editorWidget.background": "#091018",
                 "editorLineNumber.foreground": "#62707f",
-                "editorLineNumber.activeForeground": "#c8d3de",
+                "editorLineNumber.activeForeground": "#c6b8ff",
                 "editorGutter.background": "#091119",
                 "editorIndentGuide.background1": "#141d27",
-                "editorIndentGuide.activeBackground1": "#24313d",
+                "editorIndentGuide.activeBackground1": "#46356f",
               },
             });
           }}

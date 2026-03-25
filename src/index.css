@@ -18,6 +18,11 @@
   --accent-strong: #ef8e49;
   --accent-soft: rgba(217, 98, 59, 0.12);
   --accent-soft-strong: rgba(217, 98, 59, 0.18);
+  --violet: #8a6ce6;
+  --violet-strong: #a78bfa;
+  --violet-soft: rgba(138, 108, 230, 0.12);
+  --violet-soft-strong: rgba(138, 108, 230, 0.18);
+  --violet-border: rgba(138, 108, 230, 0.34);
   --ink: #d7e2ec;
   --font-soft: "Segoe UI Variable", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
   --font-code: "Fira Code", "Cascadia Code", "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
