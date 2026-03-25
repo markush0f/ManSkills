@@ -10,7 +10,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             tauri_commands::scan_system_skills,
             tauri_commands::scan_system_skills_tree,
-            tauri_commands::load_system_skill
+            tauri_commands::load_system_skill,
+            tauri_commands::save_system_skill_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

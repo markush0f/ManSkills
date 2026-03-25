@@ -95,6 +95,8 @@ export function useIdeWorkspace() {
   const [systemSkillsError, setSystemSkillsError] = useState<string | null>(null);
   const [systemSkillScanMs, setSystemSkillScanMs] = useState<number | null>(null);
   const [openingSystemSkillId, setOpeningSystemSkillId] = useState<string | null>(null);
+  const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
+  const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
 
   const activeFile = files.find((file) => file.id === activeFileId) ?? files[0];
   const tree = buildTree(files);
@@ -111,6 +113,10 @@ export function useIdeWorkspace() {
   useEffect(() => {
     window.localStorage.setItem(IDE_PREFERENCES_KEY, JSON.stringify(preferences));
   }, [preferences]);
+
+  useEffect(() => {
+    setActiveFileSaveError(null);
+  }, [activeFileId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,6 +208,40 @@ export function useIdeWorkspace() {
     }));
   }
 
+  function saveActiveFile() {
+    if (!activeFile?.isWritable || !activeFile.rootPath || !activeFile.relativePath) {
+      return Promise.resolve();
+    }
+
+    setIsSavingActiveFile(true);
+    setActiveFileSaveError(null);
+
+    return invoke("save_system_skill_file", {
+      rootPath: activeFile.rootPath,
+      relativePath: activeFile.relativePath,
+      content: activeFile.content,
+    })
+      .then(() => {
+        setFiles((current) =>
+          current.map((file) =>
+            file.id === activeFile.id
+              ? {
+                  ...file,
+                  savedContent: file.content,
+                }
+              : file,
+          ),
+        );
+      })
+      .catch((error) => {
+        console.error(`Failed to save system skill file: ${activeFile.path}`, error);
+        setActiveFileSaveError("No se pudo guardar el archivo.");
+      })
+      .finally(() => {
+        setIsSavingActiveFile(false);
+      });
+  }
+
   function installMarketplaceSkill(skill: MarketplaceSkill) {
     const existingMainFile = files.find((file) => file.path === `skills/${skill.slug}/SKILL.md`);
 
@@ -255,6 +295,9 @@ export function useIdeWorkspace() {
           language: file.language,
           content: file.content,
           savedContent: file.content,
+          rootPath: response.rootPath,
+          relativePath: file.relativePath,
+          isWritable: true,
         }));
         const nextFileId =
           createdFiles.find((file) => file.id === targetFileId)?.id ??
@@ -290,8 +333,10 @@ export function useIdeWorkspace() {
     installedSkillSlugs,
     installMarketplaceSkill,
     isMarketplaceView: workspaceView === "marketplace",
+    isSavingActiveFile,
     isSettingsView: workspaceView === "settings",
     marketplaceSkills,
+    activeFileSaveError,
     openFile,
     openFiles,
     openMarketplace,
@@ -308,6 +353,7 @@ export function useIdeWorkspace() {
     tree,
     updateActiveFile,
     updatePreferences,
+    saveActiveFile,
     workspaceView,
   };
 }

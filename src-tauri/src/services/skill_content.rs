@@ -50,6 +50,25 @@ impl SkillContentService {
         Ok(self.list_skill_files(&root))
     }
 
+    pub fn save_file<P, Q, C>(
+        &self,
+        root_path: P,
+        relative_path: Q,
+        content: C,
+    ) -> Result<(), String>
+    where
+        P: AsRef<str>,
+        Q: AsRef<str>,
+        C: AsRef<str>,
+    {
+        let root = PathBuf::from(root_path.as_ref().trim());
+        let canonical_root = canonicalize_skill_root(&root)?;
+        let file_path = resolve_skill_file_path(&canonical_root, relative_path.as_ref())?;
+
+        fs::write(file_path, content.as_ref())
+            .map_err(|error| format!("Failed to write skill file: {error}"))
+    }
+
     fn load_skill_files(&self, root: &Path) -> Vec<SystemSkillFile> {
         let mut discovered_files = Vec::new();
 
@@ -171,4 +190,36 @@ fn validate_skill_root(root: &Path) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn canonicalize_skill_root(root: &Path) -> Result<PathBuf, String> {
+    validate_skill_root(root)?;
+
+    fs::canonicalize(root).map_err(|error| format!("Failed to resolve skill root: {error}"))
+}
+
+fn resolve_skill_file_path(root: &Path, relative_path: &str) -> Result<PathBuf, String> {
+    let trimmed_relative_path = relative_path.trim();
+    if trimmed_relative_path.is_empty() {
+        return Err("Skill file path is empty".to_string());
+    }
+
+    let relative_path = Path::new(trimmed_relative_path);
+    if relative_path.is_absolute() {
+        return Err("Skill file path must be relative".to_string());
+    }
+
+    let candidate_path = root.join(relative_path);
+    let canonical_candidate =
+        fs::canonicalize(&candidate_path).map_err(|_| "Skill file does not exist".to_string())?;
+
+    if !canonical_candidate.starts_with(root) {
+        return Err("Skill file path escapes the skill root".to_string());
+    }
+
+    if !canonical_candidate.is_file() {
+        return Err("Skill file is not a regular file".to_string());
+    }
+
+    Ok(canonical_candidate)
 }

@@ -6,4 +6,7 @@ export type IdeFile = {
   language: Language;
   content: string;
   savedContent: string;
+  rootPath?: string;
+  relativePath?: string;
+  isWritable?: boolean;
 };

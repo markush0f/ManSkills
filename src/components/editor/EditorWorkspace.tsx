@@ -1,3 +1,5 @@
+import { Icon, addCollection } from "@iconify/react";
+import { icons as codiconIcons } from "@iconify-json/codicon";
 import Editor from "@monaco-editor/react";
 import { useDeferredValue, useEffect, useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
@@ -6,14 +8,30 @@ import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { shellPanelClass } from "../shared/ui";
 
+addCollection(codiconIcons);
+
 export function EditorWorkspace() {
-  const { activeFile, activeFileId, closeFile, openFile, openFiles, preferences, updateActiveFile } = useIde();
+  const {
+    activeFile,
+    activeFileId,
+    activeFileSaveError,
+    closeFile,
+    isSavingActiveFile,
+    openFile,
+    openFiles,
+    preferences,
+    saveActiveFile,
+    updateActiveFile,
+  } = useIde();
   const [contentView, setContentView] = useState<"preview" | "code" | "split">("code");
   const [draftContent, setDraftContent] = useState(activeFile.content);
   const isMarkdown = activeFile.language === "md";
   const isJson = activeFile.language === "json";
   const supportsPreview = isMarkdown || isJson;
   const deferredContent = useDeferredValue(draftContent);
+  const canSaveActiveFile =
+    Boolean(activeFile?.isWritable && activeFile.rootPath && activeFile.relativePath) &&
+    activeFile.content !== activeFile.savedContent;
 
   useEffect(() => {
     if (!supportsPreview) {
@@ -127,13 +145,39 @@ export function EditorWorkspace() {
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden`}>
-      <div className="min-w-0 overflow-hidden border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
-        <WorkbenchTabsBar
-          activeTabId={activeFileId}
-          fileTabs={openFiles}
-          onCloseTab={closeFile}
-          onOpenTab={openFile}
-        />
+      <div className="flex min-w-0 items-center justify-between border-b border-[var(--border)] bg-[rgba(4,8,12,0.94)]">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <WorkbenchTabsBar
+            activeTabId={activeFileId}
+            fileTabs={openFiles}
+            onCloseTab={closeFile}
+            onOpenTab={openFile}
+          />
+        </div>
+        <div className="flex shrink-0 items-center gap-2 px-2">
+          {activeFileSaveError && (
+            <span className="max-w-[220px] truncate text-[11px] text-[#ffb3a7]">
+              {activeFileSaveError}
+            </span>
+          )}
+          {activeFile.isWritable && (
+            <button
+              className={`inline-flex h-8 items-center gap-1.5 rounded-[8px] border px-2.5 text-[12px] transition ${
+                canSaveActiveFile && !isSavingActiveFile
+                  ? "border-[var(--violet-border)] bg-[var(--violet-soft)] text-[var(--text)] hover:bg-[var(--violet-soft-strong)]"
+                  : "border-[var(--border)] text-[var(--muted)]"
+              }`}
+              disabled={!canSaveActiveFile || isSavingActiveFile}
+              onClick={() => {
+                void saveActiveFile();
+              }}
+              type="button"
+            >
+              <Icon icon="codicon:save" className="h-3.5 w-3.5" />
+              <span>{isSavingActiveFile ? "Saving" : "Save"}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="min-h-0 bg-[var(--editor-surface)]">

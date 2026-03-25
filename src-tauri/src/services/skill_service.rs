@@ -33,6 +33,20 @@ impl SkillService {
     {
         self.content.load_from_root(root_path)
     }
+
+    pub fn save_file<P, Q, C>(
+        &self,
+        root_path: P,
+        relative_path: Q,
+        content: C,
+    ) -> Result<(), String>
+    where
+        P: AsRef<str>,
+        Q: AsRef<str>,
+        C: AsRef<str>,
+    {
+        self.content.save_file(root_path, relative_path, content)
+    }
 }
 
 impl Default for SkillService {
