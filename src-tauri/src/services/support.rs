@@ -5,7 +5,7 @@ use std::{
 
 use crate::constants::{
     MANAGED_SKILL_SOURCE_PATTERNS, PROVIDER_SCAN_ROOT_ENV_KEYS,
-    PROVIDER_SCAN_ROOT_HOME_DIRECTORIES, SKIPPED_DIRECTORY_NAMES,
+    PROVIDER_SCAN_ROOT_HOME_DIRECTORIES, PROVIDER_WATCH_ROOT_ENV_KEYS, SKIPPED_DIRECTORY_NAMES,
 };
 
 pub const SKILL_MANIFEST_NAME: &str = "SKILL.md";
@@ -22,10 +22,18 @@ pub(crate) struct SkillPreview {
 }
 
 pub(crate) fn build_scan_roots(input_roots: Option<Vec<String>>) -> Vec<PathBuf> {
+    let raw_roots = input_roots.unwrap_or_else(default_scan_roots);
+    build_roots(raw_roots)
+}
+
+pub(crate) fn build_watch_roots(input_roots: Option<Vec<String>>) -> Vec<PathBuf> {
+    let raw_roots = input_roots.unwrap_or_else(default_watch_roots);
+    build_roots(raw_roots)
+}
+
+fn build_roots(raw_roots: Vec<String>) -> Vec<PathBuf> {
     let mut roots = Vec::new();
     let mut seen = HashSet::new();
-
-    let raw_roots = input_roots.unwrap_or_else(default_scan_roots);
 
     for raw_root in raw_roots {
         let trimmed = raw_root.trim();
@@ -177,6 +185,33 @@ fn default_scan_roots() -> Vec<String> {
     #[cfg(target_os = "windows")]
     {
         roots.push("C:\\".to_string());
+    }
+
+    roots
+}
+
+fn default_watch_roots() -> Vec<String> {
+    let mut roots = Vec::new();
+
+    if let Ok(current_dir) = std::env::current_dir() {
+        roots.push(current_dir.to_string_lossy().into_owned());
+    }
+
+    if let Some(home_dir) = dirs::home_dir() {
+        for relative_directory in PROVIDER_SCAN_ROOT_HOME_DIRECTORIES {
+            roots.push(
+                home_dir
+                    .join(relative_directory)
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        }
+    }
+
+    for env_key in PROVIDER_WATCH_ROOT_ENV_KEYS {
+        if let Ok(value) = std::env::var(env_key) {
+            roots.push(value);
+        }
     }
 
     roots
