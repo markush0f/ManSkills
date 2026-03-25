@@ -16,12 +16,14 @@ function FooterButton({
   icon,
   label,
   onClick,
+  placement,
   tone,
 }: {
   active: boolean;
   icon: string;
   label: string;
   onClick: () => void;
+  placement: "footer" | "header";
   tone: "accent" | "cyan" | "violet";
 }) {
   const iconTone =
@@ -30,14 +32,20 @@ function FooterButton({
       : tone === "cyan"
         ? "text-[var(--cyan)]"
         : "text-[var(--violet)]";
+  const headerButtonClass = active
+    ? "bg-white/[0.02] text-[var(--text)]"
+    : "bg-transparent text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]";
+  const footerButtonClass = active
+    ? "bg-white/[0.018] text-[var(--text)]"
+    : "bg-transparent text-[var(--muted)] hover:bg-white/[0.03] hover:text-[var(--text)]";
 
   return (
     <button
       aria-label={label}
-      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-[13px] px-3 transition ${
-        active
-          ? "bg-[linear-gradient(180deg,var(--violet-soft-strong),rgba(255,255,255,0.03))] text-[var(--violet-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(138,108,230,0.06)]"
-          : "bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--text)]"
+      className={`relative inline-flex items-center justify-center px-3 transition-colors ${
+        placement === "header"
+          ? `h-8 w-8 min-w-8 px-0 ${headerButtonClass}`
+          : `h-11 min-w-11 rounded-none ${footerButtonClass}`
       }`}
       onClick={onClick}
       title={label}
@@ -70,8 +78,8 @@ export function SidebarFooter({
       <div
         className={
           isHeader
-            ? "flex items-center gap-1.5"
-            : "flex items-center justify-center gap-2 rounded-[14px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+            ? "flex items-center gap-0.5"
+            : "flex items-center justify-center gap-2 border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5"
         }
       >
         <FooterButton
@@ -79,6 +87,7 @@ export function SidebarFooter({
           icon="codicon:extensions"
           label="Marketplace"
           onClick={openMarketplace}
+          placement={placement}
           tone="accent"
         />
         <FooterButton
@@ -86,6 +95,7 @@ export function SidebarFooter({
           icon="codicon:settings-gear"
           label="Configuracion"
           onClick={openSettings}
+          placement={placement}
           tone="cyan"
         />
       </div>

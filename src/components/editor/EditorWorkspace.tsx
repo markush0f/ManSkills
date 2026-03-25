@@ -124,15 +124,19 @@ export function EditorWorkspace() {
 
     return (
       <button
-        className={`inline-flex h-7 items-center rounded-[7px] border px-2.5 text-[11px] transition ${
+        aria-label={label}
+        className={`relative inline-flex h-full items-center justify-center border-r border-[var(--border)] px-3 text-[11px] transition-colors ${
           isActive
-            ? "border-[var(--violet-border)] bg-[var(--violet-soft)] text-[var(--text)]"
-            : "border-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/[0.03] hover:text-[var(--text)]"
+            ? "bg-white/[0.018] text-[var(--text)]"
+            : "text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
         }`}
         onClick={() => setContentView(mode)}
         title={label}
         type="button"
       >
+        {isActive && (
+          <span className="absolute inset-x-0 bottom-0 h-px bg-[var(--accent)]" />
+        )}
         <Icon icon={icon} className="h-3.5 w-3.5" />
       </button>
     );
@@ -223,7 +227,7 @@ export function EditorWorkspace() {
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[image:var(--editor-bg)]`}>
-      <div className="flex h-[var(--app-header-height)] min-w-0 items-center justify-between border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
+      <div className="flex h-[var(--app-header-height)] min-w-0 items-stretch justify-between border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
         <div className="min-w-0 flex-1 overflow-hidden">
           <WorkbenchTabsBar
             activeTabId={activeFileId}
@@ -232,18 +236,20 @@ export function EditorWorkspace() {
             onOpenTab={openFile}
           />
         </div>
-        <div className="flex shrink-0 items-center gap-2 px-2">
+        <div className="flex h-full shrink-0 items-stretch">
           {supportsPreview && (
-            <div className="flex items-center gap-1 rounded-[10px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.01))] p-1">
+            <div className="flex h-full items-stretch border-l border-[var(--border)]">
               {PREVIEW_MODES.map(({ icon, label, mode }) =>
                 renderPreviewModeButton(mode, label, icon),
               )}
             </div>
           )}
           {activeFileSaveError && (
-            <span className="max-w-[220px] truncate text-[11px] text-[#ffb3a7]">
-              {activeFileSaveError}
-            </span>
+            <div className="flex h-full items-center border-l border-[var(--border)] px-3">
+              <span className="max-w-[220px] truncate text-[11px] text-[#ffb3a7]">
+                {activeFileSaveError}
+              </span>
+            </div>
           )}
         </div>
       </div>

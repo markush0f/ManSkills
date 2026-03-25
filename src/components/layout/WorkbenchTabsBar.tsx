@@ -35,7 +35,7 @@ export function WorkbenchTabsBar({
   onOpenTab,
 }: WorkbenchTabsBarProps) {
   return (
-    <div className="flex h-full min-w-0 items-center gap-1.5 overflow-x-auto px-2 py-1.5">
+    <div className="flex h-full min-w-0 items-stretch overflow-x-auto">
       {fileTabs.map((file) => {
         const isDirty = file.content !== file.savedContent;
         const isActive = file.id === activeTabId;
@@ -43,25 +43,29 @@ export function WorkbenchTabsBar({
         return (
           <button
             key={file.id}
-            className={`relative inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[13px] transition ${
+            className={`group relative inline-flex h-full shrink-0 items-center gap-2 border-r border-[var(--border)] px-3.5 text-[12px] transition-colors ${
               isActive
-                ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,rgba(138,108,230,0.16),rgba(255,255,255,0.03))] text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                : "border-transparent bg-transparent text-[var(--muted)] hover:border-white/[0.04] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] hover:text-[var(--text)]"
+                ? "bg-white/[0.018] text-[var(--text)]"
+                : "bg-transparent text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(file.id)}
             type="button"
           >
             {isActive && (
-              <span className="absolute inset-x-2 top-0 h-px rounded-full bg-[linear-gradient(90deg,transparent,var(--violet-strong),transparent)]" />
+              <span className="absolute inset-x-0 bottom-0 h-px bg-[var(--accent)]" />
             )}
-            <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
               {file.language}
             </span>
-            <span className="text-[14px]">{getFileName(file.path)}</span>
-            {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_rgba(217,98,59,0.5)]" />}
+            <span className={`${isActive ? "text-[var(--text)]" : ""} text-[13px]`}>
+              {getFileName(file.path)}
+            </span>
+            {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />}
             <span
-              className={`hover:cursor-pointer inline-flex h-4 w-4 items-center justify-center ${
-                isActive ? "text-[var(--accent)] hover:text-[var(--accent-strong)]" : "text-[var(--muted)] hover:text-[var(--accent-strong)]"
+              className={`inline-flex h-4 w-4 items-center justify-center transition-opacity ${
+                isActive
+                  ? "text-[var(--muted)] hover:text-[var(--text)]"
+                  : "text-[var(--muted)] opacity-0 hover:text-[var(--text)] group-hover:opacity-100"
               }`}
               onClick={(event) => {
                 event.stopPropagation();
@@ -80,30 +84,32 @@ export function WorkbenchTabsBar({
         return (
           <button
             key={tab.id}
-            className={`relative inline-flex h-10 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[13px] transition ${
+            className={`group relative inline-flex h-full shrink-0 items-center gap-2 border-r border-[var(--border)] px-3.5 text-[12px] transition-colors ${
               isActive
-                ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,rgba(138,108,230,0.16),rgba(255,255,255,0.03))] text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                : "border-transparent bg-transparent text-[var(--muted)] hover:border-white/[0.04] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] hover:text-[var(--text)]"
+                ? "bg-white/[0.018] text-[var(--text)]"
+                : "bg-transparent text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(tab.id)}
             type="button"
           >
             {isActive && (
-              <span className="absolute inset-x-2 top-0 h-px rounded-full bg-[linear-gradient(90deg,transparent,var(--accent-strong),transparent)]" />
+              <span className="absolute inset-x-0 bottom-0 h-px bg-[var(--accent)]" />
             )}
             {tab.icon ? (
-              <span className={`inline-flex h-4 w-4 items-center justify-center ${isActive ? "text-[var(--violet-strong)]" : "text-[var(--muted)]"}`}>
+              <span className={`inline-flex h-4 w-4 items-center justify-center ${isActive ? "text-[var(--text)]" : "text-[var(--muted)]"}`}>
                 {tab.icon}
               </span>
             ) : (
-              <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
                 {tab.badge}
               </span>
             )}
             <span>{tab.label}</span>
             <span
-              className={`inline-flex h-4 w-4 items-center justify-center ${
-                isActive ? "text-[var(--accent)] hover:text-[var(--accent-strong)]" : "text-[var(--muted)] hover:text-[var(--accent-strong)]"
+              className={`inline-flex h-4 w-4 items-center justify-center transition-opacity ${
+                isActive
+                  ? "text-[var(--muted)] hover:text-[var(--text)]"
+                  : "text-[var(--muted)] opacity-0 hover:text-[var(--text)] group-hover:opacity-100"
               }`}
               onClick={(event) => {
                 event.stopPropagation();

@@ -61,7 +61,7 @@ export function Sidebar() {
       className={`${shellPanelClass} relative flex h-full min-h-0 flex-col overflow-hidden bg-[image:var(--sidebar-bg)] text-[13px] before:pointer-events-none before:absolute before:inset-x-0 before:top-[var(--app-header-height)] before:h-24 before:bg-[linear-gradient(180deg,rgba(138,108,230,0.08),transparent)] before:content-['']`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
-      <div className="relative z-[1] flex h-[var(--app-header-height)] items-center gap-2 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
+      <div className="relative z-[1] flex h-[var(--app-header-height)] items-center gap-1.5 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
         <div className="min-w-0 flex-1">
           <SidebarSearch query={query} setQuery={setQuery} />
         </div>
