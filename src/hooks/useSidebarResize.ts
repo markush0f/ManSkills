@@ -4,7 +4,7 @@ const SIDEBAR_WIDTH_KEY = "skills-ide:sidebar-width";
 const DEFAULT_SIDEBAR_WIDTH = 296;
 const MIN_SIDEBAR_WIDTH = 180;
 const MAX_SIDEBAR_WIDTH = 520;
-const MIN_CONTENT_WIDTH = 480;
+const MIN_CONTENT_WIDTH = 560;
 const RESIZER_WIDTH = 6;
 
 function clampSidebarWidth(width: number, containerWidth?: number) {

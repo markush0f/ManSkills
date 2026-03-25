@@ -78,7 +78,7 @@ export function SidebarFooter({
       <div
         className={
           isHeader
-            ? "flex items-center gap-0.5"
+            ? "flex w-[72px] items-center justify-end gap-0.5"
             : "flex items-center justify-center gap-2 border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5"
         }
       >

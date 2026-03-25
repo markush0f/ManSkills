@@ -53,6 +53,40 @@ fn scan_uses_first_plain_text_line_as_summary() {
     assert_eq!(skill.summary, "Short summary line");
 }
 
+#[test]
+fn scan_marks_supported_provider_skill_directories_as_managed() {
+    let workspace = TestWorkspace::new("scan_managed_providers");
+    let skill_roots = [
+        workspace.path.join(".claude/skills/review-skill"),
+        workspace.path.join(".cursor/skills/debug-skill"),
+        workspace.path.join(".windsurf/skills/research-skill"),
+        workspace.path.join(".gemini/skills/writer-skill"),
+    ];
+
+    for skill_root in &skill_roots {
+        fs::create_dir_all(skill_root).expect("should create skill directory");
+        fs::write(
+            skill_root.join("SKILL.md"),
+            "# Managed Skill\nSummary line\n",
+        )
+        .expect("should write manifest");
+    }
+
+    let response = SkillService::new()
+        .scan(Some(vec![workspace.path_string()]))
+        .expect("scan should succeed");
+
+    for skill_root in &skill_roots {
+        let skill = response
+            .skills
+            .iter()
+            .find(|skill| skill.root_path == skill_root.to_string_lossy())
+            .expect("expected scanned skill");
+
+        assert_eq!(skill.source, "managed");
+    }
+}
+
 struct TestWorkspace {
     path: PathBuf,
 }

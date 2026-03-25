@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::constants::SKIPPED_DIRECTORY_NAMES;
+use crate::constants::{MANAGED_SKILL_SOURCE_PATTERNS, SKIPPED_DIRECTORY_NAMES};
 
 pub const SKILL_MANIFEST_NAME: &str = "SKILL.md";
 pub const PREVIEW_BYTES: u64 = 16 * 1024;
@@ -121,7 +121,10 @@ pub(crate) fn slugify_path(path: &Path) -> String {
 pub(crate) fn classify_source(path: &Path) -> String {
     let normalized = path.to_string_lossy().to_ascii_lowercase();
 
-    if normalized.contains(".codex/skills") || normalized.contains(".agents/skills") {
+    if MANAGED_SKILL_SOURCE_PATTERNS
+        .iter()
+        .any(|pattern| normalized.contains(pattern))
+    {
         return "managed".to_string();
     }
 

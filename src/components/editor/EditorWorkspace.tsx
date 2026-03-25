@@ -62,6 +62,8 @@ export function EditorWorkspace() {
   const canSaveActiveFile =
     Boolean(activeFile?.isWritable && activeFile.rootPath && activeFile.relativePath) &&
     activeFile.content !== activeFile.savedContent;
+  const previewRailWidth = supportsPreview ? 126 : 0;
+  const saveErrorWidth = activeFileSaveError ? 244 : 0;
 
   useEffect(() => {
     if (!supportsPreview) {
@@ -125,7 +127,7 @@ export function EditorWorkspace() {
     return (
       <button
         aria-label={label}
-        className={`relative inline-flex h-full items-center justify-center border-r border-[var(--border)] px-3 text-[11px] transition-colors ${
+        className={`relative inline-flex h-full min-w-0 items-center justify-center text-[11px] transition-colors ${
           isActive
             ? "bg-white/[0.018] text-[var(--text)]"
             : "text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
@@ -227,8 +229,13 @@ export function EditorWorkspace() {
 
   return (
     <section className={`${shellPanelClass} grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[image:var(--editor-bg)]`}>
-      <div className="flex h-[var(--app-header-height)] min-w-0 items-stretch justify-between border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
-        <div className="min-w-0 flex-1 overflow-hidden">
+      <div className="relative h-[var(--app-header-height)] min-w-0 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
+        <div
+          className="h-full min-w-0 overflow-hidden"
+          style={{
+            paddingRight: `${previewRailWidth + saveErrorWidth}px`,
+          }}
+        >
           <WorkbenchTabsBar
             activeTabId={activeFileId}
             fileTabs={openFiles}
@@ -236,22 +243,23 @@ export function EditorWorkspace() {
             onOpenTab={openFile}
           />
         </div>
-        <div className="flex h-full shrink-0 items-stretch">
-          {supportsPreview && (
-            <div className="flex h-full items-stretch border-l border-[var(--border)]">
-              {PREVIEW_MODES.map(({ icon, label, mode }) =>
-                renderPreviewModeButton(mode, label, icon),
-              )}
-            </div>
-          )}
-          {activeFileSaveError && (
-            <div className="flex h-full items-center border-l border-[var(--border)] px-3">
-              <span className="max-w-[220px] truncate text-[11px] text-[#ffb3a7]">
-                {activeFileSaveError}
-              </span>
-            </div>
-          )}
-        </div>
+        {supportsPreview && (
+          <div
+            className="absolute right-0 top-0 z-[2] grid h-full w-[126px] grid-cols-3 border-l border-[var(--border)] bg-[image:var(--topbar-bg)]"
+            style={{ right: `${activeFileSaveError ? `${saveErrorWidth}px` : "0px"}` }}
+          >
+            {PREVIEW_MODES.map(({ icon, label, mode }) =>
+              renderPreviewModeButton(mode, label, icon),
+            )}
+          </div>
+        )}
+        {activeFileSaveError && (
+          <div className="absolute right-0 top-0 z-[2] flex h-full w-[244px] items-center border-l border-[var(--border)] bg-[image:var(--topbar-bg)] px-3">
+            <span className="max-w-[220px] truncate text-[11px] text-[#ffb3a7]">
+              {activeFileSaveError}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="min-h-0 bg-[var(--editor-surface)]">

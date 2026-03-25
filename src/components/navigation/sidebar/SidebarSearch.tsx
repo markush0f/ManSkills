@@ -18,7 +18,7 @@ export function SidebarSearch({ query, setQuery }: SidebarSearchProps) {
       <TextInput
         className="h-8 rounded-none border-[var(--border)] bg-white/[0.015] px-2 pl-8 shadow-none focus:bg-white/[0.03]"
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search tree"
+        placeholder="Search...z"
         value={query}
       />
     </div>

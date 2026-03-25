@@ -51,7 +51,7 @@ impl SkillContentService {
     }
 
     // Save a skill file, ensuring that the path is valid and does not escape the skill root
-    
+
     pub fn save_file<P, Q, C>(
         &self,
         root_path: P,

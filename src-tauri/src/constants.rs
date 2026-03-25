@@ -1,3 +1,5 @@
+mod managed_skill_source_patterns;
 mod skipped_directory_names;
 
+pub use managed_skill_source_patterns::MANAGED_SKILL_SOURCE_PATTERNS;
 pub use skipped_directory_names::SKIPPED_DIRECTORY_NAMES;
