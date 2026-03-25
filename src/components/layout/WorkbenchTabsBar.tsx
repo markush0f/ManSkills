@@ -35,7 +35,7 @@ export function WorkbenchTabsBar({
   onOpenTab,
 }: WorkbenchTabsBarProps) {
   return (
-    <div className="flex min-w-0 items-center gap-1 overflow-x-auto px-2 py-2">
+    <div className="flex min-w-0 items-center gap-1 overflow-x-auto px-2 py-1.5">
       {fileTabs.map((file) => {
         const isDirty = file.content !== file.savedContent;
         const isActive = file.id === activeTabId;
@@ -43,7 +43,7 @@ export function WorkbenchTabsBar({
         return (
           <button
             key={file.id}
-            className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
+            className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13px] transition ${
               isActive
                 ? "border-[var(--violet-border)] bg-[linear-gradient(180deg,rgba(138,108,230,0.12),rgba(255,255,255,0.02))] text-[var(--text)]"
                 : "border-transparent bg-transparent text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/[0.03] hover:text-[var(--text)]"
@@ -54,10 +54,10 @@ export function WorkbenchTabsBar({
             <span className="font-mono text-[10px] uppercase text-[var(--muted)]">
               {file.language}
             </span>
-            <span>{getFileName(file.path)}</span>
-            {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />}
+            <span className="text-[14px]">{getFileName(file.path)}</span>
+            {isDirty && <span className=" rounded-full bg-[var(--accent)]" />}
             <span
-              className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)] hover:text-[var(--text)]"
+              className="hover:cursor-pointer inline-flex h-4 w-4 items-center justify-center text-[var(--muted)] hover:text-[var(--text)]"
               onClick={(event) => {
                 event.stopPropagation();
                 onCloseTab(file.id);
