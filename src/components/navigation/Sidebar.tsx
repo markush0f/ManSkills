@@ -61,8 +61,19 @@ export function Sidebar() {
       className={`${shellPanelClass} relative flex h-full min-h-0 flex-col overflow-hidden text-[13px] before:pointer-events-none before:absolute before:inset-x-0 before:top-[var(--app-header-height)] before:h-24 before:bg-[linear-gradient(180deg,rgba(138,108,230,0.08),transparent)] before:content-['']`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
-      <div className="relative z-[1] flex h-[var(--app-header-height)] items-center border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2">
-        <SidebarSearch query={query} setQuery={setQuery} />
+      <div className="relative z-[1] flex h-[var(--app-header-height)] items-center gap-2 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2">
+        <div className="min-w-0 flex-1">
+          <SidebarSearch query={query} setQuery={setQuery} />
+        </div>
+        <div className="shrink-0">
+          <SidebarFooter
+            isMarketplaceView={isMarketplaceView}
+            isSettingsView={isSettingsView}
+            openMarketplace={openMarketplace}
+            openSettings={openSettings}
+            placement="header"
+          />
+        </div>
       </div>
 
       <div
@@ -100,15 +111,6 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="border-r border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(255,255,255,0.005))]">
-        <SidebarFooter
-          compact={compact}
-          isMarketplaceView={isMarketplaceView}
-          isSettingsView={isSettingsView}
-          openMarketplace={openMarketplace}
-          openSettings={openSettings}
-        />
-      </div>
     </aside>
   );
 }

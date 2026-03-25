@@ -7,7 +7,7 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[12px] border border-[var(--border)] bg-white/[0.015]">
+    <section className="overflow-hidden border border-[var(--border)] bg-white/[0.015]">
       <div>{children}</div>
     </section>
   );
