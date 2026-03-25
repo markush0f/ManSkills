@@ -59,7 +59,7 @@ export function SidebarFooter({
 }: SidebarFooterProps) {
   return (
     <div className={`border-t border-[var(--border)] ${compact ? "px-2 py-2" : "px-2 py-2"}`}>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex items-center justify-center gap-2 rounded-[14px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
         <FooterButton
           active={isMarketplaceView}
           icon="codicon:extensions"

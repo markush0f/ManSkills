@@ -20,6 +20,18 @@ function getSystemFileIconTone(language?: NonNullable<SystemSkillTreeNode["file"
   return "text-[var(--muted)]";
 }
 
+function getSourceBadgeTone(source: SystemSkill["source"]) {
+  if (source === "managed") {
+    return "border-[rgba(79,168,199,0.16)] bg-[rgba(79,168,199,0.08)] text-[var(--cyan-strong)]";
+  }
+
+  if (source === "workspace") {
+    return "border-[rgba(217,98,59,0.16)] bg-[rgba(217,98,59,0.08)] text-[var(--accent-strong)]";
+  }
+
+  return "border-[rgba(138,108,230,0.18)] bg-[rgba(138,108,230,0.08)] text-[var(--violet-strong)]";
+}
+
 type SystemSkillTreeListProps = {
   compact: boolean;
   currentSkill?: SystemSkill;
@@ -55,19 +67,19 @@ export function SystemSkillTreeList({
           return (
             <div key={node.id} className="space-y-1.5">
               <button
-                className={`flex w-full items-center rounded-[10px] font-medium text-[var(--text)] transition hover:bg-white/5 ${
-                  compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-3 py-2 text-sm"
+                className={`flex w-full items-center rounded-[12px] border border-transparent font-medium text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
+                  compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-2.5 py-2 text-sm"
                 }`}
                 onClick={() => onToggleNode(node.id)}
                 style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
                 title={node.path}
                 type="button"
               >
-                <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--violet-strong)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
                   <ExpandIcon expanded={isExpanded} />
                 </span>
                 <span
-                  className={`inline-flex h-4 w-4 items-center justify-center ${
+                  className={`inline-flex h-4 w-4 items-center justify-center rounded-[6px] ${
                     isRoot ? "text-[var(--accent-strong)]" : "text-[var(--violet)]"
                   }`}
                 >
@@ -107,14 +119,14 @@ export function SystemSkillTreeList({
           return (
             <div key={node.id} className="space-y-1.5">
               <div
-                className={`flex items-center gap-2 rounded-[10px] border border-transparent text-left transition hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)] ${
-                  compact ? "px-2 py-1.5 text-[13px]" : "px-3 py-2 text-sm"
+                className={`flex items-center gap-2 rounded-[12px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] text-left transition hover:border-white/[0.08] hover:bg-white/[0.04] hover:text-[var(--text)] ${
+                  compact ? "px-2 py-1.5 text-[13px]" : "px-2.5 py-2 text-sm"
                 } text-[var(--muted)]`}
                 style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
                 title={skill.manifestPath}
               >
                 <button
-                  className="inline-flex shrink-0 h-4 w-4 items-center justify-center text-[var(--violet-strong)]"
+                  className="inline-flex shrink-0 h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]"
                   onClick={() => onToggleNode(node.id)}
                   type="button"
                 >
@@ -134,7 +146,11 @@ export function SystemSkillTreeList({
                       {!compact && <p className="truncate text-[10px] text-[var(--muted)]">{skill.rootPath}</p>}
                     </div>
                   </div>
-                  <span className="shrink-0 rounded-full border border-[var(--border)] bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+                  <span
+                    className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] ${
+                      getSourceBadgeTone(skill.source)
+                    }`}
+                  >
                     {openingSkillId === skill.id ? "Loading" : getSystemSkillSourceLabel(skill.source)}
                   </span>
                 </button>
@@ -169,8 +185,8 @@ export function SystemSkillTreeList({
           return (
             <button
               key={node.id}
-              className={`flex w-full items-center gap-2 rounded-[10px] border border-transparent text-left transition text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)] ${
-                compact ? "px-2 py-1.5 text-[13px]" : "px-3 py-2 text-sm"
+              className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left transition text-[var(--muted)] hover:border-white/[0.04] hover:bg-white/[0.03] hover:text-[var(--text)] ${
+                compact ? "px-2 py-1.5 text-[13px]" : "px-2.5 py-1.5 text-sm"
               }`}
               onClick={() => onOpenSkillFile(currentSkill, file.relativePath)}
               style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}

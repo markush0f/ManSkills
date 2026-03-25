@@ -44,15 +44,15 @@ export function LocalTreeList({
           return (
             <div key={node.path} className="space-y-1.5">
               <div
-                className={`flex items-center rounded-[10px] font-medium text-[var(--text)] ${
-                  compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-3 py-2 text-sm"
+                className={`flex items-center rounded-[12px] border border-transparent font-medium text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
+                  compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-2.5 py-2 text-sm"
                 }`}
                 style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
               >
-                <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--violet-strong)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
                   <ExpandIcon expanded={isExpanded} />
                 </span>
-                <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] text-[var(--accent)]">
                   <FolderNodeIcon expanded={isExpanded} />
                 </span>
                 <span className="truncate">{node.name}</span>
@@ -79,9 +79,9 @@ export function LocalTreeList({
             key={node.path}
             className={`flex w-full items-center rounded-[10px] border border-transparent text-left transition ${
               isActive
-                ? "border-[var(--violet-border)] bg-[linear-gradient(90deg,rgba(138,108,230,0.16),rgba(255,255,255,0.06))] text-[var(--text)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
-                : "text-[var(--muted)] hover:border-[var(--border)] hover:bg-white/5 hover:text-[var(--text)]"
-            } ${compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-3 py-2 text-sm"}`}
+                ? "border-[var(--violet-border)] bg-[linear-gradient(90deg,rgba(138,108,230,0.18),rgba(255,255,255,0.05))] text-[var(--text)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
+                : "text-[var(--muted)] hover:border-white/[0.04] hover:bg-white/[0.03] hover:text-[var(--text)]"
+            } ${compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-2.5 py-1.5 text-sm"}`}
             onClick={() => onOpenFile(node.fileId)}
             style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
           >
