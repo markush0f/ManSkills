@@ -4,6 +4,22 @@ import {
 } from "./sidebarTreeUtils";
 import { ExpandIcon, FileNodeIcon, FolderNodeIcon, SkillNodeIcon } from "./SidebarTreeIcons";
 
+function getSystemFileIconTone(language?: NonNullable<SystemSkillTreeNode["file"]>["language"]) {
+  if (language === "md") {
+    return "text-[var(--accent)]";
+  }
+
+  if (language === "json") {
+    return "text-[var(--cyan)]";
+  }
+
+  if (language === "ts") {
+    return "text-[var(--violet)]";
+  }
+
+  return "text-[var(--muted)]";
+}
+
 type SystemSkillTreeListProps = {
   compact: boolean;
   currentSkill?: SystemSkill;
@@ -50,7 +66,11 @@ export function SystemSkillTreeList({
                 <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--violet-strong)]">
                   <ExpandIcon expanded={isExpanded} />
                 </span>
-                <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)]">
+                <span
+                  className={`inline-flex h-4 w-4 items-center justify-center ${
+                    isRoot ? "text-[var(--accent-strong)]" : "text-[var(--violet)]"
+                  }`}
+                >
                   <FolderNodeIcon expanded={isExpanded} root={isRoot} />
                 </span>
                 <span className="truncate">{node.name}</span>
@@ -106,7 +126,7 @@ export function SystemSkillTreeList({
                   type="button"
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[var(--muted)]">
+                    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[var(--accent-strong)]">
                       <SkillNodeIcon />
                     </span>
                     <div className="min-w-0">
@@ -157,7 +177,11 @@ export function SystemSkillTreeList({
               title={file.relativePath}
               type="button"
             >
-              <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)]">
+              <span
+                className={`inline-flex h-4 w-4 items-center justify-center ${getSystemFileIconTone(
+                  file.language,
+                )}`}
+              >
                 <FileNodeIcon language={file.language} />
               </span>
               <span className="truncate text-[var(--text)]">{node.name}</span>

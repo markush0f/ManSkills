@@ -2,6 +2,22 @@ import type { IdeFile, TreeNode } from "../../../types";
 import { getFileName } from "../../../ide/utils";
 import { ExpandIcon, FileNodeIcon, FolderNodeIcon } from "./SidebarTreeIcons";
 
+function getLocalFileIconTone(language?: IdeFile["language"], active?: boolean) {
+  if (language === "md") {
+    return active ? "text-[var(--accent-strong)]" : "text-[var(--accent)]";
+  }
+
+  if (language === "json") {
+    return active ? "text-[var(--cyan-strong)]" : "text-[var(--cyan)]";
+  }
+
+  if (language === "ts") {
+    return active ? "text-[var(--violet-strong)]" : "text-[var(--violet)]";
+  }
+
+  return active ? "text-[var(--text)]" : "text-[var(--muted)]";
+}
+
 type LocalTreeListProps = {
   activeFileId: string;
   compact: boolean;
@@ -36,7 +52,7 @@ export function LocalTreeList({
                 <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--violet-strong)]">
                   <ExpandIcon expanded={isExpanded} />
                 </span>
-                <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent)]">
                   <FolderNodeIcon expanded={isExpanded} />
                 </span>
                 <span className="truncate">{node.name}</span>
@@ -69,7 +85,12 @@ export function LocalTreeList({
             onClick={() => onOpenFile(node.fileId)}
             style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
           >
-            <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)]">
+            <span
+              className={`inline-flex h-4 w-4 items-center justify-center ${getLocalFileIconTone(
+                file?.language,
+                isActive,
+              )}`}
+            >
               <FileNodeIcon language={file?.language} />
             </span>
             <span className="truncate">{getFileName(file?.path ?? node.name)}</span>

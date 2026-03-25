@@ -28,7 +28,7 @@ export function SettingsTabsHeader({
           {
             badge: "cfg",
             id: "__settings__",
-            icon: <Icon icon="codicon:settings-gear" className="h-4 w-4" />,
+            icon: <Icon icon="codicon:settings-gear" className="h-4 w-4 text-[var(--violet-strong)]" />,
             label: "Settings",
           },
         ]}

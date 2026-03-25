@@ -57,7 +57,9 @@ export function WorkbenchTabsBar({
             <span className="text-[14px]">{getFileName(file.path)}</span>
             {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_rgba(217,98,59,0.5)]" />}
             <span
-              className="hover:cursor-pointer inline-flex h-4 w-4 items-center justify-center text-[var(--muted)] hover:text-[var(--text)]"
+              className={`hover:cursor-pointer inline-flex h-4 w-4 items-center justify-center ${
+                isActive ? "text-[var(--accent)] hover:text-[var(--accent-strong)]" : "text-[var(--muted)] hover:text-[var(--accent-strong)]"
+              }`}
               onClick={(event) => {
                 event.stopPropagation();
                 onCloseTab(file.id);
@@ -94,7 +96,9 @@ export function WorkbenchTabsBar({
             )}
             <span>{tab.label}</span>
             <span
-              className="inline-flex h-4 w-4 items-center justify-center text-[var(--muted)] hover:text-[var(--text)]"
+              className={`inline-flex h-4 w-4 items-center justify-center ${
+                isActive ? "text-[var(--accent)] hover:text-[var(--accent-strong)]" : "text-[var(--muted)] hover:text-[var(--accent-strong)]"
+              }`}
               onClick={(event) => {
                 event.stopPropagation();
                 onCloseTab(tab.id);
