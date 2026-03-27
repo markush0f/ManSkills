@@ -21,14 +21,14 @@ export function SettingsTabsHeader({
   openSettings,
 }: SettingsTabsHeaderProps) {
   return (
-    <div className="h-[var(--app-header-height)] min-w-0 overflow-hidden border-b border-[var(--border)] bg-[image:var(--topbar-bg)]">
+    <div className="h-[var(--app-header-height)] min-w-0 overflow-hidden border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
       <WorkbenchTabsBar
         activeTabId="__settings__"
         extraTabs={[
           {
             badge: "cfg",
             id: "__settings__",
-            icon: <Icon icon="codicon:settings-gear" className="h-4 w-4 text-[var(--violet-strong)]" />,
+            icon: <Icon icon="codicon:settings-gear" className="h-4 w-4 text-[var(--accent-strong)]" />,
             label: "Settings",
           },
         ]}

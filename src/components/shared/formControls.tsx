@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, SelectHTMLAttributes } from "react";
 
 const controlBaseClass =
-  "w-full rounded-[10px] border border-[var(--border)] bg-white/[0.03] text-[12px] text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--violet-border)] focus:bg-[var(--violet-soft)]";
+  "w-full rounded-[10px] border border-[var(--border)] bg-white/[0.03] text-[12px] text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--control-focus-border)] focus:bg-[var(--control-focus-bg)]";
 
 function joinClasses(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -78,7 +78,7 @@ export function SelectInput({
         {children}
       </select>
 
-      <span className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-center border-l border-[var(--border)] text-[var(--muted)] transition peer-focus:text-[var(--violet-strong)]">
+      <span className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-center border-l border-[var(--border)] text-[var(--muted)] transition peer-focus:text-[var(--control-focus-icon)]">
         <svg
           aria-hidden="true"
           className="h-3.5 w-3.5"
@@ -114,7 +114,7 @@ export function CheckboxInput({
       className={joinClasses(
         `grid h-4.5 w-4.5 place-items-center rounded-[5px] border transition ${
           checked
-            ? "border-[var(--violet)] bg-[var(--violet)] text-white"
+            ? "border-[var(--control-checked-border)] bg-[var(--control-checked-bg)] text-[var(--control-checked-text)]"
             : "border-[var(--border)] bg-white/[0.03] text-transparent"
         }`,
         className,

@@ -14,15 +14,15 @@ function CategoryButton({
     <button
       className={`flex w-full items-center gap-2 border-l px-3 py-2.5 text-left text-[12px] transition ${
         active
-          ? "border-[var(--violet)] bg-[linear-gradient(90deg,rgba(138,108,230,0.14),rgba(255,255,255,0.02))] text-[var(--text)]"
-          : "border-transparent text-[var(--muted)] hover:bg-[linear-gradient(90deg,rgba(79,168,199,0.06),rgba(255,255,255,0.01))] hover:text-[var(--text)]"
+          ? "border-[var(--settings-category-active-border)] bg-[image:var(--settings-category-active-bg)] text-[var(--text)]"
+          : "border-transparent text-[var(--muted)] hover:bg-[image:var(--settings-category-hover-bg)] hover:text-[var(--text)]"
       }`}
       onClick={onClick}
       type="button"
     >
       <span
         className={`h-1.5 w-1.5 rounded-full ${
-          active ? "bg-[var(--violet)] shadow-[0_0_8px_rgba(138,108,230,0.4)]" : "bg-[var(--cyan)]/35"
+          active ? "bg-[var(--accent)] shadow-[0_0_10px_rgba(217,98,59,0.42)]" : "bg-[var(--cyan)]/35"
         }`}
       />
       {label}
@@ -44,10 +44,11 @@ export function SettingsCategoryNav({
   setSelectedCategory: (category: SettingsCategory) => void;
 }) {
   return (
-    <aside className="border-b border-[var(--border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))] xl:border-b-0 xl:border-r">
+    <aside className="border-b border-[var(--border)] bg-[image:var(--settings-nav-bg)] xl:border-b-0 xl:border-r">
       <div className="border-b border-[var(--border)] px-3 py-3">
         <div className="relative">
           <TextInput
+            className="bg-black/20"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search settings"
             value={query}

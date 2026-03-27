@@ -7,7 +7,7 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden border border-[var(--border)] bg-white/[0.015]">
+    <section className="mx-5 mb-5 overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
       <div>{children}</div>
     </section>
   );
@@ -25,7 +25,9 @@ function SettingRow({
   label: string;
 }) {
   return (
-    <div className={`${isFirst ? "" : "border-t border-t-[var(--border)] "}border-l-2 border-l-transparent px-4 py-3 transition hover:bg-white/[0.015] focus-within:border-l-[var(--violet)] focus-within:bg-[var(--violet-soft)]`}>
+    <div
+      className={`${isFirst ? "" : "border-t border-t-[var(--border)] "}border-l-2 border-l-transparent px-4 py-3 transition hover:bg-[var(--settings-row-hover)] focus-within:border-l-[var(--settings-row-focus-border)] focus-within:bg-[image:var(--settings-row-focus-bg)]`}
+    >
       <div className="min-w-0">
         <p className="text-[13px] text-[var(--text)]">{label}</p>
         <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">{description}</p>
@@ -128,7 +130,7 @@ export function InfoRow({
   value: string;
 }) {
   return (
-    <div className="border-t border-l-2 border-t-[var(--border)] border-l-transparent px-4 py-3">
+    <div className="border-t border-l-2 border-t-[var(--border)] border-l-transparent px-4 py-3 hover:bg-[var(--settings-row-hover)]">
       <p className="text-[13px] text-[var(--text)]">{label}</p>
       <p className="mt-2 truncate text-[12px] text-[var(--muted)]">{value}</p>
     </div>

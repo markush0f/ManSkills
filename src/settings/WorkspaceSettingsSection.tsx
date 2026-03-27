@@ -81,7 +81,7 @@ export function WorkspaceSettingsSection({
           <div className="flex items-center justify-start gap-2 xl:justify-end">
             <span className="text-[12px] text-[var(--muted)]">{sidebarWidth}px</span>
             <button
-              className="border border-[var(--border)] px-2.5 py-1.5 text-[12px] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/[0.04]"
+              className="rounded-[10px] border border-[var(--border)] bg-white/[0.02] px-2.5 py-1.5 text-[12px] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
               onClick={resetSidebarWidth}
               type="button"
             >

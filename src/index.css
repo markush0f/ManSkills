@@ -46,6 +46,29 @@
   --scrollbar-track: rgba(255, 255, 255, 0.03);
   --scrollbar-thumb: rgba(217, 98, 59, 0.28);
   --scrollbar-thumb-hover: rgba(239, 142, 73, 0.42);
+  --control-focus-border: var(--violet-border);
+  --control-focus-bg: var(--violet-soft);
+  --control-focus-icon: var(--violet-strong);
+  --control-checked-border: var(--violet);
+  --control-checked-bg: var(--violet);
+  --control-checked-text: #ffffff;
+  --settings-shell-bg: linear-gradient(180deg, rgba(10, 16, 22, 0.98), rgba(7, 11, 16, 0.99));
+  --settings-nav-bg: linear-gradient(180deg, rgba(13, 21, 29, 0.96), rgba(9, 15, 22, 0.98));
+  --settings-content-bg: linear-gradient(180deg, rgba(5, 10, 15, 0.94), rgba(5, 9, 14, 0.98));
+  --settings-frame-bg:
+    radial-gradient(circle at top right, rgba(217, 98, 59, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(18, 27, 36, 0.92), rgba(10, 16, 23, 0.94));
+  --settings-frame-shadow:
+    0 22px 50px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --settings-row-hover: rgba(255, 255, 255, 0.024);
+  --settings-row-focus-border: var(--accent);
+  --settings-row-focus-bg: linear-gradient(90deg, rgba(217, 98, 59, 0.13), rgba(79, 168, 199, 0.05));
+  --settings-category-active-border: rgba(239, 142, 73, 0.34);
+  --settings-category-active-bg: linear-gradient(90deg, rgba(217, 98, 59, 0.16), rgba(255, 255, 255, 0.03));
+  --settings-category-hover-bg: linear-gradient(90deg, rgba(79, 168, 199, 0.07), rgba(255, 255, 255, 0.01));
+  --settings-title-dot: var(--accent-strong);
+  --settings-title-glow: rgba(217, 98, 59, 0.4);
 }
 
 html,
