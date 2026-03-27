@@ -7,6 +7,7 @@ import { SettingsWorkspace } from "../panels/SettingsWorkspace";
 
 export function IdeWorkbench() {
   const { isMarketplaceView, isSettingsView } = useIde();
+  const showSidebar = !isSettingsView;
   const {
     isResizing,
     layoutRef,
@@ -22,14 +23,19 @@ export function IdeWorkbench() {
         ref={layoutRef}
         className="relative grid h-screen w-full bg-[var(--workbench-surface)]"
         style={{
-          gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)`,
+          gridTemplateColumns: showSidebar ? `${sidebarWidth}px minmax(0, 1fr)` : "0px minmax(0, 1fr)",
         }}
       >
-        <div className="min-w-0 overflow-hidden bg-[image:var(--sidebar-bg)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-          <Sidebar />
-        </div>
+        {showSidebar && (
+          <div className="min-w-0 overflow-hidden bg-[image:var(--sidebar-bg)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
+            <Sidebar />
+          </div>
+        )}
 
-        <div className="min-w-0 overflow-hidden bg-[image:var(--editor-bg)]">
+        <div
+          className="min-w-0 overflow-hidden bg-[image:var(--editor-bg)]"
+          style={showSidebar ? undefined : { gridColumn: "2 / 3" }}
+        >
           {isMarketplaceView ? (
             <MarketplaceWorkspace />
           ) : isSettingsView ? (
@@ -39,23 +45,25 @@ export function IdeWorkbench() {
           )}
         </div>
 
-        <button
-          aria-label="Redimensionar panel lateral"
-          className={`absolute inset-y-0 z-20 cursor-col-resize bg-transparent transition ${
-            isResizing ? "bg-white/[0.03]" : "hover:bg-transparent"
-          }`}
-          onDoubleClick={resetSidebarWidth}
-          onPointerDown={(event) => {
-            event.preventDefault();
-            startSidebarResize();
-          }}
-          style={{
-            left: `${sidebarWidth - resizerWidth / 2}px`,
-            width: `${resizerWidth}px`,
-          }}
-          title="Arrastra para cambiar el tamaño"
-          type="button"
-        />
+        {showSidebar && (
+          <button
+            aria-label="Redimensionar panel lateral"
+            className={`absolute inset-y-0 z-20 cursor-col-resize bg-transparent transition ${
+              isResizing ? "bg-white/[0.03]" : "hover:bg-transparent"
+            }`}
+            onDoubleClick={resetSidebarWidth}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              startSidebarResize();
+            }}
+            style={{
+              left: `${sidebarWidth - resizerWidth / 2}px`,
+              width: `${resizerWidth}px`,
+            }}
+            title="Arrastra para cambiar el tamaño"
+            type="button"
+          />
+        )}
       </section>
     </main>
   );
