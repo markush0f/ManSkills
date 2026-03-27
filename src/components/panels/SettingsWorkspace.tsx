@@ -71,11 +71,11 @@ export function SettingsWorkspace() {
     >
       <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-[radial-gradient(circle_at_top_right,rgba(217,98,59,0.12),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(79,168,199,0.07),transparent_28%)]">
         <SettingsTabsHeader
-          activeFileId={activeFileId}
           closeFile={closeFile}
           openFile={openFile}
           openFiles={openFiles}
           openSettings={openSettings}
+          returnToEditor={() => openFile(activeFileId)}
         />
 
         <div className="grid h-full min-h-0 xl:grid-cols-[220px_minmax(0,1fr)]">
