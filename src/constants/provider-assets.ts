@@ -230,15 +230,15 @@ function matchesProviderAlias(segment: string, alias: string) {
 }
 
 function findMatchingAsset<T extends { aliases: string[] }>(assets: T[], name?: string, path?: string) {
-  const segments = [name ?? "", ...(path ? path.split(/[\\/]+/) : [])]
-    .map(normalizeProviderSegment)
-    .filter(Boolean);
+  const segment = normalizeProviderSegment(name ?? path ?? "");
 
-  for (const segment of segments) {
-    for (const asset of assets) {
-      if (asset.aliases.some((alias) => matchesProviderAlias(segment, alias))) {
-        return asset;
-      }
+  if (!segment) {
+    return null;
+  }
+
+  for (const asset of assets) {
+    if (asset.aliases.some((alias) => matchesProviderAlias(segment, alias))) {
+      return asset;
     }
   }
 
