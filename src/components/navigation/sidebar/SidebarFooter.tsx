@@ -83,7 +83,7 @@ export function SidebarFooter({
       >
         <FooterButton
           active={isMarketplaceView}
-          icon={<StorefrontIcon className="h-4 w-4" weight="duotone" />}
+          icon={<StorefrontIcon className="h-[18px] w-[18px]" weight="duotone" />}
           label="Marketplace"
           onClick={openMarketplace}
           placement={placement}
@@ -91,7 +91,7 @@ export function SidebarFooter({
         />
         <FooterButton
           active={isSettingsView}
-          icon={<GearSixIcon className="h-4 w-4" weight="duotone" />}
+          icon={<GearSixIcon className="h-[18px] w-[18px]" weight="duotone" />}
           label="Configuracion"
           onClick={openSettings}
           placement={placement}

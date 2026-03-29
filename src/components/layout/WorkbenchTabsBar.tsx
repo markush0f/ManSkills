@@ -5,7 +5,7 @@ import { getFileName } from "../../ide/utils";
 
 function CloseTabIcon() {
   return (
-    <XIcon className="h-3.5 w-3.5" weight="bold" />
+    <XIcon className="h-4 w-4" weight="bold" />
   );
 }
 
@@ -59,7 +59,7 @@ export function WorkbenchTabsBar({
             </span>
             {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />}
             <span
-              className={`inline-flex h-4 w-4 items-center justify-center transition-opacity ${
+              className={`inline-flex h-[18px] w-[18px] items-center justify-center transition-opacity ${
                 isActive
                   ? "text-[var(--muted)] hover:text-[var(--text)]"
                   : "text-[var(--muted)] opacity-0 hover:text-[var(--text)] group-hover:opacity-100"
@@ -93,7 +93,7 @@ export function WorkbenchTabsBar({
               <span className="absolute inset-x-0 bottom-0 h-px bg-[var(--accent)]" />
             )}
             {tab.icon ? (
-              <span className={`inline-flex h-4 w-4 items-center justify-center ${isActive ? "text-[var(--text)]" : "text-[var(--muted)]"}`}>
+              <span className={`inline-flex h-[18px] w-[18px] items-center justify-center ${isActive ? "text-[var(--text)]" : "text-[var(--muted)]"}`}>
                 {tab.icon}
               </span>
             ) : (
@@ -103,7 +103,7 @@ export function WorkbenchTabsBar({
             )}
             <span>{tab.label}</span>
             <span
-              className={`inline-flex h-4 w-4 items-center justify-center transition-opacity ${
+              className={`inline-flex h-[18px] w-[18px] items-center justify-center transition-opacity ${
                 isActive
                   ? "text-[var(--muted)] hover:text-[var(--text)]"
                   : "text-[var(--muted)] opacity-0 hover:text-[var(--text)] group-hover:opacity-100"

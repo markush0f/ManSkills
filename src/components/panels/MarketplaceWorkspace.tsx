@@ -162,7 +162,7 @@ function SkillListRow({
         <div className="text-[12px] text-[var(--muted)] xl:text-right">{skill.author}</div>
         <div className="text-[12px] text-[var(--muted)] xl:text-right">{skill.downloads}</div>
         <div className="flex items-center gap-1 text-[12px] text-[var(--muted)] xl:justify-end">
-          <StarIcon className="h-3.5 w-3.5 text-[var(--accent-strong)]" weight="fill" />
+          <StarIcon className="h-4 w-4 text-[var(--accent-strong)]" weight="fill" />
           {skill.rating}
         </div>
         <div className="flex xl:justify-end">

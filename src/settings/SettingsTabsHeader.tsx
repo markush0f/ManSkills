@@ -28,7 +28,7 @@ export function SettingsTabsHeader({
               {
                 badge: "cfg",
                 id: "__settings__",
-                icon: <GearSixIcon className="h-4 w-4 text-[var(--accent-strong)]" weight="duotone" />,
+                icon: <GearSixIcon className="h-[18px] w-[18px] text-[var(--accent-strong)]" weight="duotone" />,
                 label: "Settings",
               },
             ]}
@@ -60,7 +60,7 @@ export function SettingsTabsHeader({
             title="Volver"
             type="button"
           >
-            <ArrowLeftIcon className="h-3.5 w-3.5" weight="bold" />
+            <ArrowLeftIcon className="h-4 w-4" weight="bold" />
           </button>
         </div>
       </div>

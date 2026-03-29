@@ -46,7 +46,7 @@ function PreviewModeIcon({
   isActive: boolean;
   mode: ContentView;
 }) {
-  const iconClassName = "h-3.5 w-3.5";
+  const iconClassName = "h-[18px] w-[18px]";
   const weight = isActive ? "fill" : "regular";
 
   if (mode === "code") {
