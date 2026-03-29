@@ -4,6 +4,23 @@ import {
 } from "./sidebarTreeUtils";
 import { ExpandIcon, FileNodeIcon, FolderNodeIcon, SkillNodeIcon } from "./SidebarTreeIcons";
 
+function isSkillsDirectoryNode(node: SystemSkillTreeNode) {
+  return node.kind === "directory" && (node.name.toLowerCase() === "skill" || node.name.toLowerCase() === "skills");
+}
+
+function sortSystemNodesForDisplay(nodes: SystemSkillTreeNode[]) {
+  return [...nodes].sort((left, right) => {
+    const leftIsSkills = isSkillsDirectoryNode(left);
+    const rightIsSkills = isSkillsDirectoryNode(right);
+
+    if (leftIsSkills === rightIsSkills) {
+      return 0;
+    }
+
+    return leftIsSkills ? -1 : 1;
+  });
+}
+
 function getSystemFileIconTone(language?: NonNullable<SystemSkillTreeNode["file"]>["language"]) {
   if (language === "md") {
     return "text-[var(--accent)]";
@@ -59,11 +76,9 @@ export function SystemSkillTreeList({
 }: SystemSkillTreeListProps) {
   return (
     <>
-      {nodes.map((node) => {
+      {sortSystemNodesForDisplay(nodes).map((node) => {
         if (node.kind === "root" || node.kind === "directory") {
-          const isSkillsDirectory =
-            node.kind === "directory" &&
-            (node.name.toLowerCase() === "skill" || node.name.toLowerCase() === "skills");
+          const isSkillsDirectory = isSkillsDirectoryNode(node);
           const isAutoExpandedDirectory = node.kind === "directory" && node.name.toLowerCase() === "skills";
           const isExpanded = isAutoExpandedDirectory || searchActive || expandedNodeIds.has(node.id);
           const isRoot = node.kind === "root";

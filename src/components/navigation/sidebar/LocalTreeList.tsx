@@ -2,6 +2,23 @@ import type { IdeFile, TreeNode } from "../../../types";
 import { getFileName } from "../../../ide/utils";
 import { ExpandIcon, FileNodeIcon, FolderNodeIcon } from "./SidebarTreeIcons";
 
+function isSkillsDirectoryNode(node: TreeNode) {
+  return node.kind === "folder" && (node.name.toLowerCase() === "skill" || node.name.toLowerCase() === "skills");
+}
+
+function sortLocalNodesForDisplay(nodes: TreeNode[]) {
+  return [...nodes].sort((left, right) => {
+    const leftIsSkills = isSkillsDirectoryNode(left);
+    const rightIsSkills = isSkillsDirectoryNode(right);
+
+    if (leftIsSkills === rightIsSkills) {
+      return 0;
+    }
+
+    return leftIsSkills ? -1 : 1;
+  });
+}
+
 function getLocalFileIconTone(language?: IdeFile["language"], active?: boolean) {
   if (language === "md") {
     return active ? "text-[var(--accent-strong)]" : "text-[var(--accent)]";
@@ -37,9 +54,9 @@ export function LocalTreeList({
 }: LocalTreeListProps) {
   return (
     <>
-      {nodes.map((node) => {
+      {sortLocalNodesForDisplay(nodes).map((node) => {
         if (node.kind === "folder") {
-          const isSkillsDirectory = node.name.toLowerCase() === "skill" || node.name.toLowerCase() === "skills";
+          const isSkillsDirectory = isSkillsDirectoryNode(node);
           const isExpanded = true;
 
           return (
