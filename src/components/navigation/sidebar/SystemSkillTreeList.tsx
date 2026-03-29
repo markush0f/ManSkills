@@ -79,8 +79,7 @@ export function SystemSkillTreeList({
       {sortSystemNodesForDisplay(nodes).map((node) => {
         if (node.kind === "root" || node.kind === "directory") {
           const isSkillsDirectory = isSkillsDirectoryNode(node);
-          const isAutoExpandedDirectory = node.kind === "directory" && node.name.toLowerCase() === "skills";
-          const isExpanded = isAutoExpandedDirectory || searchActive || expandedNodeIds.has(node.id);
+          const isExpanded = searchActive || expandedNodeIds.has(node.id);
           const isRoot = node.kind === "root";
 
           return (
