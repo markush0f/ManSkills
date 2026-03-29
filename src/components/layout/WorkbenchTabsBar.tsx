@@ -45,8 +45,8 @@ export function WorkbenchTabsBar({
             key={file.id}
             className={`group relative inline-flex h-full shrink-0 items-center gap-2 border-r border-[var(--border)] px-3.5 text-[12px] transition-colors ${
               isActive
-                ? "bg-white/[0.018] text-[var(--text)]"
-                : "bg-transparent text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
+                ? "bg-white/[0.03] text-[var(--text)]"
+                : "bg-transparent text-[var(--muted)] hover:bg-white/[0.015] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(file.id)}
             type="button"
@@ -86,8 +86,8 @@ export function WorkbenchTabsBar({
             key={tab.id}
             className={`group relative inline-flex h-full shrink-0 items-center gap-2 border-r border-[var(--border)] px-3.5 text-[12px] transition-colors ${
               isActive
-                ? "bg-white/[0.018] text-[var(--text)]"
-                : "bg-transparent text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
+                ? "bg-white/[0.03] text-[var(--text)]"
+                : "bg-transparent text-[var(--muted)] hover:bg-white/[0.015] hover:text-[var(--text)]"
             }`}
             onClick={() => onOpenTab(tab.id)}
             type="button"

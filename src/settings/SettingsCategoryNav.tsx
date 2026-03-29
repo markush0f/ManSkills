@@ -12,9 +12,9 @@ function CategoryButton({
 }) {
   return (
     <button
-      className={`flex w-full items-center gap-2 border-l px-3 py-2.5 text-left text-[12px] transition ${
+      className={`flex w-full items-center gap-2 rounded-r-[10px] border-l px-3 py-2.5 text-left text-[12px] transition ${
         active
-          ? "border-[var(--settings-category-active-border)] bg-[image:var(--settings-category-active-bg)] text-[var(--text)]"
+          ? "border-[var(--settings-category-active-border)] bg-[image:var(--settings-category-active-bg)] text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
           : "border-transparent text-[var(--muted)] hover:bg-[image:var(--settings-category-hover-bg)] hover:text-[var(--text)]"
       }`}
       onClick={onClick}
@@ -48,9 +48,9 @@ export function SettingsCategoryNav({
       <div className="border-b border-[var(--border)] px-3 py-3">
         <div className="relative">
           <TextInput
-            className="bg-black/20"
+            className="bg-black/20 pr-10"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search settings"
+            placeholder="Buscar ajustes"
             value={query}
           />
           <span className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-center text-[var(--muted)]">
@@ -73,7 +73,7 @@ export function SettingsCategoryNav({
         </div>
       </div>
 
-      <div className="py-2">
+      <div className="space-y-1 py-2">
         {categories.map((category) => (
           <CategoryButton
             key={category.id}

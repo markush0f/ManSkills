@@ -7,7 +7,7 @@ import { SettingsWorkspace } from "../panels/SettingsWorkspace";
 
 export function IdeWorkbench() {
   const { isMarketplaceView, isSettingsView } = useIde();
-  const showSidebar = !isSettingsView;
+  const showSidebar = true;
   const {
     isResizing,
     layoutRef,

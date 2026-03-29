@@ -16,9 +16,9 @@ export function SidebarSearch({ query, setQuery }: SidebarSearchProps) {
         <Icon icon="codicon:search" className="h-3.5 w-3.5" />
       </span>
       <TextInput
-        className="h-8 rounded-none border-[var(--border)] bg-white/[0.015] px-2 pl-8 shadow-none focus:bg-white/[0.03]"
+        className="h-8 rounded-[10px] border-[var(--border)] bg-white/[0.015] px-2.5 pl-8 shadow-none focus:bg-white/[0.03]"
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search...z"
+        placeholder="Buscar skills o archivos"
         value={query}
       />
     </div>

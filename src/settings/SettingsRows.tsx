@@ -7,7 +7,7 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="mx-5 mb-5 overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+    <section className="mx-5 mb-5 overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))]">
       <div>{children}</div>
     </section>
   );

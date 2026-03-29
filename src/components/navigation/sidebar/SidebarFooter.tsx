@@ -33,19 +33,19 @@ function FooterButton({
         ? "text-[var(--cyan)]"
         : "text-[var(--violet)]";
   const headerButtonClass = active
-    ? "bg-white/[0.02] text-[var(--text)]"
-    : "bg-transparent text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]";
+    ? "border-white/[0.06] bg-white/[0.028] text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+    : "border-transparent bg-transparent text-[var(--muted)] hover:border-white/[0.03] hover:bg-white/[0.015] hover:text-[var(--text)]";
   const footerButtonClass = active
-    ? "bg-white/[0.018] text-[var(--text)]"
-    : "bg-transparent text-[var(--muted)] hover:bg-white/[0.03] hover:text-[var(--text)]";
+    ? "border-white/[0.06] bg-white/[0.022] text-[var(--text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+    : "border-transparent bg-transparent text-[var(--muted)] hover:border-white/[0.04] hover:bg-white/[0.03] hover:text-[var(--text)]";
 
   return (
     <button
       aria-label={label}
-      className={`relative inline-flex items-center justify-center px-3 transition-colors ${
+      className={`relative inline-flex items-center justify-center border px-3 transition-colors ${
         placement === "header"
-          ? `h-8 w-8 min-w-8 px-0 ${headerButtonClass}`
-          : `h-11 min-w-11 rounded-none ${footerButtonClass}`
+          ? `h-8 w-8 min-w-8 rounded-[10px] px-0 ${headerButtonClass}`
+          : `h-11 min-w-11 rounded-[10px] ${footerButtonClass}`
       }`}
       onClick={onClick}
       title={label}
@@ -78,8 +78,8 @@ export function SidebarFooter({
       <div
         className={
           isHeader
-            ? "flex w-[72px] items-center justify-end gap-0.5"
-            : "flex items-center justify-center gap-2 border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5"
+            ? "flex w-[72px] items-center justify-end gap-1"
+            : "flex items-center justify-center gap-2 rounded-[12px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5"
         }
       >
         <FooterButton

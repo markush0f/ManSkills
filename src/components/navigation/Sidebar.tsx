@@ -58,7 +58,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${shellPanelClass} relative flex h-full min-h-0 flex-col overflow-hidden bg-[image:var(--sidebar-bg)] text-[13px] before:pointer-events-none before:absolute before:inset-x-0 before:top-[var(--app-header-height)] before:h-24 before:bg-[linear-gradient(180deg,rgba(138,108,230,0.08),transparent)] before:content-['']`}
+      className={`${shellPanelClass} relative flex h-full min-h-0 flex-col overflow-hidden bg-[image:var(--sidebar-bg)] text-[13px]`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
       <div className="relative z-[1] grid h-[var(--app-header-height)] grid-cols-[minmax(0,1fr)_72px] items-center gap-1.5 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
@@ -79,7 +79,7 @@ export function Sidebar() {
       <div
         className={`relative z-[1] flex-1 overflow-auto border-r border-[var(--border)] bg-[var(--sidebar-surface)] ${compact ? "px-2 pb-2 pt-0" : "px-2 pb-2 pt-0"}`}
       >
-        <div className="space-y-3 px-2 pb-3 pt-2">
+        <div className="space-y-3 px-2.5 pb-3 pt-3">
           {hasSystemSkillTree ? (
             filteredSystemSkillTree.length > 0 ? (
               <SystemSkillTreeList

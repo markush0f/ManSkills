@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, SelectHTMLAttributes } from "react";
 
 const controlBaseClass =
-  "w-full rounded-[10px] border border-[var(--border)] bg-white/[0.03] text-[12px] text-[var(--text)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--control-focus-border)] focus:bg-[var(--control-focus-bg)]";
+  "w-full rounded-[10px] border border-[var(--border)] bg-white/[0.02] text-[12px] text-[var(--text)] outline-none shadow-none transition placeholder:text-[var(--muted)] focus:border-[var(--control-focus-border)] focus:bg-white/[0.03] focus:shadow-none";
 
 function joinClasses(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(" ");
