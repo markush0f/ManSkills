@@ -53,7 +53,7 @@ export function LocalTreeList({
                   <ExpandIcon expanded={isExpanded} />
                 </span>
                 <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] text-[var(--accent)]">
-                  <FolderNodeIcon expanded={isExpanded} />
+                  <FolderNodeIcon expanded={isExpanded} name={node.name} path={node.path} />
                 </span>
                 <span className="truncate">{node.name}</span>
               </div>

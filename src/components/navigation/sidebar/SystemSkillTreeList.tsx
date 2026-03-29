@@ -83,7 +83,7 @@ export function SystemSkillTreeList({
                     isRoot ? "text-[var(--accent-strong)]" : "text-[var(--violet)]"
                   }`}
                 >
-                  <FolderNodeIcon expanded={isExpanded} root={isRoot} />
+                  <FolderNodeIcon expanded={isExpanded} name={node.name} path={node.path} root={isRoot} />
                 </span>
                 <span className="truncate">{node.name}</span>
               </button>
