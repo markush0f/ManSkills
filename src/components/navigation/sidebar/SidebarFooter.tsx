@@ -1,7 +1,6 @@
-import { Icon, addCollection } from "@iconify/react";
-import { icons as codiconIcons } from "@iconify-json/codicon";
-
-addCollection(codiconIcons);
+import { GearSixIcon } from "@phosphor-icons/react/dist/csr/GearSix";
+import { StorefrontIcon } from "@phosphor-icons/react/dist/csr/Storefront";
+import type { ReactNode } from "react";
 
 type SidebarFooterProps = {
   isMarketplaceView: boolean;
@@ -20,7 +19,7 @@ function FooterButton({
   tone,
 }: {
   active: boolean;
-  icon: string;
+  icon: ReactNode;
   label: string;
   onClick: () => void;
   placement: "footer" | "header";
@@ -52,7 +51,7 @@ function FooterButton({
       type="button"
     >
       <span className={`inline-flex h-5 w-5 items-center justify-center ${iconTone}`}>
-        <Icon icon={icon} className="h-4 w-4" />
+        {icon}
       </span>
     </button>
   );
@@ -84,7 +83,7 @@ export function SidebarFooter({
       >
         <FooterButton
           active={isMarketplaceView}
-          icon="codicon:extensions"
+          icon={<StorefrontIcon className="h-4 w-4" weight="duotone" />}
           label="Marketplace"
           onClick={openMarketplace}
           placement={placement}
@@ -92,7 +91,7 @@ export function SidebarFooter({
         />
         <FooterButton
           active={isSettingsView}
-          icon="codicon:settings-gear"
+          icon={<GearSixIcon className="h-4 w-4" weight="duotone" />}
           label="Configuracion"
           onClick={openSettings}
           placement={placement}

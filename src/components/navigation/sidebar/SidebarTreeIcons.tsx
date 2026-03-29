@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon, addCollection } from "@iconify/react";
 import { icons as codiconIcons } from "@iconify-json/codicon";
 import type { IdeFile, SystemSkillTreeNode } from "../../../types";
-import { findProviderAsset } from "../../../constants/provider-assets";
+import { findProviderAsset, findSpecialFolderAsset } from "../../../constants/provider-assets";
 
 addCollection(codiconIcons);
 
@@ -51,7 +51,7 @@ function ProviderFolderImage({
   return (
     <img
       alt={alt}
-      className="h-4 w-4 object-contain"
+      className="h-[18px] w-[18px] object-contain"
       onError={() => setFailed(true)}
       src={assetPath}
     />
@@ -78,7 +78,18 @@ export function FolderNodeIcon({
   path?: string;
   root?: boolean;
 }) {
+  const specialFolder = useMemo(() => findSpecialFolderAsset(name, path), [name, path]);
   const provider = useMemo(() => findProviderAsset(name, path), [name, path]);
+
+  if (specialFolder) {
+    return (
+      <ProviderFolderImage
+        alt={`${specialFolder.label} folder`}
+        assetPath={specialFolder.assetPath}
+        fallback={<DefaultFolderIcon expanded={expanded} root={root} />}
+      />
+    );
+  }
 
   if (provider) {
     return (
@@ -94,7 +105,7 @@ export function FolderNodeIcon({
 }
 
 export function SkillNodeIcon() {
-  return <Icon icon="codicon:folder-library" className="h-4 w-4" />;
+  return <Icon icon="codicon:folder-library" className="h-[18px] w-[18px]" />;
 }
 
 export function FileNodeIcon({

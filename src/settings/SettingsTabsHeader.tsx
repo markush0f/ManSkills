@@ -1,9 +1,7 @@
-import { Icon, addCollection } from "@iconify/react";
-import { icons as codiconIcons } from "@iconify-json/codicon";
+import { ArrowLeftIcon } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { GearSixIcon } from "@phosphor-icons/react/dist/csr/GearSix";
 import type { IdeFile } from "../types";
 import { WorkbenchTabsBar } from "../components/layout/WorkbenchTabsBar";
-
-addCollection(codiconIcons);
 
 type SettingsTabsHeaderProps = {
   closeFile: (fileId: string) => void;
@@ -30,7 +28,7 @@ export function SettingsTabsHeader({
               {
                 badge: "cfg",
                 id: "__settings__",
-                icon: <Icon icon="codicon:settings-gear" className="h-4 w-4 text-[var(--accent-strong)]" />,
+                icon: <GearSixIcon className="h-4 w-4 text-[var(--accent-strong)]" weight="duotone" />,
                 label: "Settings",
               },
             ]}
@@ -62,7 +60,7 @@ export function SettingsTabsHeader({
             title="Volver"
             type="button"
           >
-            <Icon icon="codicon:arrow-left" className="h-3.5 w-3.5" />
+            <ArrowLeftIcon className="h-3.5 w-3.5" weight="bold" />
           </button>
         </div>
       </div>

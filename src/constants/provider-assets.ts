@@ -5,6 +5,22 @@ export type ProviderAsset = {
   aliases: string[];
 };
 
+export type FolderAsset = {
+  assetPath: string;
+  label: string;
+  slug: string;
+  aliases: string[];
+};
+
+export const SPECIAL_FOLDER_ASSETS: FolderAsset[] = [
+  {
+    assetPath: "/robot.svg",
+    label: "Agents",
+    slug: "agents",
+    aliases: ["agent", "agents"],
+  },
+];
+
 export const PROVIDER_ASSETS: ProviderAsset[] = [
   {
     assetPath: "/providers/claude.svg",
@@ -213,18 +229,26 @@ function matchesProviderAlias(segment: string, alias: string) {
   );
 }
 
-export function findProviderAsset(name?: string, path?: string) {
+function findMatchingAsset<T extends { aliases: string[] }>(assets: T[], name?: string, path?: string) {
   const segments = [name ?? "", ...(path ? path.split(/[\\/]+/) : [])]
     .map(normalizeProviderSegment)
     .filter(Boolean);
 
   for (const segment of segments) {
-    for (const provider of PROVIDER_ASSETS) {
-      if (provider.aliases.some((alias) => matchesProviderAlias(segment, alias))) {
-        return provider;
+    for (const asset of assets) {
+      if (asset.aliases.some((alias) => matchesProviderAlias(segment, alias))) {
+        return asset;
       }
     }
   }
 
   return null;
+}
+
+export function findSpecialFolderAsset(name?: string, path?: string) {
+  return findMatchingAsset(SPECIAL_FOLDER_ASSETS, name, path);
+}
+
+export function findProviderAsset(name?: string, path?: string) {
+  return findMatchingAsset(PROVIDER_ASSETS, name, path);
 }

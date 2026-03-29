@@ -1,14 +1,11 @@
-import { Icon, addCollection } from "@iconify/react";
-import { icons as codiconIcons } from "@iconify-json/codicon";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import type { ReactNode } from "react";
 import type { IdeFile } from "../../types";
 import { getFileName } from "../../ide/utils";
 
-addCollection(codiconIcons);
-
 function CloseTabIcon() {
   return (
-    <Icon icon="codicon:close" className="h-3.5 w-3.5" />
+    <XIcon className="h-3.5 w-3.5" weight="bold" />
   );
 }
 

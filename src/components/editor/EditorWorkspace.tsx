@@ -1,5 +1,6 @@
-import { Icon, addCollection } from "@iconify/react";
-import { icons as codiconIcons } from "@iconify-json/codicon";
+import { CodeIcon } from "@phosphor-icons/react/dist/csr/Code";
+import { EyeIcon } from "@phosphor-icons/react/dist/csr/Eye";
+import { SplitHorizontalIcon } from "@phosphor-icons/react/dist/csr/SplitHorizontal";
 import Editor from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import { useDeferredValue, useEffect, useEffectEvent, useState } from "react";
@@ -11,14 +12,12 @@ import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { shellPanelClass } from "../shared/ui";
 
-addCollection(codiconIcons);
-
 type ContentView = "preview" | "code" | "split";
 
-const PREVIEW_MODES: Array<{ icon: string; label: string; mode: ContentView }> = [
-  { icon: "codicon:code", label: "Code", mode: "code" },
-  { icon: "codicon:open-preview", label: "Preview", mode: "preview" },
-  { icon: "codicon:split-horizontal", label: "Split", mode: "split" },
+const PREVIEW_MODES: Array<{ label: string; mode: ContentView }> = [
+  { label: "Code", mode: "code" },
+  { label: "Preview", mode: "preview" },
+  { label: "Split", mode: "split" },
 ];
 
 function getMonacoLanguage(language: IdeFile["language"]) {
@@ -38,6 +37,27 @@ function buildSaveKeybinding(shortcut: SaveShortcut, monaco: typeof Monaco) {
   }
 
   return monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS;
+}
+
+function PreviewModeIcon({
+  isActive,
+  mode,
+}: {
+  isActive: boolean;
+  mode: ContentView;
+}) {
+  const iconClassName = "h-3.5 w-3.5";
+  const weight = isActive ? "fill" : "regular";
+
+  if (mode === "code") {
+    return <CodeIcon className={iconClassName} weight={weight} />;
+  }
+
+  if (mode === "preview") {
+    return <EyeIcon className={iconClassName} weight={weight} />;
+  }
+
+  return <SplitHorizontalIcon className={iconClassName} weight={weight} />;
 }
 
 export function EditorWorkspace() {
@@ -120,7 +140,6 @@ export function EditorWorkspace() {
   function renderPreviewModeButton(
     mode: "code" | "preview" | "split",
     label: string,
-    icon: string,
   ) {
     const isActive = contentView === mode;
 
@@ -139,7 +158,7 @@ export function EditorWorkspace() {
         {isActive && (
           <span className="absolute inset-x-0 bottom-0 h-px bg-[var(--accent)]" />
         )}
-        <Icon icon={icon} className="h-3.5 w-3.5" />
+        <PreviewModeIcon isActive={isActive} mode={mode} />
       </button>
     );
   }
@@ -248,9 +267,7 @@ export function EditorWorkspace() {
             className="absolute right-0 top-0 z-[2] grid h-full w-[126px] grid-cols-3 border-l border-[var(--border)] bg-[image:var(--topbar-bg)]"
             style={{ right: `${activeFileSaveError ? `${saveErrorWidth}px` : "0px"}` }}
           >
-            {PREVIEW_MODES.map(({ icon, label, mode }) =>
-              renderPreviewModeButton(mode, label, icon),
-            )}
+            {PREVIEW_MODES.map(({ label, mode }) => renderPreviewModeButton(mode, label))}
           </div>
         )}
         {activeFileSaveError && (
