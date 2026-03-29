@@ -50,6 +50,7 @@ function getSourceBadgeTone(source: SystemSkill["source"]) {
 }
 
 type SystemSkillTreeListProps = {
+  activeFileId?: string;
   compact: boolean;
   currentSkill?: SystemSkill;
   depth?: number;
@@ -63,6 +64,7 @@ type SystemSkillTreeListProps = {
 };
 
 export function SystemSkillTreeList({
+  activeFileId,
   compact,
   currentSkill,
   depth = 0,
@@ -123,6 +125,7 @@ export function SystemSkillTreeList({
               {isExpanded && (
                 <div className="space-y-1">
                   <SystemSkillTreeList
+                    activeFileId={activeFileId}
                     compact={compact}
                     currentSkill={currentSkill}
                     depth={depth + 1}
@@ -191,6 +194,7 @@ export function SystemSkillTreeList({
               {isExpanded && (
                 <div className="space-y-1">
                   <SystemSkillTreeList
+                    activeFileId={activeFileId}
                     compact={compact}
                     currentSkill={skill}
                     depth={depth + 1}
@@ -215,10 +219,17 @@ export function SystemSkillTreeList({
             return null;
           }
 
+          const activeSystemSkillFileId = `system-skill:${currentSkill.id}:${file.relativePath}`;
+          const isActive = activeFileId === activeSystemSkillFileId;
+
           return (
             <button
               key={node.id}
-              className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left transition text-[var(--muted)] hover:border-white/[0.04] hover:bg-white/[0.03] hover:text-[var(--text)] ${
+              className={`flex w-full items-center gap-2 rounded-[11px] border text-left transition ${
+                isActive
+                  ? "border-[var(--cyan)]/30 bg-[linear-gradient(90deg,rgba(79,168,199,0.14),rgba(255,255,255,0.04))] text-[var(--text)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]"
+                  : "border-transparent text-[var(--muted)] hover:border-white/[0.04] hover:bg-white/[0.03] hover:text-[var(--text)]"
+              } ${
                 compact ? "px-2 py-1.5 text-[13px]" : "px-2.5 py-1.5 text-sm"
               }`}
               onClick={() => onOpenSkillFile(currentSkill, file.relativePath)}

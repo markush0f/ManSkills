@@ -83,6 +83,7 @@ export function Sidebar() {
           {hasSystemSkillTree ? (
             filteredSystemSkillTree.length > 0 ? (
               <SystemSkillTreeList
+                activeFileId={activeFileId}
                 compact={compact}
                 expandedNodeIds={expandedSystemSkillNodeIds}
                 nodes={filteredSystemSkillTree}
