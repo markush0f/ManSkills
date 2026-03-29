@@ -61,6 +61,9 @@ export function SystemSkillTreeList({
     <>
       {nodes.map((node) => {
         if (node.kind === "root" || node.kind === "directory") {
+          const isSkillsDirectory =
+            node.kind === "directory" &&
+            (node.name.toLowerCase() === "skill" || node.name.toLowerCase() === "skills");
           const isAutoExpandedDirectory = node.kind === "directory" && node.name.toLowerCase() === "skills";
           const isExpanded = isAutoExpandedDirectory || searchActive || expandedNodeIds.has(node.id);
           const isRoot = node.kind === "root";
@@ -69,19 +72,34 @@ export function SystemSkillTreeList({
             <div key={node.id} className="space-y-1.5">
               <button
                 className={`flex w-full items-center rounded-[12px] border border-transparent font-medium text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
-                  compact ? "gap-1.5 px-2 py-1.5 text-[13px]" : "gap-2 px-2.5 py-2 text-sm"
+                  compact
+                    ? isSkillsDirectory
+                      ? "gap-2 px-2 py-2 text-[14px]"
+                      : "gap-1.5 px-2 py-1.5 text-[13px]"
+                    : isSkillsDirectory
+                      ? "gap-2.5 px-2.5 py-2.5 text-[15px]"
+                      : "gap-2 px-2.5 py-2 text-sm"
                 }`}
                 onClick={() => onToggleNode(node.id)}
                 style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
                 title={node.path}
                 type="button"
               >
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
+                <span
+                  className={`inline-flex items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)] ${
+                    isSkillsDirectory ? "h-[18px] w-[18px]" : "h-4 w-4"
+                  }`}
+                >
                   <ExpandIcon expanded={isExpanded} />
                 </span>
                 <span
-                  className={`inline-flex h-4 w-4 items-center justify-center rounded-[6px] ${
-                    isRoot ? "text-[var(--accent-strong)]" : "text-[var(--violet)]"
+                  className={`inline-flex items-center justify-center rounded-[6px] ${
+                    isRoot
+                      ? "text-[var(--accent-strong)]"
+                      : isSkillsDirectory
+                        ? "text-[var(--cyan-strong)]"
+                        : "text-[var(--violet)]"
+                  } ${isSkillsDirectory ? "h-[18px] w-[18px]" : "h-4 w-4"
                   }`}
                 >
                   <FolderNodeIcon expanded={isExpanded} name={node.name} path={node.path} root={isRoot} />
