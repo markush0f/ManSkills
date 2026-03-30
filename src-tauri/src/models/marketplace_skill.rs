@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MarketplaceSkill {
     pub id: String,
@@ -11,5 +11,6 @@ pub struct MarketplaceSkill {
     pub author: String,
     pub stars: Option<u64>,
     pub updated_at: Option<String>,
-    pub url: Option<String>,
+    pub github_url: Option<String>,
+    pub skill_url: Option<String>,
 }

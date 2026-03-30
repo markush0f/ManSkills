@@ -1,16 +1,23 @@
-use std::time::{Duration, Instant};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+};
 
 use reqwest::blocking::Client;
 use serde_json::Value;
 
-use crate::models::{MarketplaceSearchResponse, MarketplaceSkill};
+use crate::models::{MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill};
 
 const DEFAULT_LIMIT: u32 = 20;
 const DEFAULT_PAGE: u32 = 1;
 const MAX_LIMIT: u32 = 100;
 const SEARCH_URL: &str = "https://skillsmp.com/api/v1/skills/search";
+const GITHUB_API_ROOT: &str = "https://api.github.com/repos";
 const API_KEY_ENV: &str = "SKILLSMP_API_KEY";
 const DEFAULT_SUMMARY: &str = "No summary provided by SkillsMP.";
+const USER_AGENT: &str = "skills-ide-marketplace";
+const SKILL_MANIFEST_NAME: &str = "SKILL.md";
 
 pub struct MarketplaceService {
     client: Client,
@@ -80,6 +87,59 @@ impl MarketplaceService {
             normalized_limit,
             started_at.elapsed().as_millis(),
         )
+    }
+
+    pub fn install(
+        &self,
+        skill: MarketplaceSkill,
+        target: String,
+    ) -> Result<MarketplaceInstallResult, String> {
+        let github_url = skill
+            .github_url
+            .clone()
+            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
+        let reference = parse_github_tree_url(&github_url)?;
+        let install_root = resolve_install_root(&target)?;
+
+        fs::create_dir_all(&install_root)
+            .map_err(|_| "No se pudo preparar el directorio de instalacion.".to_string())?;
+
+        let final_root = install_root.join(&skill.slug);
+        if final_root.exists() {
+            return Err("La skill ya existe en el destino seleccionado.".to_string());
+        }
+
+        let temp_root = install_root.join(format!(
+            ".{}-tmp-{}",
+            skill.slug,
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|value| value.as_nanos())
+                .unwrap_or(0)
+        ));
+
+        fs::create_dir_all(&temp_root)
+            .map_err(|_| "No se pudo crear el directorio temporal de instalacion.".to_string())?;
+
+        let install_result = self.download_directory(&reference, &temp_root, "")?;
+
+        if !temp_root.join(SKILL_MANIFEST_NAME).exists() {
+            let _ = fs::remove_dir_all(&temp_root);
+            return Err("La skill descargada no contiene SKILL.md.".to_string());
+        }
+
+        fs::rename(&temp_root, &final_root).map_err(|_| {
+            let _ = fs::remove_dir_all(&temp_root);
+            "No se pudo mover la skill instalada al destino final.".to_string()
+        })?;
+
+        Ok(MarketplaceInstallResult {
+            skill_id: skill.id,
+            slug: skill.slug,
+            target,
+            installed_path: final_root.to_string_lossy().into_owned(),
+            file_count: install_result,
+        })
     }
 }
 
@@ -178,6 +238,10 @@ fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
     .or_else(|| read_nested_string(skill, &["github", "updatedAt"]));
     let url = read_first_string(skill, &["url", "htmlUrl", "html_url"])
         .or_else(|| read_nested_string(skill, &["github", "url"]));
+    let github_url = read_first_string(skill, &["githubUrl"])
+        .or_else(|| read_nested_string(skill, &["github", "url"]))
+        .or_else(|| read_nested_string(skill, &["github", "treeUrl"]));
+    let skill_url = read_first_string(skill, &["skillUrl"]).or(url);
 
     Some(MarketplaceSkill {
         id,
@@ -188,7 +252,8 @@ fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
         author,
         stars,
         updated_at,
-        url,
+        github_url,
+        skill_url,
     })
 }
 
@@ -263,11 +328,173 @@ fn map_api_error(status: u16, payload: &Value) -> String {
     }
 }
 
+fn resolve_install_root(target: &str) -> Result<PathBuf, String> {
+    match target {
+        "codex" => dirs::home_dir()
+            .map(|home| home.join(".codex").join("skills"))
+            .ok_or_else(|| "No se pudo resolver el home para instalar en Codex.".to_string()),
+        "claude" => dirs::home_dir()
+            .map(|home| home.join(".claude").join("skills"))
+            .ok_or_else(|| "No se pudo resolver el home para instalar en Claude.".to_string()),
+        "workspace" => std::env::current_dir()
+            .map(|path| path.join(".agents").join("skills"))
+            .map_err(|_| "No se pudo resolver el workspace actual.".to_string()),
+        _ => Err("Destino de instalacion no soportado.".to_string()),
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct GitHubTreeReference {
+    owner: String,
+    repo: String,
+    branch: String,
+    path: String,
+}
+
+fn parse_github_tree_url(url: &str) -> Result<GitHubTreeReference, String> {
+    let stripped = url
+        .strip_prefix("https://github.com/")
+        .or_else(|| url.strip_prefix("http://github.com/"))
+        .ok_or_else(|| "La skill no apunta a una URL GitHub valida.".to_string())?;
+    let segments = stripped.split('/').collect::<Vec<_>>();
+
+    if segments.len() < 5 || segments[2] != "tree" {
+        return Err("La URL GitHub de la skill no tiene el formato esperado.".to_string());
+    }
+
+    Ok(GitHubTreeReference {
+        owner: segments[0].to_string(),
+        repo: segments[1].to_string(),
+        branch: segments[3].to_string(),
+        path: segments[4..].join("/"),
+    })
+}
+
+#[derive(Debug)]
+struct GitHubEntry {
+    entry_type: String,
+    download_url: Option<String>,
+    name: String,
+    path: String,
+}
+
+impl MarketplaceService {
+    fn download_directory(
+        &self,
+        reference: &GitHubTreeReference,
+        output_root: &Path,
+        current_relative: &str,
+    ) -> Result<usize, String> {
+        let entries = self.fetch_github_directory(reference, current_relative)?;
+        let mut file_count = 0usize;
+
+        for entry in entries {
+            match entry.entry_type.as_str() {
+                "file" => {
+                    let download_url = entry
+                        .download_url
+                        .as_deref()
+                        .ok_or_else(|| "GitHub no devolvio una URL de descarga para un archivo.".to_string())?;
+                    let relative_path = entry
+                        .path
+                        .strip_prefix(&reference.path)
+                        .map(|value| value.trim_start_matches('/'))
+                        .unwrap_or(entry.path.as_str());
+                    let destination = output_root.join(to_relative_path_buf(relative_path));
+                    if let Some(parent) = destination.parent() {
+                        fs::create_dir_all(parent)
+                            .map_err(|_| "No se pudo crear la carpeta de destino.".to_string())?;
+                    }
+                    let bytes = self
+                        .client
+                        .get(download_url)
+                        .header("User-Agent", USER_AGENT)
+                        .send()
+                        .and_then(|response| response.error_for_status())
+                        .map_err(|_| "No se pudo descargar un archivo de la skill desde GitHub.".to_string())?
+                        .bytes()
+                        .map_err(|_| "No se pudo leer un archivo descargado de la skill.".to_string())?;
+                    fs::write(destination, bytes)
+                        .map_err(|_| "No se pudo escribir un archivo de la skill instalada.".to_string())?;
+                    file_count += 1;
+                }
+                "dir" => {
+                    let next_relative = if current_relative.is_empty() {
+                        entry.name.clone()
+                    } else {
+                        format!("{current_relative}/{}", entry.name)
+                    };
+                    file_count += self.download_directory(reference, output_root, &next_relative)?;
+                }
+                _ => {}
+            }
+        }
+
+        Ok(file_count)
+    }
+
+    fn fetch_github_directory(
+        &self,
+        reference: &GitHubTreeReference,
+        current_relative: &str,
+    ) -> Result<Vec<GitHubEntry>, String> {
+        let full_path = if current_relative.is_empty() {
+            reference.path.clone()
+        } else {
+            format!("{}/{}", reference.path, current_relative)
+        };
+
+        let response = self
+            .client
+            .get(format!(
+                "{}/{}/{}/contents/{}",
+                GITHUB_API_ROOT, reference.owner, reference.repo, full_path
+            ))
+            .header("User-Agent", USER_AGENT)
+            .query(&[("ref", reference.branch.as_str())])
+            .send()
+            .and_then(|response| response.error_for_status())
+            .map_err(|_| "No se pudo consultar el contenido de la skill en GitHub.".to_string())?;
+
+        let payload: Value = response
+            .json()
+            .map_err(|_| "GitHub devolvio un contenido no valido para la skill.".to_string())?;
+        let entries = payload
+            .as_array()
+            .ok_or_else(|| "GitHub no devolvio una carpeta valida para esta skill.".to_string())?;
+
+        Ok(entries
+            .iter()
+            .filter_map(|entry| {
+                Some(GitHubEntry {
+                    entry_type: entry.get("type")?.as_str()?.to_string(),
+                    download_url: entry
+                        .get("download_url")
+                        .and_then(Value::as_str)
+                        .map(str::to_string),
+                    name: entry.get("name")?.as_str()?.to_string(),
+                    path: entry.get("path")?.as_str()?.to_string(),
+                })
+            })
+            .collect())
+    }
+}
+
+fn to_relative_path_buf(value: &str) -> PathBuf {
+    let mut path = PathBuf::new();
+
+    for segment in value.split('/').filter(|segment| !segment.is_empty()) {
+        path.push(segment);
+    }
+
+    path
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
-    use super::parse_search_response;
+    use super::{parse_github_tree_url, parse_search_response, resolve_install_root};
 
     #[test]
     fn parse_search_response_supports_skills_array_shape() {
@@ -282,7 +509,8 @@ mod tests {
                     "author": "aj-geddes",
                     "stars": 132,
                     "updatedAt": "2026-03-04T07:30:00Z",
-                    "url": "https://skillsmp.com/skills/example"
+                    "githubUrl": "https://github.com/aj-geddes/useful-ai-prompts-skills/tree/main/skills/api",
+                    "skillUrl": "https://skillsmp.com/skills/example"
                 }
             ],
             "total": 695541
@@ -294,6 +522,10 @@ mod tests {
         assert_eq!(response.skills.len(), 1);
         assert_eq!(response.total, Some(695541));
         assert_eq!(response.skills[0].repository, "aj-geddes/useful-ai-prompts-skills");
+        assert_eq!(
+            response.skills[0].github_url.as_deref(),
+            Some("https://github.com/aj-geddes/useful-ai-prompts-skills/tree/main/skills/api")
+        );
     }
 
     #[test]
@@ -321,5 +553,26 @@ mod tests {
         assert_eq!(response.skills[0].name, "Install");
         assert_eq!(response.skills[0].author, "nickdirienzo");
         assert_eq!(response.skills[0].stars, Some(3));
+    }
+
+    #[test]
+    fn parse_github_tree_url_supports_tree_paths() {
+        let reference = parse_github_tree_url(
+            "https://github.com/pinkpixel-dev/skills-collection/tree/main/SKILLS/rust-pro",
+        )
+        .expect("github url should parse");
+
+        assert_eq!(reference.owner, "pinkpixel-dev");
+        assert_eq!(reference.repo, "skills-collection");
+        assert_eq!(reference.branch, "main");
+        assert_eq!(reference.path, "SKILLS/rust-pro");
+    }
+
+    #[test]
+    fn resolve_install_root_supports_workspace_target() {
+        let root = resolve_install_root("workspace").expect("workspace target should resolve");
+
+        assert!(root.to_string_lossy().contains(".agents"));
+        assert!(root.to_string_lossy().contains("skills"));
     }
 }

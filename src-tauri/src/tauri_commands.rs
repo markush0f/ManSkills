@@ -1,6 +1,6 @@
 use crate::{
     models::{
-        MarketplaceSearchResponse, SkillScanResponse, SkillTreeResponse,
+        MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill, SkillScanResponse, SkillTreeResponse,
         SystemSkillContentResponse, SystemSkillTreeFile,
     },
     services::{MarketplaceService, SkillService},
@@ -13,6 +13,14 @@ pub fn search_marketplace_skills(
     limit: Option<u32>,
 ) -> Result<MarketplaceSearchResponse, String> {
     MarketplaceService::new().search(query, page, limit)
+}
+
+#[tauri::command]
+pub fn install_marketplace_skill(
+    skill: MarketplaceSkill,
+    target: String,
+) -> Result<MarketplaceInstallResult, String> {
+    MarketplaceService::new().install(skill, target)
 }
 
 #[tauri::command]
