@@ -2,10 +2,11 @@ import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
 import { EditorWorkspace } from "../editor/EditorWorkspace";
 import { Sidebar } from "../navigation/Sidebar";
+import { MarketplaceWorkspace } from "../panels/MarketplaceWorkspace";
 import { SettingsWorkspace } from "../panels/SettingsWorkspace";
 
 export function IdeWorkbench() {
-  const { isSettingsView } = useIde();
+  const { isMarketplaceView, isSettingsView } = useIde();
   const showSidebar = true;
   const {
     isResizing,
@@ -37,6 +38,8 @@ export function IdeWorkbench() {
         >
           {isSettingsView ? (
             <SettingsWorkspace />
+          ) : isMarketplaceView ? (
+            <MarketplaceWorkspace />
           ) : (
             <EditorWorkspace />
           )}

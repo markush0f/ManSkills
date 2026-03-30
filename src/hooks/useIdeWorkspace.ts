@@ -6,12 +6,13 @@ import {
   getSystemSkillFileId,
   getSystemSkillMainFileId,
 } from "../ide/systemSkills";
+import { useSkillMarketplace } from "./useSkillMarketplace";
 import { useIdePreferences } from "./useIdePreferences";
 import { useSystemSkills } from "./useSystemSkills";
 import { useWorkspaceFiles } from "./useWorkspaceFiles";
 import type { SystemSkill, SystemSkillWatchEvent } from "../types";
 
-export type WorkspaceView = "editor" | "settings";
+export type WorkspaceView = "editor" | "settings" | "marketplace";
 
 const SKILLS_CHANGED_EVENT = "skills:changed";
 const WATCH_REFRESH_DEBOUNCE_MS = 350;
@@ -25,6 +26,7 @@ export function useIdeWorkspace() {
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
   const { preferences, updatePreferences } = useIdePreferences();
+  const marketplaceState = useSkillMarketplace();
   const workspaceFiles = useWorkspaceFiles();
   const systemSkillsState = useSystemSkills();
   const pendingWatchPathsRef = useRef<Set<string>>(new Set());
@@ -59,6 +61,14 @@ export function useIdeWorkspace() {
     systemSkillsError,
     systemSkillsLoading,
   } = systemSkillsState;
+  const {
+    marketplaceError,
+    marketplaceLoading,
+    marketplaceScanMs,
+    marketplaceScannedRoots,
+    marketplaceSkills,
+    refreshMarketplace,
+  } = marketplaceState;
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -107,7 +117,12 @@ export function useIdeWorkspace() {
       pendingWatchPathsRef.current.clear();
 
       refreshSystemSkillTree()
-        .then(() => refreshAffectedSystemSkills(changedPaths))
+        .then(() =>
+          Promise.all([
+            refreshAffectedSystemSkills(changedPaths),
+            refreshMarketplace(),
+          ]),
+        )
         .catch(() => undefined);
     }, WATCH_REFRESH_DEBOUNCE_MS);
 
@@ -152,6 +167,11 @@ export function useIdeWorkspace() {
 
   function openSettings() {
     setWorkspaceView("settings");
+  }
+
+  function openMarketplace() {
+    setActiveFileSaveError(null);
+    setWorkspaceView("marketplace");
   }
 
   function openFile(fileId: string) {
@@ -220,7 +240,10 @@ export function useIdeWorkspace() {
         return loadSystemSkillFiles(activeSkill)
           .then((response) => {
             mergeFiles(buildSystemSkillFiles(activeSkill, response));
-            return refreshSystemSkillTree();
+            return Promise.all([
+              refreshSystemSkillTree(),
+              refreshMarketplace(),
+            ]);
           })
           .catch(() => {
             setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
@@ -242,18 +265,26 @@ export function useIdeWorkspace() {
     closeFile,
     files,
     isSavingActiveFile,
+    isMarketplaceView: workspaceView === "marketplace",
     isSettingsView: workspaceView === "settings",
     listSystemSkillFiles,
     listedSystemSkillIds,
     listingSystemSkillIds,
+    marketplaceError,
+    marketplaceLoading,
+    marketplaceScanMs,
+    marketplaceScannedRoots,
+    marketplaceSkills,
     openEditor,
     openFile,
     openFiles,
+    openMarketplace,
     openSettings,
     openSystemSkill,
     openSystemSkillFile,
     openingSystemSkillIds,
     preferences,
+    refreshMarketplace,
     refreshSystemSkillTree,
     saveActiveFile,
     systemSkillActionError,

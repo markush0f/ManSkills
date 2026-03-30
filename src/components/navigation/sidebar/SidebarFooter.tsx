@@ -1,8 +1,11 @@
 import { GearSixIcon } from "@phosphor-icons/react/dist/csr/GearSix";
+import { BagSimpleIcon } from "@phosphor-icons/react/dist/csr/BagSimple";
 import type { ReactNode } from "react";
 
 type SidebarFooterProps = {
+  isMarketplaceView: boolean;
   isSettingsView: boolean;
+  openMarketplace: () => void;
   openSettings: () => void;
   placement?: "footer" | "header";
 };
@@ -55,7 +58,9 @@ function FooterButton({
 }
 
 export function SidebarFooter({
+  isMarketplaceView,
   isSettingsView,
+  openMarketplace,
   openSettings,
   placement = "footer",
 }: SidebarFooterProps) {
@@ -72,10 +77,18 @@ export function SidebarFooter({
       <div
         className={
           isHeader
-            ? "flex w-[36px] items-center justify-end gap-1"
+            ? "flex w-[72px] items-center justify-end gap-1"
             : "flex items-center justify-center gap-2 rounded-[12px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5"
         }
       >
+        <FooterButton
+          active={isMarketplaceView}
+          icon={<BagSimpleIcon className="h-[18px] w-[18px]" weight="duotone" />}
+          label="Marketplace"
+          onClick={openMarketplace}
+          placement={placement}
+          tone="violet"
+        />
         <FooterButton
           active={isSettingsView}
           icon={<GearSixIcon className="h-[18px] w-[18px]" weight="duotone" />}

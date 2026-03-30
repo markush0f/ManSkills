@@ -48,10 +48,12 @@ export function Sidebar() {
     activeFileId,
     clearSystemSkillActionError,
     files,
+    isMarketplaceView,
     isSettingsView,
     listSystemSkillFiles,
     listingSystemSkillIds,
     openFile,
+    openMarketplace,
     openSettings,
     openingSystemSkillIds,
     openSystemSkill,
@@ -113,13 +115,15 @@ export function Sidebar() {
       className={`${shellPanelClass} relative flex h-full min-h-0 flex-col overflow-hidden bg-[image:var(--sidebar-bg)] text-[13px]`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
-      <div className="relative z-[1] grid h-[var(--app-header-height)] grid-cols-[minmax(0,1fr)_36px] items-center gap-1.5 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
+      <div className="relative z-[1] grid h-[var(--app-header-height)] grid-cols-[minmax(0,1fr)_72px] items-center gap-1.5 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
         <div className="min-w-0">
           <SidebarSearch query={query} setQuery={setQuery} />
         </div>
-        <div className="w-[36px] shrink-0">
+        <div className="w-[72px] shrink-0">
           <SidebarFooter
+            isMarketplaceView={isMarketplaceView}
             isSettingsView={isSettingsView}
+            openMarketplace={openMarketplace}
             openSettings={openSettings}
             placement="header"
           />

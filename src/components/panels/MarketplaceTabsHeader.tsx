@@ -1,40 +1,40 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react/dist/csr/ArrowLeft";
-import { GearSixIcon } from "@phosphor-icons/react/dist/csr/GearSix";
-import type { IdeFile } from "../types";
-import { WorkbenchTabsBar } from "../components/layout/WorkbenchTabsBar";
+import { BagSimpleIcon } from "@phosphor-icons/react/dist/csr/BagSimple";
+import type { IdeFile } from "../../types";
+import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
 
-type SettingsTabsHeaderProps = {
+type MarketplaceTabsHeaderProps = {
   closeFile: (fileId: string) => void;
   openFile: (fileId: string) => void;
   openFiles: IdeFile[];
-  openSettings: () => void;
+  openMarketplace: () => void;
   returnToEditor: () => void;
 };
 
-export function SettingsTabsHeader({
+export function MarketplaceTabsHeader({
   closeFile,
   openFile,
   openFiles,
-  openSettings,
+  openMarketplace,
   returnToEditor,
-}: SettingsTabsHeaderProps) {
+}: MarketplaceTabsHeaderProps) {
   return (
     <div className="h-[var(--app-header-height)] min-w-0 overflow-hidden border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
       <div className="flex h-full min-w-0 items-stretch">
         <div className="min-w-0 flex-1 overflow-hidden">
           <WorkbenchTabsBar
-            activeTabId="__settings__"
+            activeTabId="__marketplace__"
             extraTabs={[
               {
-                badge: "cfg",
-                id: "__settings__",
-                icon: <GearSixIcon className="h-[18px] w-[18px] text-[var(--accent-strong)]" weight="duotone" />,
-                label: "Settings",
+                badge: "mkt",
+                id: "__marketplace__",
+                icon: <BagSimpleIcon className="h-[18px] w-[18px] text-[var(--cyan-strong)]" weight="duotone" />,
+                label: "Marketplace",
               },
             ]}
             fileTabs={openFiles}
             onCloseTab={(tabId) => {
-              if (tabId === "__settings__") {
+              if (tabId === "__marketplace__") {
                 returnToEditor();
                 return;
               }
@@ -42,8 +42,8 @@ export function SettingsTabsHeader({
               closeFile(tabId);
             }}
             onOpenTab={(tabId) => {
-              if (tabId === "__settings__") {
-                openSettings();
+              if (tabId === "__marketplace__") {
+                openMarketplace();
                 return;
               }
 
