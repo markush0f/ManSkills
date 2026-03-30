@@ -7,7 +7,10 @@ use std::{
 use reqwest::blocking::Client;
 use serde_json::Value;
 
-use crate::models::{MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill};
+use crate::models::{
+    MarketplaceInstallMetadata, MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill,
+    MarketplaceUninstallResult,
+};
 
 const DEFAULT_LIMIT: u32 = 20;
 const DEFAULT_PAGE: u32 = 1;
@@ -19,6 +22,8 @@ const DEFAULT_SUMMARY: &str = "No summary provided by SkillsMP.";
 const USER_AGENT: &str = "skills-ide-marketplace";
 const SKILL_MANIFEST_NAME: &str = "SKILL.md";
 const FEATURED_BROWSE_QUERY: &str = "skill";
+pub(crate) const MARKETPLACE_INSTALL_METADATA_FILE_NAME: &str = ".skills-ide-marketplace.json";
+const MARKETPLACE_INSTALLER_ID: &str = "skills-ide";
 
 pub struct MarketplaceService {
     client: Client,
@@ -91,7 +96,11 @@ impl MarketplaceService {
             .clone()
             .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
         let reference = parse_github_tree_url(&github_url)?;
-        let install_root = resolve_install_root(&target, collection.as_deref())?;
+        let normalized_collection = normalize_install_collection(collection.as_deref())?;
+        let normalized_collection_value = normalized_collection
+            .as_ref()
+            .map(|segments| segments.join("/"));
+        let install_root = resolve_install_root(&target, normalized_collection.as_deref())?;
 
         fs::create_dir_all(&install_root)
             .map_err(|_| "No se pudo preparar el directorio de instalacion.".to_string())?;
@@ -120,6 +129,15 @@ impl MarketplaceService {
             return Err("La skill descargada no contiene SKILL.md.".to_string());
         }
 
+        let metadata = build_marketplace_install_metadata(
+            &skill,
+            &target,
+            normalized_collection_value.as_deref(),
+            &final_root,
+            None,
+        );
+        write_marketplace_install_metadata(&temp_root, &metadata)?;
+
         fs::rename(&temp_root, &final_root).map_err(|_| {
             let _ = fs::remove_dir_all(&temp_root);
             "No se pudo mover la skill instalada al destino final.".to_string()
@@ -131,6 +149,77 @@ impl MarketplaceService {
             target,
             installed_path: final_root.to_string_lossy().into_owned(),
             file_count: install_result,
+        })
+    }
+
+    pub fn update(&self, skill: MarketplaceSkill, root_path: &str) -> Result<MarketplaceInstallResult, String> {
+        let github_url = skill
+            .github_url
+            .clone()
+            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
+        let reference = parse_github_tree_url(&github_url)?;
+        let final_root = PathBuf::from(root_path);
+        let parent_root = final_root
+            .parent()
+            .map(Path::to_path_buf)
+            .ok_or_else(|| "La ruta instalada de la skill no es valida.".to_string())?;
+        let existing_metadata = read_marketplace_install_metadata(&final_root);
+        let temp_root = build_temporary_skill_root(&parent_root, &skill.slug, "update");
+        let backup_root = build_temporary_skill_root(&parent_root, &skill.slug, "backup");
+
+        if !final_root.exists() {
+            return Err("La skill instalada ya no existe en disco.".to_string());
+        }
+
+        fs::create_dir_all(&temp_root)
+            .map_err(|_| "No se pudo crear el directorio temporal de actualizacion.".to_string())?;
+
+        let file_count = self.download_directory(&reference, &temp_root, "")?;
+
+        if !temp_root.join(SKILL_MANIFEST_NAME).exists() {
+            let _ = fs::remove_dir_all(&temp_root);
+            return Err("La actualizacion descargada no contiene SKILL.md.".to_string());
+        }
+
+        let metadata = build_marketplace_install_metadata(
+            &skill,
+            existing_metadata
+                .as_ref()
+                .and_then(|value| value.install_target.as_deref())
+                .unwrap_or("workspace"),
+            existing_metadata
+                .as_ref()
+                .and_then(|value| value.install_collection.as_deref()),
+            &final_root,
+            existing_metadata.as_ref(),
+        );
+        write_marketplace_install_metadata(&temp_root, &metadata)?;
+
+        replace_directory_atomically(&temp_root, &final_root, &backup_root)?;
+
+        Ok(MarketplaceInstallResult {
+            skill_id: skill.id,
+            slug: skill.slug,
+            target: metadata.install_target.unwrap_or_else(|| "workspace".to_string()),
+            installed_path: final_root.to_string_lossy().into_owned(),
+            file_count,
+        })
+    }
+
+    pub fn uninstall(&self, root_path: &str) -> Result<MarketplaceUninstallResult, String> {
+        let final_root = PathBuf::from(root_path);
+        let metadata = read_marketplace_install_metadata(&final_root)
+            .ok_or_else(|| "La skill seleccionada no esta gestionada por el marketplace.".to_string())?;
+
+        if !final_root.exists() {
+            return Err("La skill instalada ya no existe en disco.".to_string());
+        }
+
+        fs::remove_dir_all(&final_root).map_err(|_| "No se pudo eliminar la skill instalada.".to_string())?;
+
+        Ok(MarketplaceUninstallResult {
+            removed_path: final_root.to_string_lossy().into_owned(),
+            skill_id: metadata.skill_id,
         })
     }
 
@@ -352,7 +441,7 @@ fn map_api_error(status: u16, payload: &Value) -> String {
     }
 }
 
-fn resolve_install_root(target: &str, collection: Option<&str>) -> Result<PathBuf, String> {
+fn resolve_install_root(target: &str, collection: Option<&[String]>) -> Result<PathBuf, String> {
     let mut root = match target {
         "codex" => dirs::home_dir()
             .map(|home| home.join(".codex").join("skills"))
@@ -366,7 +455,7 @@ fn resolve_install_root(target: &str, collection: Option<&str>) -> Result<PathBu
         _ => Err("Destino de instalacion no soportado.".to_string()),
     }?;
 
-    if let Some(segments) = normalize_install_collection(collection)? {
+    if let Some(segments) = collection {
         for segment in segments {
             root.push(segment);
         }
@@ -404,6 +493,78 @@ fn normalize_install_collection(collection: Option<&str>) -> Result<Option<Vec<S
     }
 
     Ok(Some(segments))
+}
+
+fn build_marketplace_install_metadata(
+    skill: &MarketplaceSkill,
+    target: &str,
+    collection: Option<&str>,
+    installed_path: &Path,
+    existing: Option<&MarketplaceInstallMetadata>,
+) -> MarketplaceInstallMetadata {
+    MarketplaceInstallMetadata {
+        skill_id: Some(skill.id.clone()),
+        slug: skill.slug.clone(),
+        name: skill.name.clone(),
+        github_url: skill.github_url.clone(),
+        skill_url: skill.skill_url.clone(),
+        remote_updated_at: skill.updated_at.clone(),
+        install_target: Some(target.to_string()),
+        install_collection: collection.map(str::to_string),
+        installed_at: existing
+            .map(|value| value.installed_at.clone())
+            .unwrap_or_else(now_timestamp_string),
+        installed_path: installed_path.to_string_lossy().into_owned(),
+        installer: MARKETPLACE_INSTALLER_ID.to_string(),
+    }
+}
+
+fn write_marketplace_install_metadata(
+    root_path: &Path,
+    metadata: &MarketplaceInstallMetadata,
+) -> Result<(), String> {
+    let metadata_path = root_path.join(MARKETPLACE_INSTALL_METADATA_FILE_NAME);
+    let content = serde_json::to_string_pretty(metadata)
+        .map_err(|_| "No se pudo serializar la metadata de la skill instalada.".to_string())?;
+
+    fs::write(metadata_path, content)
+        .map_err(|_| "No se pudo guardar la metadata del marketplace.".to_string())
+}
+
+fn read_marketplace_install_metadata(root_path: &Path) -> Option<MarketplaceInstallMetadata> {
+    let metadata_path = root_path.join(MARKETPLACE_INSTALL_METADATA_FILE_NAME);
+    let content = fs::read_to_string(metadata_path).ok()?;
+
+    serde_json::from_str(&content).ok()
+}
+
+fn build_temporary_skill_root(parent_root: &Path, slug: &str, suffix: &str) -> PathBuf {
+    parent_root.join(format!(".{slug}-{suffix}-{}", now_timestamp_string()))
+}
+
+fn replace_directory_atomically(temp_root: &Path, final_root: &Path, backup_root: &Path) -> Result<(), String> {
+    if backup_root.exists() {
+        let _ = fs::remove_dir_all(backup_root);
+    }
+
+    fs::rename(final_root, backup_root)
+        .map_err(|_| "No se pudo preparar la carpeta actual para actualizar la skill.".to_string())?;
+
+    if let Err(_) = fs::rename(temp_root, final_root) {
+        let _ = fs::remove_dir_all(final_root);
+        let _ = fs::rename(backup_root, final_root);
+        return Err("No se pudo reemplazar la skill instalada con la nueva version.".to_string());
+    }
+
+    let _ = fs::remove_dir_all(backup_root);
+    Ok(())
+}
+
+fn now_timestamp_string() -> String {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|value| value.as_secs().to_string())
+        .unwrap_or_else(|_| "0".to_string())
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -596,11 +757,18 @@ fn to_relative_path_buf(value: &str) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
     use serde_json::json;
 
     use super::{
-        build_search_request, normalize_install_collection, parse_github_tree_url, parse_search_response,
-        resolve_install_root,
+        build_marketplace_install_metadata, build_search_request, normalize_install_collection,
+        parse_github_tree_url, parse_search_response, read_marketplace_install_metadata,
+        replace_directory_atomically, resolve_install_root, MarketplaceSkill,
     };
 
     #[test]
@@ -685,7 +853,8 @@ mod tests {
 
     #[test]
     fn resolve_install_root_appends_collection_segments() {
-        let root = resolve_install_root("workspace", Some("team/marketplace"))
+        let collection = vec!["team".to_string(), "marketplace".to_string()];
+        let root = resolve_install_root("workspace", Some(&collection))
             .expect("workspace target with collection should resolve");
 
         assert!(root.to_string_lossy().contains(".agents"));
@@ -717,5 +886,113 @@ mod tests {
         assert_eq!(request.request_query, "rust");
         assert_eq!(request.response_query, "rust");
         assert_eq!(request.sort_by, "recent");
+    }
+
+    #[test]
+    fn build_marketplace_install_metadata_keeps_existing_install_timestamp() {
+        let skill = sample_marketplace_skill();
+        let installed_path = PathBuf::from("C:/skills/example-skill");
+        let existing = super::MarketplaceInstallMetadata {
+            skill_id: Some("skill_123".to_string()),
+            slug: "example-skill".to_string(),
+            name: "Example Skill".to_string(),
+            github_url: Some("https://github.com/example/repo/tree/main/skills/example".to_string()),
+            skill_url: Some("https://skillsmp.com/skills/example".to_string()),
+            remote_updated_at: Some("1710000000".to_string()),
+            install_target: Some("codex".to_string()),
+            install_collection: Some("team/tools".to_string()),
+            installed_at: "1700000000".to_string(),
+            installed_path: installed_path.to_string_lossy().into_owned(),
+            installer: "skills-ide".to_string(),
+        };
+
+        let metadata = build_marketplace_install_metadata(
+            &skill,
+            "codex",
+            Some("team/tools"),
+            &installed_path,
+            Some(&existing),
+        );
+
+        assert_eq!(metadata.installed_at, "1700000000");
+        assert_eq!(metadata.remote_updated_at.as_deref(), Some("1712345678"));
+        assert_eq!(metadata.install_collection.as_deref(), Some("team/tools"));
+    }
+
+    #[test]
+    fn read_marketplace_install_metadata_round_trips_written_file() {
+        let workspace = TestWorkspace::new("marketplace_metadata");
+        let skill = sample_marketplace_skill();
+        let installed_root = workspace.path.join("example-skill");
+        fs::create_dir_all(&installed_root).expect("should create installed root");
+
+        let metadata = build_marketplace_install_metadata(&skill, "workspace", Some("team"), &installed_root, None);
+        super::write_marketplace_install_metadata(&installed_root, &metadata)
+            .expect("metadata should be written");
+
+        let parsed = read_marketplace_install_metadata(&installed_root).expect("metadata should parse");
+
+        assert_eq!(parsed.skill_id.as_deref(), Some("skill_123"));
+        assert_eq!(parsed.install_target.as_deref(), Some("workspace"));
+        assert_eq!(parsed.install_collection.as_deref(), Some("team"));
+        assert_eq!(parsed.installed_path, installed_root.to_string_lossy());
+    }
+
+    #[test]
+    fn replace_directory_atomically_restores_original_directory_when_swap_fails() {
+        let workspace = TestWorkspace::new("marketplace_replace");
+        let final_root = workspace.path.join("installed-skill");
+        let backup_root = workspace.path.join(".installed-skill-backup");
+        let missing_temp_root = workspace.path.join(".installed-skill-update");
+
+        fs::create_dir_all(&final_root).expect("should create existing directory");
+        fs::write(final_root.join("SKILL.md"), "# Original\n").expect("should write original manifest");
+
+        let error = replace_directory_atomically(&missing_temp_root, &final_root, &backup_root)
+            .expect_err("missing replacement directory should fail");
+
+        assert_eq!(error, "No se pudo reemplazar la skill instalada con la nueva version.");
+        assert!(final_root.exists());
+        assert!(final_root.join("SKILL.md").exists());
+        assert!(!backup_root.exists());
+    }
+
+    fn sample_marketplace_skill() -> MarketplaceSkill {
+        MarketplaceSkill {
+            id: "skill_123".to_string(),
+            slug: "example-skill".to_string(),
+            name: "Example Skill".to_string(),
+            summary: "Example summary".to_string(),
+            repository: "example/repo".to_string(),
+            author: "example".to_string(),
+            stars: Some(42),
+            updated_at: Some("1712345678".to_string()),
+            github_url: Some("https://github.com/example/repo/tree/main/skills/example".to_string()),
+            skill_url: Some("https://skillsmp.com/skills/example".to_string()),
+        }
+    }
+
+    struct TestWorkspace {
+        path: PathBuf,
+    }
+
+    impl TestWorkspace {
+        fn new(prefix: &str) -> Self {
+            let unique_suffix = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system time should be after unix epoch")
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!("skills_ide_marketplace_{prefix}_{unique_suffix}"));
+
+            fs::create_dir_all(&path).expect("should create temporary workspace");
+
+            Self { path }
+        }
+    }
+
+    impl Drop for TestWorkspace {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.path);
+        }
     }
 }

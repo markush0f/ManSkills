@@ -1,4 +1,6 @@
+mod marketplace_install_metadata;
 mod marketplace_install_result;
+mod marketplace_uninstall_result;
 mod marketplace_search_response;
 mod marketplace_skill;
 mod skill_scan_response;
@@ -10,7 +12,9 @@ mod system_skill_file;
 mod system_skill_tree_file;
 mod system_skill_tree_node;
 
+pub use marketplace_install_metadata::MarketplaceInstallMetadata;
 pub use marketplace_install_result::MarketplaceInstallResult;
+pub use marketplace_uninstall_result::MarketplaceUninstallResult;
 pub use marketplace_search_response::MarketplaceSearchResponse;
 pub use marketplace_skill::MarketplaceSkill;
 pub use skill_scan_response::SkillScanResponse;

@@ -5,6 +5,7 @@ use std::{
 };
 
 use ide_lib::services::SkillService;
+use serde_json::json;
 
 #[test]
 fn scan_normalizes_skill_slug_from_directory_name() {
@@ -72,19 +73,76 @@ fn scan_marks_supported_provider_skill_directories_as_managed() {
         .expect("should write manifest");
     }
 
+    let scan_roots = skill_roots
+        .iter()
+        .filter_map(|skill_root| skill_root.parent())
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+
     let response = SkillService::new()
-        .scan(Some(vec![workspace.path_string()]))
+        .scan(Some(scan_roots))
         .expect("scan should succeed");
 
     for skill_root in &skill_roots {
         let skill = response
             .skills
             .iter()
-            .find(|skill| skill.root_path == skill_root.to_string_lossy())
+            .find(|skill| PathBuf::from(&skill.root_path) == *skill_root)
             .expect("expected scanned skill");
 
         assert_eq!(skill.source, "managed");
     }
+}
+
+#[test]
+fn scan_surfaces_marketplace_install_metadata_when_present() {
+    let workspace = TestWorkspace::new("scan_marketplace_metadata");
+    let skill_root = workspace.path.join("marketplace-skill");
+
+    fs::create_dir_all(&skill_root).expect("should create skill directory");
+    fs::write(
+        skill_root.join("SKILL.md"),
+        "# Marketplace Skill\nSummary line\n",
+    )
+    .expect("should write manifest");
+    fs::write(
+        skill_root.join(".skills-ide-marketplace.json"),
+        serde_json::to_string_pretty(&json!({
+            "skillId": "skill_123",
+            "slug": "marketplace-skill",
+            "name": "Marketplace Skill",
+            "githubUrl": "https://github.com/example/repo/tree/main/skills/marketplace-skill",
+            "skillUrl": "https://skillsmp.com/skills/example",
+            "remoteUpdatedAt": "1712345678",
+            "installTarget": "workspace",
+            "installCollection": "team/tools",
+            "installedAt": "1712000000",
+            "installedPath": skill_root.to_string_lossy(),
+            "installer": "skills-ide"
+        }))
+        .expect("metadata json should serialize"),
+    )
+    .expect("should write marketplace metadata");
+
+    let response = SkillService::new()
+        .scan(Some(vec![workspace.path_string()]))
+        .expect("scan should succeed");
+
+    let skill = response
+        .skills
+        .iter()
+        .find(|skill| skill.root_path == skill_root.to_string_lossy())
+        .expect("expected scanned skill");
+
+    let metadata = skill
+        .marketplace_install
+        .as_ref()
+        .expect("expected marketplace metadata");
+
+    assert_eq!(metadata.skill_id.as_deref(), Some("skill_123"));
+    assert_eq!(metadata.install_target.as_deref(), Some("workspace"));
+    assert_eq!(metadata.install_collection.as_deref(), Some("team/tools"));
+    assert_eq!(metadata.installed_path, skill_root.to_string_lossy());
 }
 
 struct TestWorkspace {

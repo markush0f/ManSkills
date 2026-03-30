@@ -25,7 +25,7 @@ fn scan_tree_builds_directory_hierarchy_for_skills() {
 
     let root = &response.roots[0];
     assert_eq!(root.kind, "root");
-    assert_eq!(root.path, workspace.path_string());
+    assert_eq!(PathBuf::from(&root.path), workspace.path);
 
     let group_node = root
         .children
@@ -43,7 +43,7 @@ fn scan_tree_builds_directory_hierarchy_for_skills() {
         .find(|node| node.kind == "skill" && node.name == "My Skill")
         .expect("expected skill leaf");
 
-    assert_eq!(skill_node.path, nested_skill_root.to_string_lossy());
+    assert_eq!(PathBuf::from(&skill_node.path), nested_skill_root);
     assert_eq!(
         skill_node
             .skill
@@ -80,7 +80,7 @@ fn scan_tree_uses_longest_matching_scan_root() {
         .expect("tree scan should succeed");
 
     assert_eq!(response.roots.len(), 1);
-    assert_eq!(response.roots[0].path, child_root.to_string_lossy());
+    assert_eq!(PathBuf::from(&response.roots[0].path), child_root);
 
     let skill_node = response.roots[0]
         .children

@@ -1,5 +1,6 @@
 use std::{
     collections::HashSet,
+    fs,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
@@ -10,13 +11,15 @@ use std::{
 use ignore::WalkBuilder;
 
 use crate::{
-    models::{SkillScanResponse, SystemSkill},
+    models::{MarketplaceInstallMetadata, SkillScanResponse, SystemSkill},
     services::support::{
         build_scan_roots, classify_source, is_skill_manifest, is_summary_candidate,
         should_skip_directory, slugify_path, SkillPreview, DEFAULT_SUMMARY, MAX_RESULTS,
         PREVIEW_BYTES,
     },
 };
+
+use super::marketplace::MARKETPLACE_INSTALL_METADATA_FILE_NAME;
 
 pub struct SkillCatalogService;
 
@@ -100,6 +103,7 @@ impl SkillCatalogService {
                         };
 
                         let preview = read_skill_preview(path, root_path);
+                        let marketplace_install = read_marketplace_install_metadata(root_path);
                         let skill = SystemSkill {
                             id: manifest_key.clone(),
                             slug: slugify_path(root_path),
@@ -108,6 +112,7 @@ impl SkillCatalogService {
                             manifest_path: manifest_key,
                             root_path: root_path.to_string_lossy().into_owned(),
                             source: classify_source(root_path),
+                            marketplace_install,
                         };
 
                         let mut results = results.lock().expect("results poisoned");
@@ -195,4 +200,11 @@ fn sort_skills(skills: &mut [SystemSkill]) {
             .cmp(&right.name.to_ascii_lowercase())
             .then_with(|| left.root_path.cmp(&right.root_path))
     });
+}
+
+fn read_marketplace_install_metadata(root_path: &Path) -> Option<MarketplaceInstallMetadata> {
+    let metadata_path = root_path.join(MARKETPLACE_INSTALL_METADATA_FILE_NAME);
+    let content = fs::read_to_string(metadata_path).ok()?;
+
+    serde_json::from_str(&content).ok()
 }

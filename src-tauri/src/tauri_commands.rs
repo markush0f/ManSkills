@@ -1,7 +1,7 @@
 use crate::{
     models::{
-        MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill, SkillScanResponse, SkillTreeResponse,
-        SystemSkillContentResponse, SystemSkillTreeFile,
+        MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill, MarketplaceUninstallResult,
+        SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse, SystemSkillTreeFile,
     },
     services::{MarketplaceService, SkillService},
 };
@@ -27,6 +27,19 @@ pub fn install_marketplace_skill(
 #[tauri::command]
 pub fn load_marketplace_skill_manifest(skill: MarketplaceSkill) -> Result<String, String> {
     MarketplaceService::new().load_manifest(&skill)
+}
+
+#[tauri::command]
+pub fn update_marketplace_skill(
+    skill: MarketplaceSkill,
+    root_path: String,
+) -> Result<MarketplaceInstallResult, String> {
+    MarketplaceService::new().update(skill, &root_path)
+}
+
+#[tauri::command]
+pub fn uninstall_marketplace_skill(root_path: String) -> Result<MarketplaceUninstallResult, String> {
+    MarketplaceService::new().uninstall(&root_path)
 }
 
 #[tauri::command]
