@@ -13,7 +13,7 @@ function applyMarketplaceResponse(
 ) {
   startTransition(() => {
     setSkills(response.skills);
-    setHasSearched(response.query.trim().length > 0);
+    setHasSearched(true);
     setSearchMs(response.durationMs);
     setTotal(response.total);
     setError(null);
@@ -72,25 +72,11 @@ export function useSkillMarketplace() {
   useEffect(() => {
     let cancelled = false;
 
-    invoke<MarketplaceSearchResponse>("search_marketplace_skills", {
-      query: "",
-      page: 1,
-      limit: 20,
-    })
-      .then((response) => {
+    searchMarketplace("", 1, 20)
+      .then(() => {
         if (cancelled) {
           return;
         }
-
-        applyMarketplaceResponse(
-          response,
-          setMarketplaceSkills,
-          setMarketplaceHasSearched,
-          setMarketplaceSearchMs,
-          setMarketplaceTotal,
-          setMarketplaceError,
-          setMarketplaceLoading,
-        );
       })
       .catch(() => {
         if (cancelled) {
@@ -98,10 +84,9 @@ export function useSkillMarketplace() {
         }
 
         setMarketplaceSkills([]);
-        setMarketplaceHasSearched(false);
+        setMarketplaceHasSearched(true);
         setMarketplaceSearchMs(null);
         setMarketplaceTotal(0);
-        setMarketplaceError(null);
         setMarketplaceLoading(false);
       });
 

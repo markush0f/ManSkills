@@ -18,6 +18,7 @@ const API_KEY_ENV: &str = "SKILLSMP_API_KEY";
 const DEFAULT_SUMMARY: &str = "No summary provided by SkillsMP.";
 const USER_AGENT: &str = "skills-ide-marketplace";
 const SKILL_MANIFEST_NAME: &str = "SKILL.md";
+const FEATURED_BROWSE_QUERY: &str = "skill";
 
 pub struct MarketplaceService {
     client: Client,
@@ -43,17 +44,7 @@ impl MarketplaceService {
         let normalized_query = query.unwrap_or_default().trim().to_string();
         let normalized_page = page.unwrap_or(DEFAULT_PAGE).max(1);
         let normalized_limit = limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
-
-        if normalized_query.is_empty() {
-            return Ok(MarketplaceSearchResponse {
-                skills: Vec::new(),
-                query: String::new(),
-                page: normalized_page,
-                limit: normalized_limit,
-                total: Some(0),
-                duration_ms: 0,
-            });
-        }
+        let search_request = build_search_request(&normalized_query);
 
         let api_key = std::env::var(API_KEY_ENV)
             .map_err(|_| "Falta la variable de entorno SKILLSMP_API_KEY.".to_string())?;
@@ -63,10 +54,10 @@ impl MarketplaceService {
             .get(SEARCH_URL)
             .bearer_auth(api_key)
             .query(&[
-                ("q", normalized_query.as_str()),
+                ("q", search_request.request_query.as_str()),
                 ("page", &normalized_page.to_string()),
                 ("limit", &normalized_limit.to_string()),
-                ("sortBy", "recent"),
+                ("sortBy", search_request.sort_by),
             ])
             .send()
             .map_err(map_request_error)?;
@@ -82,7 +73,7 @@ impl MarketplaceService {
 
         parse_search_response(
             payload,
-            normalized_query,
+            search_request.response_query,
             normalized_page,
             normalized_limit,
             started_at.elapsed().as_millis(),
@@ -146,6 +137,28 @@ impl MarketplaceService {
 impl Default for MarketplaceService {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+struct SearchRequest<'a> {
+    request_query: String,
+    response_query: String,
+    sort_by: &'a str,
+}
+
+fn build_search_request(query: &str) -> SearchRequest<'static> {
+    if query.is_empty() {
+        return SearchRequest {
+            request_query: FEATURED_BROWSE_QUERY.to_string(),
+            response_query: String::new(),
+            sort_by: "stars",
+        };
+    }
+
+    SearchRequest {
+        request_query: query.to_string(),
+        response_query: query.to_string(),
+        sort_by: "recent",
     }
 }
 
@@ -494,7 +507,7 @@ fn to_relative_path_buf(value: &str) -> PathBuf {
 mod tests {
     use serde_json::json;
 
-    use super::{parse_github_tree_url, parse_search_response, resolve_install_root};
+    use super::{build_search_request, parse_github_tree_url, parse_search_response, resolve_install_root};
 
     #[test]
     fn parse_search_response_supports_skills_array_shape() {
@@ -574,5 +587,23 @@ mod tests {
 
         assert!(root.to_string_lossy().contains(".agents"));
         assert!(root.to_string_lossy().contains("skills"));
+    }
+
+    #[test]
+    fn build_search_request_uses_featured_defaults_for_empty_query() {
+        let request = build_search_request("");
+
+        assert_eq!(request.request_query, "skill");
+        assert_eq!(request.response_query, "");
+        assert_eq!(request.sort_by, "stars");
+    }
+
+    #[test]
+    fn build_search_request_preserves_user_query() {
+        let request = build_search_request("rust");
+
+        assert_eq!(request.request_query, "rust");
+        assert_eq!(request.response_query, "rust");
+        assert_eq!(request.sort_by, "recent");
     }
 }
