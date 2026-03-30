@@ -1,52 +1,69 @@
 import { invoke } from "@tauri-apps/api/core";
 import { startTransition, useEffect, useState } from "react";
-import type { SkillScanResponse, SystemSkill } from "../types";
+import type { MarketplaceSearchResponse, MarketplaceSkill } from "../types";
 
 function applyMarketplaceResponse(
-  response: SkillScanResponse,
-  setSkills: (value: SystemSkill[]) => void,
-  setScannedRoots: (value: string[]) => void,
-  setScanMs: (value: number | null) => void,
+  response: MarketplaceSearchResponse,
+  setSkills: (value: MarketplaceSkill[]) => void,
+  setHasSearched: (value: boolean) => void,
+  setSearchMs: (value: number | null) => void,
+  setTotal: (value: number | null) => void,
   setError: (value: string | null) => void,
   setLoading: (value: boolean) => void,
 ) {
   startTransition(() => {
     setSkills(response.skills);
-    setScannedRoots(response.scannedRoots);
-    setScanMs(response.durationMs);
+    setHasSearched(response.query.trim().length > 0);
+    setSearchMs(response.durationMs);
+    setTotal(response.total);
     setError(null);
     setLoading(false);
   });
 }
 
 export function useSkillMarketplace() {
-  const [marketplaceSkills, setMarketplaceSkills] = useState<SystemSkill[]>([]);
-  const [marketplaceScannedRoots, setMarketplaceScannedRoots] = useState<string[]>([]);
-  const [marketplaceScanMs, setMarketplaceScanMs] = useState<number | null>(null);
+  const [marketplaceSkills, setMarketplaceSkills] = useState<MarketplaceSkill[]>([]);
+  const [marketplaceHasSearched, setMarketplaceHasSearched] = useState(false);
+  const [marketplaceSearchMs, setMarketplaceSearchMs] = useState<number | null>(null);
+  const [marketplaceTotal, setMarketplaceTotal] = useState<number | null>(0);
+  const [marketplaceQuery, setMarketplaceQuery] = useState("");
   const [marketplaceLoading, setMarketplaceLoading] = useState(true);
   const [marketplaceError, setMarketplaceError] = useState<string | null>(null);
 
-  function refreshMarketplace() {
+  function searchMarketplace(query = marketplaceQuery, page = 1, limit = 20) {
     setMarketplaceLoading(true);
     setMarketplaceError(null);
+    setMarketplaceQuery(query);
 
-    return invoke<SkillScanResponse>("scan_system_skills")
+    return invoke<MarketplaceSearchResponse>("search_marketplace_skills", {
+      query,
+      page,
+      limit,
+    })
       .then((response) => {
         applyMarketplaceResponse(
           response,
           setMarketplaceSkills,
-          setMarketplaceScannedRoots,
-          setMarketplaceScanMs,
+          setMarketplaceHasSearched,
+          setMarketplaceSearchMs,
+          setMarketplaceTotal,
           setMarketplaceError,
           setMarketplaceLoading,
         );
         return response;
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         setMarketplaceSkills([]);
-        setMarketplaceScannedRoots([]);
-        setMarketplaceScanMs(null);
-        setMarketplaceError("No se pudo cargar el catalogo del marketplace.");
+        setMarketplaceHasSearched(query.trim().length > 0);
+        setMarketplaceSearchMs(null);
+        setMarketplaceTotal(0);
+        setMarketplaceError(
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+              ? error.message
+              : "No se pudo cargar el marketplace remoto.",
+        );
         setMarketplaceLoading(false);
         throw error;
       });
@@ -55,7 +72,11 @@ export function useSkillMarketplace() {
   useEffect(() => {
     let cancelled = false;
 
-    invoke<SkillScanResponse>("scan_system_skills")
+    invoke<MarketplaceSearchResponse>("search_marketplace_skills", {
+      query: "",
+      page: 1,
+      limit: 20,
+    })
       .then((response) => {
         if (cancelled) {
           return;
@@ -64,8 +85,9 @@ export function useSkillMarketplace() {
         applyMarketplaceResponse(
           response,
           setMarketplaceSkills,
-          setMarketplaceScannedRoots,
-          setMarketplaceScanMs,
+          setMarketplaceHasSearched,
+          setMarketplaceSearchMs,
+          setMarketplaceTotal,
           setMarketplaceError,
           setMarketplaceLoading,
         );
@@ -76,9 +98,10 @@ export function useSkillMarketplace() {
         }
 
         setMarketplaceSkills([]);
-        setMarketplaceScannedRoots([]);
-        setMarketplaceScanMs(null);
-        setMarketplaceError("No se pudo cargar el catalogo del marketplace.");
+        setMarketplaceHasSearched(false);
+        setMarketplaceSearchMs(null);
+        setMarketplaceTotal(0);
+        setMarketplaceError(null);
         setMarketplaceLoading(false);
       });
 
@@ -89,10 +112,13 @@ export function useSkillMarketplace() {
 
   return {
     marketplaceError,
+    marketplaceHasSearched,
     marketplaceLoading,
-    marketplaceScanMs,
-    marketplaceScannedRoots,
+    marketplaceQuery,
+    marketplaceSearchMs,
     marketplaceSkills,
-    refreshMarketplace,
+    marketplaceTotal,
+    refreshMarketplace: () => searchMarketplace(),
+    searchMarketplace,
   };
 }

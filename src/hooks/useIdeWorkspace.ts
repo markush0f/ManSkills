@@ -63,11 +63,14 @@ export function useIdeWorkspace() {
   } = systemSkillsState;
   const {
     marketplaceError,
+    marketplaceHasSearched,
     marketplaceLoading,
-    marketplaceScanMs,
-    marketplaceScannedRoots,
+    marketplaceQuery,
+    marketplaceSearchMs,
     marketplaceSkills,
+    marketplaceTotal,
     refreshMarketplace,
+    searchMarketplace,
   } = marketplaceState;
 
   useEffect(() => {
@@ -117,12 +120,7 @@ export function useIdeWorkspace() {
       pendingWatchPathsRef.current.clear();
 
       refreshSystemSkillTree()
-        .then(() =>
-          Promise.all([
-            refreshAffectedSystemSkills(changedPaths),
-            refreshMarketplace(),
-          ]),
-        )
+        .then(() => refreshAffectedSystemSkills(changedPaths))
         .catch(() => undefined);
     }, WATCH_REFRESH_DEBOUNCE_MS);
 
@@ -240,10 +238,7 @@ export function useIdeWorkspace() {
         return loadSystemSkillFiles(activeSkill)
           .then((response) => {
             mergeFiles(buildSystemSkillFiles(activeSkill, response));
-            return Promise.all([
-              refreshSystemSkillTree(),
-              refreshMarketplace(),
-            ]);
+            return refreshSystemSkillTree();
           })
           .catch(() => {
             setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
@@ -271,10 +266,12 @@ export function useIdeWorkspace() {
     listedSystemSkillIds,
     listingSystemSkillIds,
     marketplaceError,
+    marketplaceHasSearched,
     marketplaceLoading,
-    marketplaceScanMs,
-    marketplaceScannedRoots,
+    marketplaceQuery,
+    marketplaceSearchMs,
     marketplaceSkills,
+    marketplaceTotal,
     openEditor,
     openFile,
     openFiles,
@@ -285,6 +282,7 @@ export function useIdeWorkspace() {
     openingSystemSkillIds,
     preferences,
     refreshMarketplace,
+    searchMarketplace,
     refreshSystemSkillTree,
     saveActiveFile,
     systemSkillActionError,

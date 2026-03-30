@@ -5,6 +5,8 @@ export type { DiagnosticLevel } from "./diagnostic-level";
 export type { IdeFile } from "./ide-file";
 export type { IdePreferences } from "./ide-preferences";
 export type { Language } from "./language";
+export type { MarketplaceSearchResponse } from "./marketplace-search-response";
+export type { MarketplaceSkill } from "./marketplace-skill";
 export type { SaveShortcut } from "./save-shortcut";
 export type { SidebarView } from "./sidebar-view";
 export type { SkillScanResponse } from "./skill-scan-response";
