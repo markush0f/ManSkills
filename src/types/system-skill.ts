@@ -1,3 +1,4 @@
+import type { MarketplaceInstallMetadata } from "./marketplace-install-metadata";
 import type { SystemSkillSource } from "./system-skill-source";
 
 export type SystemSkill = {
@@ -8,4 +9,5 @@ export type SystemSkill = {
   manifestPath: string;
   rootPath: string;
   source: SystemSkillSource | string;
+  marketplaceInstall?: MarketplaceInstallMetadata | null;
 };

@@ -7,3 +7,8 @@ export type MarketplaceInstallResult = {
   installedPath: string;
   fileCount: number;
 };
+
+export type MarketplaceUninstallResult = {
+  removedPath: string;
+  skillId: string | null;
+};

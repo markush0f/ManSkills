@@ -13,6 +13,7 @@ import { useWorkspaceFiles } from "./useWorkspaceFiles";
 import type {
   MarketplaceInstallResult,
   MarketplaceSkill,
+  MarketplaceUninstallResult,
   SystemSkill,
   SystemSkillWatchEvent,
 } from "../types";
@@ -26,12 +27,33 @@ function matchesChangedPath(rootPath: string, changedPaths: string[]) {
   return changedPaths.some((path) => path === rootPath || path.startsWith(`${rootPath}/`));
 }
 
+function parseMarketplaceTimestamp(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const seconds = Number(value);
+  const date = Number.isNaN(seconds) ? new Date(value) : new Date(seconds * 1000);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.getTime();
+}
+
 export function useIdeWorkspace() {
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
   const [selectedMarketplaceSkill, setSelectedMarketplaceSkill] = useState<MarketplaceSkill | null>(null);
   const [installingMarketplaceSkillIds, setInstallingMarketplaceSkillIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [updatingMarketplaceSkillIds, setUpdatingMarketplaceSkillIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [uninstallingMarketplaceSkillIds, setUninstallingMarketplaceSkillIds] = useState<Set<string>>(
     () => new Set(),
   );
   const [marketplaceInstallMessage, setMarketplaceInstallMessage] = useState<string | null>(null);
@@ -194,6 +216,41 @@ export function useIdeWorkspace() {
     setSelectedMarketplaceSkill(null);
   }
 
+  function findInstalledMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedBySkillId = systemSkills.find(
+      (systemSkill) => systemSkill.marketplaceInstall?.skillId === skill.id,
+    );
+    if (installedBySkillId) {
+      return installedBySkillId;
+    }
+
+    return systemSkills.find((systemSkill) => {
+      const metadata = systemSkill.marketplaceInstall;
+      return Boolean(
+        metadata?.githubUrl &&
+        skill.githubUrl &&
+        metadata.githubUrl === skill.githubUrl &&
+        metadata.slug === skill.slug,
+      );
+    }) ?? null;
+  }
+
+  function isMarketplaceSkillUpdateAvailable(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill?.marketplaceInstall?.remoteUpdatedAt) {
+      return false;
+    }
+
+    const installedUpdatedAt = parseMarketplaceTimestamp(installedSkill.marketplaceInstall.remoteUpdatedAt);
+    const remoteUpdatedAt = parseMarketplaceTimestamp(skill.updatedAt);
+
+    if (installedUpdatedAt === null || remoteUpdatedAt === null) {
+      return false;
+    }
+
+    return remoteUpdatedAt > installedUpdatedAt;
+  }
+
   function installMarketplaceSkill(skill: MarketplaceSkill) {
     setMarketplaceInstallError(null);
     setMarketplaceInstallMessage(null);
@@ -229,6 +286,96 @@ export function useIdeWorkspace() {
           return next;
         });
       });
+  }
+
+  function updateMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill) {
+      return Promise.reject(new Error("La skill no esta instalada."));
+    }
+
+    setMarketplaceInstallError(null);
+    setMarketplaceInstallMessage(null);
+    setUpdatingMarketplaceSkillIds((current) => {
+      const next = new Set(current);
+      next.add(skill.id);
+      return next;
+    });
+
+    return invoke<MarketplaceInstallResult>("update_marketplace_skill", {
+      rootPath: installedSkill.rootPath,
+      skill,
+    })
+      .then((result) => {
+        setMarketplaceInstallMessage(`Skill actualizada en ${result.installedPath}`);
+        return refreshSystemSkillTree();
+      })
+      .catch((error: unknown) => {
+        setMarketplaceInstallError(
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+              ? error.message
+              : "No se pudo actualizar la skill.",
+        );
+        throw error;
+      })
+      .finally(() => {
+        setUpdatingMarketplaceSkillIds((current) => {
+          const next = new Set(current);
+          next.delete(skill.id);
+          return next;
+        });
+      });
+  }
+
+  function uninstallMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill) {
+      return Promise.reject(new Error("La skill no esta instalada."));
+    }
+
+    setMarketplaceInstallError(null);
+    setMarketplaceInstallMessage(null);
+    setUninstallingMarketplaceSkillIds((current) => {
+      const next = new Set(current);
+      next.add(skill.id);
+      return next;
+    });
+
+    return invoke<MarketplaceUninstallResult>("uninstall_marketplace_skill", {
+      rootPath: installedSkill.rootPath,
+    })
+      .then((result) => {
+        setMarketplaceInstallMessage(`Skill eliminada de ${result.removedPath}`);
+        return refreshSystemSkillTree();
+      })
+      .catch((error: unknown) => {
+        setMarketplaceInstallError(
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+              ? error.message
+              : "No se pudo eliminar la skill.",
+        );
+        throw error;
+      })
+      .finally(() => {
+        setUninstallingMarketplaceSkillIds((current) => {
+          const next = new Set(current);
+          next.delete(skill.id);
+          return next;
+        });
+      });
+  }
+
+  function openInstalledMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill) {
+      return;
+    }
+
+    openSystemSkill(installedSkill);
   }
 
   function openFile(fileId: string) {
@@ -321,8 +468,10 @@ export function useIdeWorkspace() {
     isSavingActiveFile,
     isMarketplaceView: workspaceView === "marketplace",
     isSettingsView: workspaceView === "settings",
+    isMarketplaceSkillUpdateAvailable,
     installingMarketplaceSkillIds,
     installMarketplaceSkill,
+    findInstalledMarketplaceSkill,
     listSystemSkillFiles,
     listedSystemSkillIds,
     listingSystemSkillIds,
@@ -336,6 +485,7 @@ export function useIdeWorkspace() {
     marketplaceSkills,
     marketplaceTotal,
     openMarketplaceSkillDetail,
+    openInstalledMarketplaceSkill,
     openEditor,
     openFile,
     openFiles,
@@ -357,8 +507,12 @@ export function useIdeWorkspace() {
     systemSkillsError,
     systemSkillsLoading,
     tree,
+    uninstallMarketplaceSkill,
     updateActiveFile,
+    updateMarketplaceSkill,
+    updatingMarketplaceSkillIds,
     updatePreferences,
+    uninstallingMarketplaceSkillIds,
     workspaceView,
     closeMarketplaceSkillDetail,
   };
