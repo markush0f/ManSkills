@@ -10,7 +10,12 @@ import { useSkillMarketplace } from "./useSkillMarketplace";
 import { useIdePreferences } from "./useIdePreferences";
 import { useSystemSkills } from "./useSystemSkills";
 import { useWorkspaceFiles } from "./useWorkspaceFiles";
-import type { SystemSkill, SystemSkillWatchEvent } from "../types";
+import type {
+  MarketplaceInstallResult,
+  MarketplaceSkill,
+  SystemSkill,
+  SystemSkillWatchEvent,
+} from "../types";
 
 export type WorkspaceView = "editor" | "settings" | "marketplace";
 
@@ -25,6 +30,11 @@ export function useIdeWorkspace() {
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
+  const [installingMarketplaceSkillIds, setInstallingMarketplaceSkillIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [marketplaceInstallMessage, setMarketplaceInstallMessage] = useState<string | null>(null);
+  const [marketplaceInstallError, setMarketplaceInstallError] = useState<string | null>(null);
   const { preferences, updatePreferences } = useIdePreferences();
   const marketplaceState = useSkillMarketplace();
   const workspaceFiles = useWorkspaceFiles();
@@ -172,6 +182,42 @@ export function useIdeWorkspace() {
     setWorkspaceView("marketplace");
   }
 
+  function installMarketplaceSkill(skill: MarketplaceSkill) {
+    setMarketplaceInstallError(null);
+    setMarketplaceInstallMessage(null);
+    setInstallingMarketplaceSkillIds((current) => {
+      const next = new Set(current);
+      next.add(skill.id);
+      return next;
+    });
+
+    return invoke<MarketplaceInstallResult>("install_marketplace_skill", {
+      skill,
+      target: preferences.marketplaceInstallTarget,
+    })
+      .then((result) => {
+        setMarketplaceInstallMessage(`Skill instalada en ${result.installedPath}`);
+        return refreshSystemSkillTree();
+      })
+      .catch((error: unknown) => {
+        setMarketplaceInstallError(
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+              ? error.message
+              : "No se pudo instalar la skill.",
+        );
+        throw error;
+      })
+      .finally(() => {
+        setInstallingMarketplaceSkillIds((current) => {
+          const next = new Set(current);
+          next.delete(skill.id);
+          return next;
+        });
+      });
+  }
+
   function openFile(fileId: string) {
     setActiveFileSaveError(null);
     openWorkspaceFile(fileId);
@@ -262,11 +308,15 @@ export function useIdeWorkspace() {
     isSavingActiveFile,
     isMarketplaceView: workspaceView === "marketplace",
     isSettingsView: workspaceView === "settings",
+    installingMarketplaceSkillIds,
+    installMarketplaceSkill,
     listSystemSkillFiles,
     listedSystemSkillIds,
     listingSystemSkillIds,
     marketplaceError,
     marketplaceHasSearched,
+    marketplaceInstallError,
+    marketplaceInstallMessage,
     marketplaceLoading,
     marketplaceQuery,
     marketplaceSearchMs,

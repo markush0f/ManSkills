@@ -1,20 +1,28 @@
 import { ArrowClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
+import { DownloadSimpleIcon } from "@phosphor-icons/react/dist/csr/DownloadSimple";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { useEffect, useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
-import { TextInput } from "../shared/formControls";
+import { SelectInput, TextInput } from "../shared/formControls";
 import { ghostButtonClass, shellPanelClass } from "../shared/ui";
 import { MarketplaceTabsHeader } from "./MarketplaceTabsHeader";
-import type { MarketplaceSkill } from "../../types";
+import type { MarketplaceInstallTarget, MarketplaceSkill } from "../../types";
+
+const INSTALL_TARGET_OPTIONS: Array<{ label: string; value: MarketplaceInstallTarget }> = [
+  { label: "Codex", value: "codex" },
+  { label: "Claude", value: "claude" },
+  { label: "Workspace", value: "workspace" },
+];
 
 function formatUpdatedAt(value: string | null) {
   if (!value) {
     return "Sin fecha";
   }
 
-  const date = new Date(value);
+  const seconds = Number(value);
+  const normalizedDate = Number.isNaN(seconds) ? new Date(value) : new Date(seconds * 1000);
 
-  if (Number.isNaN(date.getTime())) {
+  if (Number.isNaN(normalizedDate.getTime())) {
     return value;
   }
 
@@ -22,16 +30,24 @@ function formatUpdatedAt(value: string | null) {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(date);
+  }).format(normalizedDate);
 }
 
-function MarketplaceSkillRow({ skill }: { skill: MarketplaceSkill }) {
+function MarketplaceSkillRow({
+  installing,
+  onInstall,
+  skill,
+}: {
+  installing: boolean;
+  onInstall: (skill: MarketplaceSkill) => void;
+  skill: MarketplaceSkill;
+}) {
   return (
     <article className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 lg:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.4fr)_220px_120px_auto] lg:items-center">
       <div className="min-w-0">
         <h2 className="truncate text-[14px] font-medium text-[var(--text)]">{skill.name}</h2>
         <p className="mt-1 truncate text-[11px] text-[var(--muted)]">
-          {skill.author} · {skill.repository}
+          {skill.author} - {skill.repository}
         </p>
       </div>
 
@@ -49,11 +65,17 @@ function MarketplaceSkillRow({ skill }: { skill: MarketplaceSkill }) {
 
       <div className="flex justify-start lg:justify-end">
         <button
-          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--border)] bg-transparent px-4 py-2.5 text-sm text-[var(--muted)] opacity-60"
-          disabled
+          className={`inline-flex items-center justify-center rounded-[10px] border px-4 py-2.5 text-sm transition ${
+            installing
+              ? "border-[var(--border)] bg-transparent text-[var(--muted)] opacity-60"
+              : "border-[var(--border-strong)] bg-transparent text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]"
+          }`}
+          disabled={installing}
+          onClick={() => onInstall(skill)}
           type="button"
         >
-          Proximamente
+          <DownloadSimpleIcon className="mr-2 h-4 w-4" weight="bold" />
+          {installing ? "Descargando..." : "Descargar"}
         </button>
       </div>
     </article>
@@ -63,8 +85,12 @@ function MarketplaceSkillRow({ skill }: { skill: MarketplaceSkill }) {
 export function MarketplaceWorkspace() {
   const {
     closeFile,
+    installingMarketplaceSkillIds,
+    installMarketplaceSkill,
     marketplaceError,
     marketplaceHasSearched,
+    marketplaceInstallError,
+    marketplaceInstallMessage,
     marketplaceLoading,
     marketplaceQuery,
     marketplaceSearchMs,
@@ -74,8 +100,10 @@ export function MarketplaceWorkspace() {
     openFile,
     openFiles,
     openMarketplace,
+    preferences,
     refreshMarketplace,
     searchMarketplace,
+    updatePreferences,
   } = useIde();
   const [query, setQuery] = useState(marketplaceQuery);
 
@@ -108,7 +136,7 @@ export function MarketplaceWorkspace() {
                 <div className="min-w-0">
                   <h1 className="text-[18px] font-medium text-[var(--text)]">Marketplace</h1>
                   <p className="mt-1 text-[12px] text-[var(--muted)]">
-                    {marketplaceSkills.length} de {marketplaceTotal ?? marketplaceSkills.length} skills · {marketplaceSearchMs ?? 0} ms
+                    {marketplaceSkills.length} de {marketplaceTotal ?? marketplaceSkills.length} skills - {marketplaceSearchMs ?? 0} ms
                   </p>
                 </div>
 
@@ -130,6 +158,22 @@ export function MarketplaceWorkspace() {
                     />
                   </div>
 
+                  <SelectInput
+                    className="min-w-[160px]"
+                    onChange={(event) =>
+                      updatePreferences({
+                        marketplaceInstallTarget: event.target.value as MarketplaceInstallTarget,
+                      })
+                    }
+                    value={preferences.marketplaceInstallTarget}
+                  >
+                    {INSTALL_TARGET_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </SelectInput>
+
                   <button
                     className={ghostButtonClass}
                     onClick={() => {
@@ -147,6 +191,18 @@ export function MarketplaceWorkspace() {
                   </button>
                 </div>
               </div>
+
+              {marketplaceInstallError ? (
+                <div className="border-b border-[#cf5e4f]/20 px-4 py-3 text-[12px] text-[#ffb3a7]">
+                  {marketplaceInstallError}
+                </div>
+              ) : null}
+
+              {marketplaceInstallMessage ? (
+                <div className="border-b border-[rgba(79,168,199,0.18)] px-4 py-3 text-[12px] text-[#a7dfd9]">
+                  {marketplaceInstallMessage}
+                </div>
+              ) : null}
 
               <div className="hidden border-b border-[var(--border)] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)] lg:grid lg:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.4fr)_220px_120px_auto] lg:gap-3">
                 <span>Skill</span>
@@ -168,7 +224,11 @@ export function MarketplaceWorkspace() {
                 <div>
                   {marketplaceSkills.map((skill) => (
                     <MarketplaceSkillRow
+                      installing={installingMarketplaceSkillIds.has(skill.id)}
                       key={skill.id}
+                      onInstall={(targetSkill) => {
+                        void installMarketplaceSkill(targetSkill);
+                      }}
                       skill={skill}
                     />
                   ))}

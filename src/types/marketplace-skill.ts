@@ -7,5 +7,6 @@ export type MarketplaceSkill = {
   author: string;
   stars: number | null;
   updatedAt: string | null;
-  url: string | null;
+  githubUrl: string | null;
+  skillUrl: string | null;
 };

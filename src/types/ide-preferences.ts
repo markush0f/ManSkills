@@ -1,3 +1,4 @@
+import type { MarketplaceInstallTarget } from "./marketplace-install-result";
 import type { SaveShortcut } from "./save-shortcut";
 
 export type IdePreferences = {
@@ -9,6 +10,7 @@ export type IdePreferences = {
   highlightActiveLine: boolean;
   lineHeight: number;
   lineNumbers: "on" | "off" | "relative";
+  marketplaceInstallTarget: MarketplaceInstallTarget;
   markdownWordWrap: boolean;
   minimap: boolean;
   renderWhitespace: "none" | "boundary" | "selection" | "all";
