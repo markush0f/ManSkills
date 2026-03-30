@@ -10,9 +10,11 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGl
 import { SealCheckIcon } from "@phosphor-icons/react/dist/csr/SealCheck";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { UserIcon } from "@phosphor-icons/react/dist/csr/User";
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, type ReactNode } from "react";
 import { useIde } from "../../contexts/IdeContext";
 import type { MarketplaceInstallTarget, MarketplaceSkill } from "../../types";
+import { MarkdownPreview } from "../editor/MarkdownPreview";
 import { SelectInput, TextInput } from "../shared/formControls";
 import { ghostButtonClass, shellPanelClass } from "../shared/ui";
 import { MarketplaceTabsHeader } from "./MarketplaceTabsHeader";
@@ -107,7 +109,7 @@ function DetailMeta({
         {icon}
         <span>{label}</span>
       </div>
-      <p className="mt-2 text-[13px] text-[var(--text)]">{value}</p>
+      <p className="mt-2 break-words text-[13px] leading-6 text-[var(--text)]">{value}</p>
     </div>
   );
 }
@@ -139,6 +141,9 @@ export function MarketplaceWorkspace() {
     updatePreferences,
   } = useIde();
   const [query, setQuery] = useState(marketplaceQuery);
+  const [selectedSkillManifest, setSelectedSkillManifest] = useState("");
+  const [selectedSkillManifestError, setSelectedSkillManifestError] = useState<string | null>(null);
+  const [selectedSkillManifestLoading, setSelectedSkillManifestLoading] = useState(false);
   const selectedTargetLabel =
     INSTALL_TARGET_OPTIONS.find((option) => option.value === preferences.marketplaceInstallTarget)?.label ??
     preferences.marketplaceInstallTarget;
@@ -146,6 +151,53 @@ export function MarketplaceWorkspace() {
   useEffect(() => {
     setQuery(marketplaceQuery);
   }, [marketplaceQuery]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!selectedMarketplaceSkill) {
+      setSelectedSkillManifest("");
+      setSelectedSkillManifestError(null);
+      setSelectedSkillManifestLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setSelectedSkillManifest("");
+    setSelectedSkillManifestError(null);
+    setSelectedSkillManifestLoading(true);
+
+    invoke<string>("load_marketplace_skill_manifest", {
+      skill: selectedMarketplaceSkill,
+    })
+      .then((manifest) => {
+        if (cancelled) {
+          return;
+        }
+
+        setSelectedSkillManifest(manifest);
+        setSelectedSkillManifestLoading(false);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
+
+        setSelectedSkillManifestError(
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+              ? error.message
+              : "No se pudo cargar SKILL.md.",
+        );
+        setSelectedSkillManifestLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMarketplaceSkill]);
 
   function submitSearch() {
     void searchMarketplace(query.trim(), 1, 20);
@@ -298,80 +350,154 @@ export function MarketplaceWorkspace() {
                     </button>
                   </div>
 
-                  <div className="max-w-[980px]">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-[var(--border)] text-[var(--accent-strong)]">
-                        <BagSimpleIcon className="h-5 w-5" weight="duotone" />
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_360px]">
+                    <div className="min-w-0">
+                      <div className="flex items-start gap-3 border-b border-[var(--border)] pb-5">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border border-[var(--border)] text-[var(--accent-strong)]">
+                          <BagSimpleIcon className="h-5 w-5" weight="duotone" />
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="text-[28px] font-medium leading-tight text-[var(--text)]">
+                            {selectedMarketplaceSkill.name}
+                          </h2>
+                          <p className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-[var(--muted)]">
+                            <UserIcon className="h-4 w-4 shrink-0" weight="bold" />
+                            <span>{selectedMarketplaceSkill.author}</span>
+                            <span className="text-[var(--border-strong)]">/</span>
+                            <span className="break-all">{selectedMarketplaceSkill.repository}</span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h2 className="text-[24px] font-medium text-[var(--text)]">{selectedMarketplaceSkill.name}</h2>
-                        <p className="mt-2 flex items-center gap-2 text-[13px] text-[var(--muted)]">
-                          <UserIcon className="h-4 w-4 shrink-0" weight="bold" />
-                          <span>{selectedMarketplaceSkill.author}</span>
-                          <span className="text-[var(--border-strong)]">/</span>
-                          <span>{selectedMarketplaceSkill.repository}</span>
+
+                      <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+                        <DetailMeta
+                          icon={<StarIcon className="h-3.5 w-3.5" weight="fill" />}
+                          label="Stars"
+                          value={selectedMarketplaceSkill.stars !== null ? String(selectedMarketplaceSkill.stars) : "Sin stars"}
+                        />
+                        <DetailMeta
+                          icon={<CalendarBlankIcon className="h-3.5 w-3.5" weight="bold" />}
+                          label="Updated"
+                          value={formatUpdatedAt(selectedMarketplaceSkill.updatedAt)}
+                        />
+                        <DetailMeta
+                          icon={<SealCheckIcon className="h-3.5 w-3.5" weight="duotone" />}
+                          label="Slug"
+                          value={selectedMarketplaceSkill.slug}
+                        />
+                        <DetailMeta
+                          icon={<FolderSimpleIcon className="h-3.5 w-3.5" weight="bold" />}
+                          label="Target"
+                          value={selectedTargetLabel}
+                        />
+                      </div>
+
+                      <div className="mt-5 rounded-[16px] border border-[var(--border)] p-5">
+                        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+                          <FileTextIcon className="h-3.5 w-3.5" weight="bold" />
+                          <span>Resumen completo</span>
+                        </div>
+                        <p className="mt-4 whitespace-pre-wrap break-words text-[14px] leading-7 text-[var(--text)]">
+                          {selectedMarketplaceSkill.summary}
                         </p>
                       </div>
-                    </div>
 
-                    <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                      <DetailMeta
-                        icon={<StarIcon className="h-3.5 w-3.5" weight="fill" />}
-                        label="Stars"
-                        value={selectedMarketplaceSkill.stars !== null ? String(selectedMarketplaceSkill.stars) : "Sin stars"}
-                      />
-                      <DetailMeta
-                        icon={<CalendarBlankIcon className="h-3.5 w-3.5" weight="bold" />}
-                        label="Updated"
-                        value={formatUpdatedAt(selectedMarketplaceSkill.updatedAt)}
-                      />
-                      <DetailMeta
-                        icon={<SealCheckIcon className="h-3.5 w-3.5" weight="duotone" />}
-                        label="Slug"
-                        value={selectedMarketplaceSkill.slug}
-                      />
-                      <DetailMeta
-                        icon={<FolderSimpleIcon className="h-3.5 w-3.5" weight="bold" />}
-                        label="Target"
-                        value={selectedTargetLabel}
-                      />
-                    </div>
+                      <div className="mt-5 overflow-hidden rounded-[16px] border border-[var(--border)]">
+                        <div className="border-b border-[var(--border)] px-5 py-4">
+                          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+                            <FileTextIcon className="h-3.5 w-3.5" weight="bold" />
+                            <span>SKILL.md</span>
+                          </div>
+                        </div>
 
-                    <div className="mt-6 rounded-[16px] border border-[var(--border)] p-5">
-                      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
-                        <FileTextIcon className="h-3.5 w-3.5" weight="bold" />
-                        <span>Resumen</span>
+                        {selectedSkillManifestError ? (
+                          <div className="px-5 py-5 text-[13px] text-[#ffb3a7]">
+                            {selectedSkillManifestError}
+                          </div>
+                        ) : selectedSkillManifestLoading ? (
+                          <div className="px-5 py-8 text-[13px] text-[var(--muted)]">
+                            Cargando SKILL.md...
+                          </div>
+                        ) : selectedSkillManifest ? (
+                          <div className="min-h-[420px]">
+                            <MarkdownPreview compact content={selectedSkillManifest} />
+                          </div>
+                        ) : (
+                          <div className="px-5 py-8 text-[13px] text-[var(--muted)]">
+                            No hay contenido disponible para SKILL.md.
+                          </div>
+                        )}
                       </div>
-                      <p className="mt-3 max-w-[820px] text-[14px] leading-7 text-[var(--text)]">
-                        {selectedMarketplaceSkill.summary}
-                      </p>
                     </div>
 
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {selectedMarketplaceSkill.githubUrl ? (
-                        <a
-                          className="inline-flex items-center gap-2 rounded-[14px] border border-[var(--border)] px-4 py-3 text-[13px] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/[0.02]"
-                          href={selectedMarketplaceSkill.githubUrl}
-                          rel="noopener noreferrer"
-                          target="_blank"
+                    <aside className="min-w-0 xl:sticky xl:top-4 xl:self-start">
+                      <div className="rounded-[16px] border border-[var(--border)] p-5">
+                        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+                          <DownloadSimpleIcon className="h-3.5 w-3.5" weight="bold" />
+                          <span>Instalacion</span>
+                        </div>
+                        <p className="mt-3 text-[13px] leading-6 text-[var(--muted)]">
+                          Esta skill se instalara en <span className="text-[var(--text)]">{selectedTargetLabel}</span>.
+                        </p>
+                        <button
+                          className={`mt-4 inline-flex w-full items-center justify-center rounded-[10px] border px-4 py-3 text-sm transition ${
+                            installingMarketplaceSkillIds.has(selectedMarketplaceSkill.id)
+                              ? "border-[var(--border)] bg-transparent text-[var(--muted)] opacity-60"
+                              : "border-[var(--border-strong)] bg-transparent text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]"
+                          }`}
+                          disabled={installingMarketplaceSkillIds.has(selectedMarketplaceSkill.id)}
+                          onClick={() => {
+                            void installMarketplaceSkill(selectedMarketplaceSkill);
+                          }}
+                          type="button"
                         >
-                          <LinkSimpleIcon className="h-4 w-4 shrink-0 text-[var(--accent-strong)]" weight="bold" />
-                          <span className="truncate">Ver fuente en GitHub</span>
-                        </a>
-                      ) : null}
+                          <DownloadSimpleIcon className="mr-2 h-4 w-4" weight="bold" />
+                          {installingMarketplaceSkillIds.has(selectedMarketplaceSkill.id) ? "Descargando..." : "Descargar skill"}
+                        </button>
+                      </div>
 
-                      {selectedMarketplaceSkill.skillUrl ? (
-                        <a
-                          className="inline-flex items-center gap-2 rounded-[14px] border border-[var(--border)] px-4 py-3 text-[13px] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/[0.02]"
-                          href={selectedMarketplaceSkill.skillUrl}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          <LinkSimpleIcon className="h-4 w-4 shrink-0 text-[var(--accent-strong)]" weight="bold" />
-                          <span className="truncate">Abrir pagina en SkillsMP</span>
-                        </a>
-                      ) : null}
-                    </div>
+                      <div className="mt-4 rounded-[16px] border border-[var(--border)] p-5">
+                        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+                          <LinkSimpleIcon className="h-3.5 w-3.5" weight="bold" />
+                          <span>Enlaces</span>
+                        </div>
+                        <div className="mt-4 grid gap-3">
+                          {selectedMarketplaceSkill.githubUrl ? (
+                            <a
+                              className="rounded-[14px] border border-[var(--border)] px-4 py-3 text-[13px] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/[0.02]"
+                              href={selectedMarketplaceSkill.githubUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              <div className="flex items-center gap-2">
+                                <LinkSimpleIcon className="h-4 w-4 shrink-0 text-[var(--accent-strong)]" weight="bold" />
+                                <span>Ver fuente en GitHub</span>
+                              </div>
+                              <p className="mt-2 break-all text-[12px] leading-5 text-[var(--muted)]">
+                                {selectedMarketplaceSkill.githubUrl}
+                              </p>
+                            </a>
+                          ) : null}
+
+                          {selectedMarketplaceSkill.skillUrl ? (
+                            <a
+                              className="rounded-[14px] border border-[var(--border)] px-4 py-3 text-[13px] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/[0.02]"
+                              href={selectedMarketplaceSkill.skillUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              <div className="flex items-center gap-2">
+                                <LinkSimpleIcon className="h-4 w-4 shrink-0 text-[var(--accent-strong)]" weight="bold" />
+                                <span>Abrir pagina en SkillsMP</span>
+                              </div>
+                              <p className="mt-2 break-all text-[12px] leading-5 text-[var(--muted)]">
+                                {selectedMarketplaceSkill.skillUrl}
+                              </p>
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </aside>
                   </div>
                 </div>
               ) : marketplaceSkills.length > 0 ? (
