@@ -132,6 +132,16 @@ impl MarketplaceService {
             file_count: install_result,
         })
     }
+
+    pub fn load_manifest(&self, skill: &MarketplaceSkill) -> Result<String, String> {
+        let github_url = skill
+            .github_url
+            .as_deref()
+            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
+        let reference = parse_github_tree_url(github_url)?;
+
+        self.fetch_github_file_text(&reference, SKILL_MANIFEST_NAME)
+    }
 }
 
 impl Default for MarketplaceService {
@@ -392,6 +402,47 @@ struct GitHubEntry {
 }
 
 impl MarketplaceService {
+    fn fetch_github_file_text(
+        &self,
+        reference: &GitHubTreeReference,
+        relative_path: &str,
+    ) -> Result<String, String> {
+        let full_path = if relative_path.is_empty() {
+            reference.path.clone()
+        } else {
+            format!("{}/{}", reference.path, relative_path)
+        };
+
+        let response = self
+            .client
+            .get(format!(
+                "{}/{}/{}/contents/{}",
+                GITHUB_API_ROOT, reference.owner, reference.repo, full_path
+            ))
+            .header("User-Agent", USER_AGENT)
+            .query(&[("ref", reference.branch.as_str())])
+            .send()
+            .and_then(|response| response.error_for_status())
+            .map_err(|_| "No se pudo localizar SKILL.md en GitHub.".to_string())?;
+
+        let payload: Value = response
+            .json()
+            .map_err(|_| "GitHub devolvio un contenido no valido para SKILL.md.".to_string())?;
+        let download_url = payload
+            .get("download_url")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "GitHub no devolvio una URL valida para SKILL.md.".to_string())?;
+
+        self.client
+            .get(download_url)
+            .header("User-Agent", USER_AGENT)
+            .send()
+            .and_then(|response| response.error_for_status())
+            .map_err(|_| "No se pudo descargar SKILL.md desde GitHub.".to_string())?
+            .text()
+            .map_err(|_| "No se pudo leer el contenido de SKILL.md.".to_string())
+    }
+
     fn download_directory(
         &self,
         reference: &GitHubTreeReference,

@@ -20,6 +20,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             tauri_commands::search_marketplace_skills,
             tauri_commands::install_marketplace_skill,
+            tauri_commands::load_marketplace_skill_manifest,
             tauri_commands::scan_system_skills,
             tauri_commands::scan_system_skills_tree,
             tauri_commands::load_system_skill,

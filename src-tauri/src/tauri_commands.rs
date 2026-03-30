@@ -24,6 +24,11 @@ pub fn install_marketplace_skill(
 }
 
 #[tauri::command]
+pub fn load_marketplace_skill_manifest(skill: MarketplaceSkill) -> Result<String, String> {
+    MarketplaceService::new().load_manifest(&skill)
+}
+
+#[tauri::command]
 pub fn scan_system_skills(scan_roots: Option<Vec<String>>) -> Result<SkillScanResponse, String> {
     SkillService::new().scan(scan_roots)
 }
