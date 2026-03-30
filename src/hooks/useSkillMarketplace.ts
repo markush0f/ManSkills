@@ -2,6 +2,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { startTransition, useEffect, useState } from "react";
 import type { MarketplaceSearchResponse, MarketplaceSkill } from "../types";
 
+function requestMarketplaceSearch(query: string, page: number, limit: number) {
+  return invoke<MarketplaceSearchResponse>("search_marketplace_skills", {
+    query,
+    page,
+    limit,
+  });
+}
+
 function applyMarketplaceResponse(
   response: MarketplaceSearchResponse,
   setSkills: (value: MarketplaceSkill[]) => void,
@@ -35,11 +43,7 @@ export function useSkillMarketplace() {
     setMarketplaceError(null);
     setMarketplaceQuery(query);
 
-    return invoke<MarketplaceSearchResponse>("search_marketplace_skills", {
-      query,
-      page,
-      limit,
-    })
+    return requestMarketplaceSearch(query, page, limit)
       .then((response) => {
         applyMarketplaceResponse(
           response,
@@ -72,11 +76,21 @@ export function useSkillMarketplace() {
   useEffect(() => {
     let cancelled = false;
 
-    searchMarketplace("", 1, 20)
-      .then(() => {
+    requestMarketplaceSearch("", 1, 20)
+      .then((response) => {
         if (cancelled) {
           return;
         }
+
+        applyMarketplaceResponse(
+          response,
+          setMarketplaceSkills,
+          setMarketplaceHasSearched,
+          setMarketplaceSearchMs,
+          setMarketplaceTotal,
+          setMarketplaceError,
+          setMarketplaceLoading,
+        );
       })
       .catch(() => {
         if (cancelled) {
