@@ -157,8 +157,6 @@ fn default_scan_roots() -> Vec<String> {
     }
 
     if let Some(home_dir) = dirs::home_dir() {
-        roots.push(home_dir.to_string_lossy().into_owned());
-
         for relative_directory in PROVIDER_SCAN_ROOT_HOME_DIRECTORIES {
             roots.push(
                 home_dir
@@ -173,18 +171,6 @@ fn default_scan_roots() -> Vec<String> {
         if let Ok(value) = std::env::var(env_key) {
             roots.push(value);
         }
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        roots.push("/opt".to_string());
-        roots.push("/usr/local/share".to_string());
-        roots.push("/usr/share".to_string());
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        roots.push("C:\\".to_string());
     }
 
     roots
@@ -215,4 +201,34 @@ fn default_watch_roots() -> Vec<String> {
     }
 
     roots
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_scan_roots;
+
+    #[test]
+    fn default_scan_roots_should_stay_scoped_to_workspace_and_provider_locations() {
+        let roots = build_scan_roots(None)
+            .into_iter()
+            .map(|path| path.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+
+        if let Some(home_dir) = dirs::home_dir() {
+            assert!(
+                !roots.contains(&home_dir.to_string_lossy().into_owned()),
+                "default scan roots should not include the entire home directory"
+            );
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            assert!(
+                !roots.iter().any(|root| root == "/opt"
+                    || root == "/usr/local/share"
+                    || root == "/usr/share"),
+                "default scan roots should not include broad global directories"
+            );
+        }
+    }
 }

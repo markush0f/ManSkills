@@ -15,6 +15,7 @@ pub fn run() {
             tauri_commands::scan_system_skills,
             tauri_commands::scan_system_skills_tree,
             tauri_commands::load_system_skill,
+            tauri_commands::list_system_skill_files,
             tauri_commands::save_system_skill_file
         ])
         .run(tauri::generate_context!())

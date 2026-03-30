@@ -1,5 +1,7 @@
 use crate::{
-    models::{SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse},
+    models::{
+        SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse, SystemSkillTreeFile,
+    },
     services::SkillService,
 };
 
@@ -18,6 +20,11 @@ pub fn scan_system_skills_tree(
 #[tauri::command]
 pub fn load_system_skill(root_path: String) -> Result<SystemSkillContentResponse, String> {
     SkillService::new().load_from_root(root_path)
+}
+
+#[tauri::command]
+pub fn list_system_skill_files(root_path: String) -> Result<Vec<SystemSkillTreeFile>, String> {
+    SkillService::new().list_from_root(root_path)
 }
 
 #[tauri::command]

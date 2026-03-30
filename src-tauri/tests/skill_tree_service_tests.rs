@@ -17,12 +17,6 @@ fn scan_tree_builds_directory_hierarchy_for_skills() {
         "# My Skill\nNested summary\n",
     )
     .expect("should write nested manifest");
-    fs::write(
-        nested_skill_root.join("config.json"),
-        "{\n  \"name\": \"my-skill\"\n}\n",
-    )
-    .expect("should write config file");
-
     let response = SkillService::new()
         .scan_tree(Some(vec![workspace.path_string()]))
         .expect("tree scan should succeed");
@@ -58,34 +52,9 @@ fn scan_tree_builds_directory_hierarchy_for_skills() {
             .summary,
         "Nested summary"
     );
-    assert_eq!(skill_node.children.len(), 2);
-
-    let manifest_node = skill_node
-        .children
-        .iter()
-        .find(|node| node.kind == "file" && node.name == "SKILL.md")
-        .expect("expected markdown file node");
-    let config_node = skill_node
-        .children
-        .iter()
-        .find(|node| node.kind == "file" && node.name == "config.json")
-        .expect("expected json file node");
-
-    assert_eq!(
-        manifest_node
-            .file
-            .as_ref()
-            .expect("file metadata should exist")
-            .language,
-        "md"
-    );
-    assert_eq!(
-        config_node
-            .file
-            .as_ref()
-            .expect("file metadata should exist")
-            .language,
-        "json"
+    assert!(
+        skill_node.children.is_empty(),
+        "tree scan should not eagerly include file children"
     );
 }
 

@@ -1,4 +1,6 @@
-use crate::models::{SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse};
+use crate::models::{
+    SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse, SystemSkillTreeFile,
+};
 use crate::services::{
     skill_catalog::SkillCatalogService, skill_content::SkillContentService,
     skill_tree::SkillTreeService,
@@ -32,6 +34,13 @@ impl SkillService {
         P: AsRef<str>,
     {
         self.content.load_from_root(root_path)
+    }
+
+    pub fn list_from_root<P>(&self, root_path: P) -> Result<Vec<SystemSkillTreeFile>, String>
+    where
+        P: AsRef<str>,
+    {
+        self.content.list_from_root(root_path)
     }
 
     pub fn save_file<P, Q, C>(

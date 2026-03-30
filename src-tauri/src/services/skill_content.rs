@@ -47,7 +47,14 @@ impl SkillContentService {
         let root = PathBuf::from(root_path.as_ref().trim());
         validate_skill_root(&root)?;
 
-        Ok(self.list_skill_files(&root))
+        let mut files = self.list_skill_files(&root);
+        files.sort_by(|left, right| {
+            prioritize_skill_manifest(&left.relative_path)
+                .cmp(&prioritize_skill_manifest(&right.relative_path))
+                .then_with(|| left.relative_path.cmp(&right.relative_path))
+        });
+
+        Ok(files)
     }
 
     // Save a skill file, ensuring that the path is valid and does not escape the skill root
