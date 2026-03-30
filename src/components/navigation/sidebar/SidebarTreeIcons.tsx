@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Icon, addCollection } from "@iconify/react";
 import { icons as codiconIcons } from "@iconify-json/codicon";
 import type { IdeFile, SystemSkillTreeNode } from "../../../types";
@@ -38,11 +38,8 @@ function ProviderFolderImage({
   assetPath: string;
   alt: string;
 }) {
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setFailed(false);
-  }, [assetPath]);
+  const [failedAssetPath, setFailedAssetPath] = useState<string | null>(null);
+  const failed = failedAssetPath === assetPath;
 
   if (failed) {
     return <>{fallback}</>;
@@ -52,7 +49,7 @@ function ProviderFolderImage({
     <img
       alt={alt}
       className="h-[18px] w-[18px] object-contain"
-      onError={() => setFailed(true)}
+      onError={() => setFailedAssetPath(assetPath)}
       src={assetPath}
     />
   );

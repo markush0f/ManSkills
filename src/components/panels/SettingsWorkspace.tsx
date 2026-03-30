@@ -14,9 +14,9 @@ import { hasWorkspaceSettingsResults, WorkspaceSettingsSection } from "../../set
 
 export function SettingsWorkspace() {
   const {
-    activeFileId,
     activeFile,
     closeFile,
+    openEditor,
     openFiles,
     openFile,
     openSettings,
@@ -29,6 +29,7 @@ export function SettingsWorkspace() {
   const [selectedCategory, setSelectedCategory] = useState<SettingsCategory>("text");
   const [query, setQuery] = useState("");
   const systemSkillCount = countSkills(systemSkillTree);
+  const activeFilePath = activeFile?.path ?? "No file selected";
 
   const selectedCategoryLabel = useMemo(
     () => SETTINGS_CATEGORIES.find((category) => category.id === selectedCategory)?.label ?? "Settings",
@@ -46,7 +47,7 @@ export function SettingsWorkspace() {
       case "workspace":
         return hasWorkspaceSettingsResults(
           query,
-          activeFile.path,
+          activeFilePath,
           openFiles.length,
           systemSkillCount,
           systemSkillScanMs,
@@ -54,7 +55,7 @@ export function SettingsWorkspace() {
       default:
         return false;
     }
-  }, [activeFile.path, openFiles.length, query, selectedCategory, systemSkillCount, systemSkillScanMs]);
+  }, [activeFilePath, openFiles.length, query, selectedCategory, systemSkillCount, systemSkillScanMs]);
 
   return (
     <section
@@ -75,7 +76,7 @@ export function SettingsWorkspace() {
           openFile={openFile}
           openFiles={openFiles}
           openSettings={openSettings}
-          returnToEditor={() => openFile(activeFileId)}
+          returnToEditor={openEditor}
         />
 
         <div className="grid h-full min-h-0 xl:grid-cols-[220px_minmax(0,1fr)]">
@@ -115,7 +116,7 @@ export function SettingsWorkspace() {
             )}
             {selectedCategory === "workspace" && (
               <WorkspaceSettingsSection
-                activeFilePath={activeFile.path}
+                activeFilePath={activeFilePath}
                 openTabsCount={openFiles.length}
                 preferences={preferences}
                 query={query}

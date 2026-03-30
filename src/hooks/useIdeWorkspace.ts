@@ -1,308 +1,190 @@
 import { invoke } from "@tauri-apps/api/core";
-import { startTransition, useEffect, useMemo, useState } from "react";
-import { marketplaceSkills } from "../ide/marketplaceData";
-import { initialFiles, initialOpenFileIds } from "../ide/mockData";
-import type {
-  IdeFile,
-  IdePreferences,
-  MarketplaceSkill,
-  SkillTreeResponse,
-  SystemSkill,
-  SystemSkillContentResponse,
-  SystemSkillTreeNode,
-} from "../types";
-import { buildTree } from "../ide/utils";
+import { listen } from "@tauri-apps/api/event";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  buildSystemSkillFiles,
+  getSystemSkillFileId,
+  getSystemSkillMainFileId,
+} from "../ide/systemSkills";
+import { useIdePreferences } from "./useIdePreferences";
+import { useSystemSkills } from "./useSystemSkills";
+import { useWorkspaceFiles } from "./useWorkspaceFiles";
+import type { SystemSkill, SystemSkillWatchEvent } from "../types";
 
-export type WorkspaceView = "editor" | "marketplace" | "settings";
+export type WorkspaceView = "editor" | "settings";
 
-const IDE_PREFERENCES_KEY = "skills-ide:preferences";
+const SKILLS_CHANGED_EVENT = "skills:changed";
+const WATCH_REFRESH_DEBOUNCE_MS = 350;
 
-const DEFAULT_IDE_PREFERENCES: IdePreferences = {
-  bracketPairGuides: true,
-  cursorAnimation: true,
-  cursorStyle: "line-thin",
-  fontLigatures: true,
-  fontSize: 14,
-  highlightActiveLine: false,
-  lineHeight: 28,
-  lineNumbers: "on",
-  markdownWordWrap: true,
-  minimap: false,
-  renderWhitespace: "selection",
-  saveShortcut: "mod+s",
-  scrollBeyondLastLine: false,
-  smoothScrolling: true,
-  tabSize: 4,
-};
-
-function hashString(value: string) {
-  let hash = 0;
-
-  for (const character of value) {
-    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  }
-
-  return hash.toString(36);
-}
-
-function getSystemSkillWorkspaceRoot(skill: SystemSkill) {
-  return `system-skills/${skill.slug}-${hashString(skill.id)}`;
-}
-
-function getSystemSkillMainFileId(skill: SystemSkill) {
-  return `system-skill:${skill.id}:SKILL.md`;
-}
-
-function getSystemSkillFileId(skill: SystemSkill, relativePath: string) {
-  return `system-skill:${skill.id}:${relativePath}`;
-}
-
-function flattenSystemSkillTree(nodes: SystemSkillTreeNode[]): SystemSkill[] {
-  return nodes.flatMap((node) => {
-    const currentSkill = node.skill ? [node.skill] : [];
-    return [...currentSkill, ...flattenSystemSkillTree(node.children)];
-  });
-}
-
-function buildSystemSkillFiles(
-  skill: SystemSkill,
-  response: SystemSkillContentResponse,
-): IdeFile[] {
-  const workspaceRoot = getSystemSkillWorkspaceRoot(skill);
-
-  return response.files.map((file) => ({
-    id: getSystemSkillFileId(skill, file.relativePath),
-    path: `${workspaceRoot}/${file.relativePath}`,
-    language: file.language,
-    content: file.content,
-    savedContent: file.content,
-    rootPath: response.rootPath,
-    relativePath: file.relativePath,
-    isWritable: true,
-  }));
-}
-
-function mergeRefreshedSystemSkillFiles(currentFiles: IdeFile[], refreshedFiles: IdeFile[]): IdeFile[] {
-  const refreshedFileMap = new Map(refreshedFiles.map((file) => [file.id, file]));
-
-  return currentFiles.map((file) => {
-    const refreshedFile = refreshedFileMap.get(file.id);
-
-    if (!refreshedFile) {
-      return file;
-    }
-
-    if (file.content !== file.savedContent) {
-      return {
-        ...file,
-        savedContent: refreshedFile.savedContent,
-      };
-    }
-
-    return refreshedFile;
-  });
+function matchesChangedPath(rootPath: string, changedPaths: string[]) {
+  return changedPaths.some((path) => path === rootPath || path.startsWith(`${rootPath}/`));
 }
 
 export function useIdeWorkspace() {
-  const [files, setFiles] = useState(initialFiles);
-  const [openFileIds, setOpenFileIds] = useState<string[]>(initialOpenFileIds);
-  const [activeFileId, setActiveFileId] = useState(initialOpenFileIds[0] ?? initialFiles[0]?.id ?? "");
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
-  const [preferences, setPreferences] = useState<IdePreferences>(() => {
-    if (typeof window === "undefined") {
-      return DEFAULT_IDE_PREFERENCES;
-    }
-
-    try {
-      const storedValue = window.localStorage.getItem(IDE_PREFERENCES_KEY);
-
-      if (!storedValue) {
-        return DEFAULT_IDE_PREFERENCES;
-      }
-
-      return {
-        ...DEFAULT_IDE_PREFERENCES,
-        ...(JSON.parse(storedValue) as Partial<IdePreferences>),
-      };
-    } catch (error) {
-      console.error("Failed to read IDE preferences", error);
-      return DEFAULT_IDE_PREFERENCES;
-    }
-  });
-  const [systemSkills, setSystemSkills] = useState<SystemSkill[]>([]);
-  const [systemSkillTree, setSystemSkillTree] = useState<SystemSkillTreeNode[]>([]);
-  const [systemSkillsLoading, setSystemSkillsLoading] = useState(true);
-  const [systemSkillsError, setSystemSkillsError] = useState<string | null>(null);
-  const [systemSkillScanMs, setSystemSkillScanMs] = useState<number | null>(null);
-  const [openingSystemSkillId, setOpeningSystemSkillId] = useState<string | null>(null);
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
+  const { preferences, updatePreferences } = useIdePreferences();
+  const workspaceFiles = useWorkspaceFiles();
+  const systemSkillsState = useSystemSkills();
+  const pendingWatchPathsRef = useRef<Set<string>>(new Set());
 
-  const fileById = useMemo(() => new Map(files.map((file) => [file.id, file] as const)), [files]);
-  const systemSkillByRootPath = useMemo(
-    () => new Map(systemSkills.map((skill) => [skill.rootPath, skill] as const)),
-    [systemSkills],
-  );
-  const activeFile = fileById.get(activeFileId) ?? files[0];
-  const tree = useMemo(() => buildTree(files), [files]);
-  const openFiles = useMemo(
-    () => openFileIds.map((fileId) => fileById.get(fileId)).filter((file): file is IdeFile => Boolean(file)),
-    [fileById, openFileIds],
-  );
-  const installedSkillSlugs = useMemo(
-    () =>
-      new Set(
-        files
-          .filter((file) => file.path.startsWith("skills/"))
-          .map((file) => file.path.split("/")[1])
-          .filter(Boolean),
-      ),
-    [files],
-  );
-  const hasUnsavedChanges = useMemo(
-    () => files.some((file) => file.content !== file.savedContent),
-    [files],
-  );
+  const {
+    activeFile,
+    activeFileId,
+    closeFile,
+    fileById,
+    files,
+    hasUnsavedChanges,
+    mergeFiles,
+    mergeFilesAndOpen,
+    openFile: openWorkspaceFile,
+    openFiles,
+    tree,
+    updateActiveFile,
+  } = workspaceFiles;
+  const {
+    clearSystemSkillActionError,
+    listSystemSkillFiles,
+    listedSystemSkillIds,
+    listingSystemSkillIds,
+    loadSystemSkillFiles,
+    openingSystemSkillIds,
+    refreshSystemSkillTree,
+    systemSkillActionError,
+    systemSkillByRootPath,
+    systemSkillScanMs,
+    systemSkillTree,
+    systemSkills,
+    systemSkillsError,
+    systemSkillsLoading,
+  } = systemSkillsState;
 
   useEffect(() => {
-    window.localStorage.setItem(IDE_PREFERENCES_KEY, JSON.stringify(preferences));
-  }, [preferences]);
-
-  useEffect(() => {
-    setActiveFileSaveError(null);
-  }, [activeFileId]);
-
-  useEffect(() => {
-    const baseTitle = "Skills management";
-
     if (typeof document === "undefined") {
       return;
     }
 
-    document.title = hasUnsavedChanges ? `• ${baseTitle}` : baseTitle;
+    const baseTitle = "Skills IDE";
+    document.title = hasUnsavedChanges ? `* ${baseTitle}` : baseTitle;
   }, [hasUnsavedChanges]);
+
+  const refreshAffectedSystemSkills = useEffectEvent(async (changedPaths: string[]) => {
+    const loadedRootPaths = new Set(
+      files
+        .map((file) => file.rootPath)
+        .filter((rootPath): rootPath is string => Boolean(rootPath)),
+    );
+
+    const affectedSkills = systemSkills.filter((skill) => {
+      if (changedPaths.length > 0 && !matchesChangedPath(skill.rootPath, changedPaths)) {
+        return false;
+      }
+
+      return loadedRootPaths.has(skill.rootPath) || listedSystemSkillIds.has(skill.id);
+    });
+
+    await Promise.all(
+      affectedSkills.map(async (skill) => {
+        if (loadedRootPaths.has(skill.rootPath)) {
+          const response = await loadSystemSkillFiles(skill);
+          mergeFiles(buildSystemSkillFiles(skill, response));
+          return;
+        }
+
+        await listSystemSkillFiles(skill, { force: true });
+      }),
+    );
+  });
+
+  const handleWatchedSkillsChange = useEffectEvent((event: SystemSkillWatchEvent) => {
+    for (const path of event.paths) {
+      pendingWatchPathsRef.current.add(path);
+    }
+
+    const nextTimeoutId = window.setTimeout(() => {
+      const changedPaths = [...pendingWatchPathsRef.current];
+      pendingWatchPathsRef.current.clear();
+
+      refreshSystemSkillTree()
+        .then(() => refreshAffectedSystemSkills(changedPaths))
+        .catch(() => undefined);
+    }, WATCH_REFRESH_DEBOUNCE_MS);
+
+    return nextTimeoutId;
+  });
 
   useEffect(() => {
     let cancelled = false;
+    let unlisten = () => {};
+    let timeoutId: number | null = null;
 
-    setSystemSkillsLoading(true);
-    setSystemSkillsError(null);
+    listen<SystemSkillWatchEvent>(SKILLS_CHANGED_EVENT, (event) => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
 
-    fetchSystemSkillTree()
-      .then((response) => {
-        if (cancelled) {
-          return;
-        }
+      timeoutId = handleWatchedSkillsChange(event.payload);
+    }).then((dispose) => {
+      if (cancelled) {
+        dispose();
+        return;
+      }
 
-        applySystemSkillTree(response);
-      })
-      .catch((error) => {
-        if (cancelled) {
-          return;
-        }
-
-        console.error("Failed to scan system skills", error);
-        setSystemSkillTree([]);
-        setSystemSkills([]);
-        setSystemSkillScanMs(null);
-        setSystemSkillsError("No se pudieron cargar las skills del sistema.");
-        setSystemSkillsLoading(false);
-      });
+      unlisten = dispose;
+    });
 
     return () => {
       cancelled = true;
+
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+
+      unlisten();
     };
   }, []);
 
-  function applySystemSkillTree(response: SkillTreeResponse) {
-    const nextSystemSkills = flattenSystemSkillTree(response.roots);
-
-    startTransition(() => {
-      setSystemSkillTree(response.roots);
-      setSystemSkills(nextSystemSkills);
-      setSystemSkillScanMs(response.durationMs);
-      setSystemSkillsLoading(false);
-    });
-  }
-
-  function fetchSystemSkillTree() {
-    return invoke<SkillTreeResponse>("scan_system_skills_tree");
-  }
-
-  function refreshSystemSkillTree() {
-    return fetchSystemSkillTree().then((response) => {
-      applySystemSkillTree(response);
-      return response;
-    });
-  }
-
-  function loadSystemSkillFiles(skill: SystemSkill) {
-    return invoke<SystemSkillContentResponse>("load_system_skill", {
-      rootPath: skill.rootPath,
-    });
-  }
-
-  function refreshSystemSkillFiles(skill: SystemSkill) {
-    return loadSystemSkillFiles(skill).then((response) => {
-      const refreshedFiles = buildSystemSkillFiles(skill, response);
-
-      startTransition(() => {
-        setFiles((current) => mergeRefreshedSystemSkillFiles(current, refreshedFiles));
-      });
-
-      return response;
-    });
-  }
-
-  function openFile(fileId: string) {
-    if (!openFileIds.includes(fileId)) {
-      setOpenFileIds((current) => [...current, fileId]);
-    }
-
+  function openEditor() {
+    setActiveFileSaveError(null);
     setWorkspaceView("editor");
-    setActiveFileId(fileId);
-  }
-
-  function openMarketplace() {
-    setWorkspaceView("marketplace");
   }
 
   function openSettings() {
     setWorkspaceView("settings");
   }
 
-  function closeFile(fileId: string) {
-    const nextOpen = openFileIds.filter((currentId) => currentId !== fileId);
+  function openFile(fileId: string) {
+    setActiveFileSaveError(null);
+    openWorkspaceFile(fileId);
+    setWorkspaceView("editor");
+  }
 
-    if (nextOpen.length === 0) {
+  function openSystemSkill(skill: SystemSkill) {
+    openSystemSkillFile(skill, "SKILL.md");
+  }
+
+  function openSystemSkillFile(skill: SystemSkill, relativePath: string) {
+    const targetFileId = getSystemSkillFileId(skill, relativePath);
+    const existingFile = fileById.get(targetFileId);
+
+    if (existingFile) {
+      openFile(existingFile.id);
       return;
     }
 
-    setOpenFileIds(nextOpen);
+    loadSystemSkillFiles(skill)
+      .then((response) => {
+        const createdFiles = buildSystemSkillFiles(skill, response);
+        const nextFileId =
+          createdFiles.find((file) => file.id === targetFileId)?.id ??
+          createdFiles.find((file) => file.id === getSystemSkillMainFileId(skill))?.id ??
+          createdFiles[0]?.id;
 
-    if (activeFileId === fileId) {
-      setActiveFileId(nextOpen[nextOpen.length - 1]);
-    }
-  }
-
-  function updateActiveFile(content: string) {
-    setFiles((current) =>
-      current.map((file) =>
-        file.id === activeFileId
-          ? {
-              ...file,
-              content,
-            }
-          : file,
-      ),
-    );
-  }
-
-  function updatePreferences(nextPreferences: Partial<IdePreferences>) {
-    setPreferences((current) => ({
-      ...current,
-      ...nextPreferences,
-    }));
+        mergeFilesAndOpen(createdFiles, nextFileId);
+        setWorkspaceView("editor");
+      })
+      .catch(() => undefined);
   }
 
   function saveActiveFile(nextContent?: string) {
@@ -323,136 +205,66 @@ export function useIdeWorkspace() {
       content: contentToSave,
     })
       .then(() => {
-        setFiles((current) =>
-          current.map((file) =>
-            file.id === fileToSave.id
-              ? {
-                  ...file,
-                  content: contentToSave,
-                  savedContent: contentToSave,
-                }
-              : file,
-          ),
-        );
+        mergeFiles([
+          {
+            ...fileToSave,
+            content: contentToSave,
+            savedContent: contentToSave,
+          },
+        ]);
 
-        setIsSavingActiveFile(false);
-
-        if (activeSkill) {
-          void refreshSystemSkillFiles(activeSkill)
-            .then(() => refreshSystemSkillTree())
-            .catch((error) => {
-              console.error(`Saved file but failed to refresh skill: ${fileToSave.path}`, error);
-              setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
-            });
+        if (!activeSkill) {
+          return;
         }
-      })
-      .catch((error) => {
-        console.error(`Failed to save system skill file: ${fileToSave.path}`, error);
-        setActiveFileSaveError("No se pudo guardar el archivo.");
-        setIsSavingActiveFile(false);
-      });
-  }
 
-  function installMarketplaceSkill(skill: MarketplaceSkill) {
-    const existingMainFile = files.find((file) => file.path === `skills/${skill.slug}/SKILL.md`);
-
-    if (existingMainFile) {
-      openFile(existingMainFile.id);
-      return;
-    }
-
-    const createdFiles: IdeFile[] = skill.files.map((file) => ({
-      id: `${skill.id}-${file.idSuffix}`,
-      path: `skills/${skill.slug}/${file.path}`,
-      language: file.language,
-      content: file.content,
-      savedContent: file.content,
-    }));
-
-    const mainFileId = createdFiles[0]?.id;
-
-    setFiles((current) => [...current, ...createdFiles]);
-
-    if (mainFileId) {
-      setOpenFileIds((current) => (current.includes(mainFileId) ? current : [...current, mainFileId]));
-      setWorkspaceView("editor");
-      setActiveFileId(mainFileId);
-    }
-  }
-
-  function openSystemSkill(skill: SystemSkill) {
-    openSystemSkillFile(skill, "SKILL.md");
-  }
-
-  function openSystemSkillFile(skill: SystemSkill, relativePath: string) {
-    const targetFileId = getSystemSkillFileId(skill, relativePath);
-    const existingFile = fileById.get(targetFileId);
-
-    if (existingFile) {
-      openFile(existingFile.id);
-      return;
-    }
-
-    setOpeningSystemSkillId(skill.id);
-
-    loadSystemSkillFiles(skill)
-      .then((response) => {
-        const createdFiles = buildSystemSkillFiles(skill, response);
-        const nextFileId =
-          createdFiles.find((file) => file.id === targetFileId)?.id ??
-          createdFiles.find((file) => file.id === getSystemSkillMainFileId(skill))?.id ??
-          createdFiles[0]?.id;
-
-        startTransition(() => {
-          setFiles((current) => {
-            const existingIds = new Set(current.map((file) => file.id));
-            return [...current, ...createdFiles.filter((file) => !existingIds.has(file.id))];
+        return loadSystemSkillFiles(activeSkill)
+          .then((response) => {
+            mergeFiles(buildSystemSkillFiles(activeSkill, response));
+            return refreshSystemSkillTree();
+          })
+          .catch(() => {
+            setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
           });
-
-          if (nextFileId) {
-            setOpenFileIds((current) => (current.includes(nextFileId) ? current : [...current, nextFileId]));
-            setWorkspaceView("editor");
-            setActiveFileId(nextFileId);
-          }
-        });
       })
-      .catch((error) => {
-        console.error(`Failed to load system skill: ${skill.rootPath}`, error);
+      .catch(() => {
+        setActiveFileSaveError("No se pudo guardar el archivo.");
       })
       .finally(() => {
-        setOpeningSystemSkillId((current) => (current === skill.id ? null : current));
+        setIsSavingActiveFile(false);
       });
   }
 
   return {
     activeFile,
     activeFileId,
+    activeFileSaveError,
+    clearSystemSkillActionError,
     closeFile,
     files,
-    installedSkillSlugs,
-    installMarketplaceSkill,
-    isMarketplaceView: workspaceView === "marketplace",
     isSavingActiveFile,
     isSettingsView: workspaceView === "settings",
-    marketplaceSkills,
-    activeFileSaveError,
+    listSystemSkillFiles,
+    listedSystemSkillIds,
+    listingSystemSkillIds,
+    openEditor,
     openFile,
     openFiles,
-    openMarketplace,
     openSettings,
     openSystemSkill,
     openSystemSkillFile,
-    openingSystemSkillId,
+    openingSystemSkillIds,
     preferences,
+    refreshSystemSkillTree,
+    saveActiveFile,
+    systemSkillActionError,
     systemSkillScanMs,
+    systemSkillTree,
     systemSkills,
     systemSkillsError,
     systemSkillsLoading,
-    systemSkillTree,
     tree,
     updateActiveFile,
     updatePreferences,
-    saveActiveFile,
     workspaceView,
   };
 }

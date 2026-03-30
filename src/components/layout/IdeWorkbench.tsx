@@ -2,11 +2,10 @@ import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
 import { EditorWorkspace } from "../editor/EditorWorkspace";
 import { Sidebar } from "../navigation/Sidebar";
-import { MarketplaceWorkspace } from "../panels/MarketplaceWorkspace";
 import { SettingsWorkspace } from "../panels/SettingsWorkspace";
 
 export function IdeWorkbench() {
-  const { isMarketplaceView, isSettingsView } = useIde();
+  const { isSettingsView } = useIde();
   const showSidebar = true;
   const {
     isResizing,
@@ -36,9 +35,7 @@ export function IdeWorkbench() {
           className="min-w-0 overflow-hidden bg-[image:var(--editor-bg)]"
           style={showSidebar ? undefined : { gridColumn: "2 / 3" }}
         >
-          {isMarketplaceView ? (
-            <MarketplaceWorkspace />
-          ) : isSettingsView ? (
+          {isSettingsView ? (
             <SettingsWorkspace />
           ) : (
             <EditorWorkspace />

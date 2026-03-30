@@ -55,11 +55,13 @@ type SystemSkillTreeListProps = {
   currentSkill?: SystemSkill;
   depth?: number;
   expandedNodeIds: Set<string>;
+  listingSystemSkillIds: Set<string>;
   nodes: SystemSkillTreeNode[];
+  onListSkillFiles: (skill: SystemSkill, options?: { force?: boolean }) => Promise<unknown>;
   onOpenSkill: (skill: SystemSkill) => void;
   onOpenSkillFile: (skill: SystemSkill, relativePath: string) => void;
   onToggleNode: (nodeId: string) => void;
-  openingSkillId: string | null;
+  openingSystemSkillIds: Set<string>;
   searchActive: boolean;
 };
 
@@ -69,11 +71,13 @@ export function SystemSkillTreeList({
   currentSkill,
   depth = 0,
   expandedNodeIds,
+  listingSystemSkillIds,
   nodes,
+  onListSkillFiles,
   onOpenSkill,
   onOpenSkillFile,
   onToggleNode,
-  openingSkillId,
+  openingSystemSkillIds,
   searchActive,
 }: SystemSkillTreeListProps) {
   return (
@@ -130,11 +134,13 @@ export function SystemSkillTreeList({
                     currentSkill={currentSkill}
                     depth={depth + 1}
                     expandedNodeIds={expandedNodeIds}
+                    listingSystemSkillIds={listingSystemSkillIds}
                     nodes={node.children}
+                    onListSkillFiles={onListSkillFiles}
                     onOpenSkill={onOpenSkill}
                     onOpenSkillFile={onOpenSkillFile}
                     onToggleNode={onToggleNode}
-                    openingSkillId={openingSkillId}
+                    openingSystemSkillIds={openingSystemSkillIds}
                     searchActive={searchActive}
                   />
                 </div>
@@ -151,6 +157,9 @@ export function SystemSkillTreeList({
           }
 
           const isExpanded = searchActive || expandedNodeIds.has(node.id);
+          const isListingSkillFiles = listingSystemSkillIds.has(skill.id);
+          const isOpeningSkill = openingSystemSkillIds.has(skill.id);
+          const badgeLabel = isOpeningSkill ? "Opening" : isListingSkillFiles ? "Indexing" : getSystemSkillSourceLabel(skill.source);
 
           return (
             <div key={node.id} className="space-y-1.5">
@@ -163,7 +172,13 @@ export function SystemSkillTreeList({
               >
                 <button
                   className="inline-flex shrink-0 h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]"
-                  onClick={() => onToggleNode(node.id)}
+                  onClick={() => {
+                    if (!isExpanded && node.children.length === 0) {
+                      void onListSkillFiles(skill).catch(() => undefined);
+                    }
+
+                    onToggleNode(node.id);
+                  }}
                   type="button"
                 >
                   <ExpandIcon expanded={isExpanded} />
@@ -187,7 +202,7 @@ export function SystemSkillTreeList({
                       getSourceBadgeTone(skill.source)
                     }`}
                   >
-                    {openingSkillId === skill.id ? "Loading" : getSystemSkillSourceLabel(skill.source)}
+                    {badgeLabel}
                   </span>
                 </button>
               </div>
@@ -199,11 +214,13 @@ export function SystemSkillTreeList({
                     currentSkill={skill}
                     depth={depth + 1}
                     expandedNodeIds={expandedNodeIds}
+                    listingSystemSkillIds={listingSystemSkillIds}
                     nodes={node.children}
+                    onListSkillFiles={onListSkillFiles}
                     onOpenSkill={onOpenSkill}
                     onOpenSkillFile={onOpenSkillFile}
                     onToggleNode={onToggleNode}
-                    openingSkillId={openingSkillId}
+                    openingSystemSkillIds={openingSystemSkillIds}
                     searchActive={searchActive}
                   />
                 </div>

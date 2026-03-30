@@ -73,32 +73,34 @@ export function EditorWorkspace() {
     saveActiveFile,
     updateActiveFile,
   } = useIde();
-  const [contentView, setContentView] = useState<ContentView>("code");
-  const [draftContent, setDraftContent] = useState(activeFile.content);
-  const isMarkdown = activeFile.language === "md";
-  const isJson = activeFile.language === "json";
+  const [contentViewState, setContentViewState] = useState<{ fileId: string; mode: ContentView }>({
+    fileId: "",
+    mode: "code",
+  });
+  const [draftState, setDraftState] = useState<{ content: string; fileId: string }>({
+    content: "",
+    fileId: "",
+  });
+  const activeEditorFileId = activeFile?.id ?? "";
+  const contentView = contentViewState.fileId === activeEditorFileId ? contentViewState.mode : "code";
+  const draftContent =
+    draftState.fileId === activeEditorFileId ? draftState.content : activeFile?.content ?? "";
+  const isMarkdown = activeFile?.language === "md";
+  const isJson = activeFile?.language === "json";
   const supportsPreview = isMarkdown || isJson;
   const deferredContent = useDeferredValue(draftContent);
-  const canSaveActiveFile =
-    Boolean(activeFile?.isWritable && activeFile.rootPath && activeFile.relativePath) &&
-    activeFile.content !== activeFile.savedContent;
+  const canSaveActiveFile = activeFile
+    ? Boolean(activeFile.isWritable && activeFile.rootPath && activeFile.relativePath) &&
+      activeFile.content !== activeFile.savedContent
+    : false;
   const previewRailWidth = supportsPreview ? 126 : 0;
   const saveErrorWidth = activeFileSaveError ? 244 : 0;
 
   useEffect(() => {
-    if (!supportsPreview) {
-      setContentView("code");
+    if (!activeFile) {
       return;
     }
 
-    setContentView("code");
-  }, [activeFile.id, supportsPreview]);
-
-  useEffect(() => {
-    setDraftContent(activeFile.content);
-  }, [activeFile.id]);
-
-  useEffect(() => {
     if (draftContent === activeFile.content) {
       return;
     }
@@ -110,7 +112,7 @@ export function EditorWorkspace() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [activeFile.content, draftContent, updateActiveFile]);
+  }, [activeFile, draftContent, updateActiveFile]);
 
   const handleWindowSaveShortcut = useEffectEvent((event: KeyboardEvent) => {
     if (event.repeat || !canSaveActiveFile || isSavingActiveFile) {
@@ -151,7 +153,7 @@ export function EditorWorkspace() {
             ? "bg-white/[0.018] text-[var(--text)]"
             : "text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
         }`}
-        onClick={() => setContentView(mode)}
+        onClick={() => setContentViewState({ fileId: activeEditorFileId, mode })}
         title={label}
         type="button"
       >
@@ -164,6 +166,10 @@ export function EditorWorkspace() {
   }
 
   function renderCodeEditor() {
+    if (!activeFile) {
+      return null;
+    }
+
     return (
       <div className="h-full min-h-0 bg-[var(--editor-surface)]">
         <Editor
@@ -202,7 +208,12 @@ export function EditorWorkspace() {
           path={activeFile.path}
           theme="vs-dark"
           value={draftContent}
-          onChange={(value) => setDraftContent(value ?? "")}
+          onChange={(value) =>
+            setDraftState({
+              content: value ?? "",
+              fileId: activeEditorFileId,
+            })
+          }
           beforeMount={(monaco) => {
             monaco.editor.defineTheme("skills-dark", {
               base: "vs-dark",
@@ -262,7 +273,7 @@ export function EditorWorkspace() {
             onOpenTab={openFile}
           />
         </div>
-        {supportsPreview && (
+        {activeFile && supportsPreview && (
           <div
             className="absolute right-0 top-0 z-[2] grid h-full w-[126px] grid-cols-3 border-l border-[var(--border)] bg-[image:var(--topbar-bg)]"
             style={{ right: `${activeFileSaveError ? `${saveErrorWidth}px` : "0px"}` }}
@@ -280,9 +291,22 @@ export function EditorWorkspace() {
       </div>
 
       <div className="min-h-0 bg-[var(--editor-surface)]">
-        {supportsPreview && contentView === "preview" ? (
+        {!activeFile ? (
+          <div className="grid h-full place-items-center p-6">
+            <div className="max-w-[560px] rounded-[24px] border border-[var(--border)] bg-[linear-gradient(180deg,rgba(17,24,31,0.94),rgba(11,16,21,0.98))] p-6 text-left shadow-[0_24px_48px_rgba(0,0,0,0.24)]">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">Workspace Ready</p>
+              <h1 className="mt-3 text-[30px] font-semibold tracking-[-0.05em] text-[var(--text)]">
+                No hay ningun archivo abierto.
+              </h1>
+              <p className="mt-4 text-[14px] leading-7 text-[#c1ccd7]">
+                Abre una skill desde la sidebar para cargar sus ficheros reales desde disco. Los buffers solo
+                aparecen aqui cuando ya han sido abiertos o editados.
+              </p>
+            </div>
+          </div>
+        ) : supportsPreview && contentView === "preview" ? (
           isMarkdown ? (
-          <MarkdownPreview content={deferredContent} />
+            <MarkdownPreview content={deferredContent} />
           ) : (
             <JsonPreview content={deferredContent} />
           )
