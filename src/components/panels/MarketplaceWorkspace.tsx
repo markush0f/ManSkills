@@ -47,7 +47,7 @@ function MarketplaceSkillRow({
       <div className="min-w-0">
         <h2 className="truncate text-[14px] font-medium text-[var(--text)]">{skill.name}</h2>
         <p className="mt-1 truncate text-[11px] text-[var(--muted)]">
-          {skill.author} - {skill.repository}
+          {skill.author} · {skill.repository}
         </p>
       </div>
 
@@ -65,11 +65,10 @@ function MarketplaceSkillRow({
 
       <div className="flex justify-start lg:justify-end">
         <button
-          className={`inline-flex items-center justify-center rounded-[10px] border px-4 py-2.5 text-sm transition ${
-            installing
-              ? "border-[var(--border)] bg-transparent text-[var(--muted)] opacity-60"
-              : "border-[var(--border-strong)] bg-transparent text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]"
-          }`}
+          className={`inline-flex items-center justify-center rounded-[10px] border px-4 py-2.5 text-sm transition ${installing
+            ? "border-[var(--border)] bg-transparent text-[var(--muted)] opacity-60"
+            : "border-[var(--border-strong)] bg-transparent text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]"
+            }`}
           disabled={installing}
           onClick={() => onInstall(skill)}
           type="button"
@@ -134,9 +133,13 @@ export function MarketplaceWorkspace() {
             <section className="min-h-full border-y border-[var(--border)] bg-[rgba(10,16,21,0.9)]">
               <div className="flex flex-col gap-4 border-b border-[var(--border)] px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
-                  <h1 className="text-[18px] font-medium text-[var(--text)]">Marketplace</h1>
+                  <h1 className="text-[18px] font-medium text-[var(--text)]">Marketplace
+                    <a href="https://skillsmp.com/" className="text-[var(--accent)] hover:underline" target="_blank" rel="noopener noreferrer">
+                      (SkillsMP)
+                    </a>
+                  </h1>
                   <p className="mt-1 text-[12px] text-[var(--muted)]">
-                    {marketplaceSkills.length} de {marketplaceTotal ?? marketplaceSkills.length} skills - {marketplaceSearchMs ?? 0} ms
+                    {marketplaceSkills.length} de {marketplaceTotal ?? marketplaceSkills.length} skills · {marketplaceSearchMs ?? 0} ms
                   </p>
                 </div>
 
