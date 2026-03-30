@@ -30,6 +30,7 @@ export function useIdeWorkspace() {
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
+  const [selectedMarketplaceSkill, setSelectedMarketplaceSkill] = useState<MarketplaceSkill | null>(null);
   const [installingMarketplaceSkillIds, setInstallingMarketplaceSkillIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -182,6 +183,17 @@ export function useIdeWorkspace() {
     setWorkspaceView("marketplace");
   }
 
+  function openMarketplaceSkillDetail(skill: MarketplaceSkill) {
+    setMarketplaceInstallError(null);
+    setMarketplaceInstallMessage(null);
+    setSelectedMarketplaceSkill(skill);
+    setWorkspaceView("marketplace");
+  }
+
+  function closeMarketplaceSkillDetail() {
+    setSelectedMarketplaceSkill(null);
+  }
+
   function installMarketplaceSkill(skill: MarketplaceSkill) {
     setMarketplaceInstallError(null);
     setMarketplaceInstallMessage(null);
@@ -322,6 +334,7 @@ export function useIdeWorkspace() {
     marketplaceSearchMs,
     marketplaceSkills,
     marketplaceTotal,
+    openMarketplaceSkillDetail,
     openEditor,
     openFile,
     openFiles,
@@ -333,6 +346,7 @@ export function useIdeWorkspace() {
     preferences,
     refreshMarketplace,
     searchMarketplace,
+    selectedMarketplaceSkill,
     refreshSystemSkillTree,
     saveActiveFile,
     systemSkillActionError,
@@ -345,5 +359,6 @@ export function useIdeWorkspace() {
     updateActiveFile,
     updatePreferences,
     workspaceView,
+    closeMarketplaceSkillDetail,
   };
 }
