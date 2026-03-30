@@ -1,3 +1,5 @@
+mod marketplace_search_response;
+mod marketplace_skill;
 mod skill_scan_response;
 mod skill_tree_response;
 mod skill_watch_event;
@@ -7,6 +9,8 @@ mod system_skill_file;
 mod system_skill_tree_file;
 mod system_skill_tree_node;
 
+pub use marketplace_search_response::MarketplaceSearchResponse;
+pub use marketplace_skill::MarketplaceSkill;
 pub use skill_scan_response::SkillScanResponse;
 pub use skill_tree_response::SkillTreeResponse;
 pub use skill_watch_event::SkillWatchEvent;

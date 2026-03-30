@@ -3,8 +3,14 @@ pub mod models;
 pub mod services;
 mod tauri_commands;
 
+fn load_project_env() {
+    let _ = dotenvy::from_filename(".env");
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    load_project_env();
+
     tauri::Builder::default()
         .setup(|app| {
             services::SkillWatchState::install(&app.handle())?;
@@ -12,6 +18,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            tauri_commands::search_marketplace_skills,
             tauri_commands::scan_system_skills,
             tauri_commands::scan_system_skills_tree,
             tauri_commands::load_system_skill,

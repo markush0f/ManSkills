@@ -1,9 +1,19 @@
 use crate::{
     models::{
-        SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse, SystemSkillTreeFile,
+        MarketplaceSearchResponse, SkillScanResponse, SkillTreeResponse,
+        SystemSkillContentResponse, SystemSkillTreeFile,
     },
-    services::SkillService,
+    services::{MarketplaceService, SkillService},
 };
+
+#[tauri::command]
+pub fn search_marketplace_skills(
+    query: Option<String>,
+    page: Option<u32>,
+    limit: Option<u32>,
+) -> Result<MarketplaceSearchResponse, String> {
+    MarketplaceService::new().search(query, page, limit)
+}
 
 #[tauri::command]
 pub fn scan_system_skills(scan_roots: Option<Vec<String>>) -> Result<SkillScanResponse, String> {
