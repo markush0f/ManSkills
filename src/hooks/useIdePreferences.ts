@@ -12,6 +12,7 @@ export const DEFAULT_IDE_PREFERENCES: IdePreferences = {
   highlightActiveLine: false,
   lineHeight: 28,
   lineNumbers: "on",
+  marketplaceInstallCollection: "",
   marketplaceInstallTarget: "codex",
   markdownWordWrap: true,
   minimap: false,

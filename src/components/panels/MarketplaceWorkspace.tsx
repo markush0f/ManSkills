@@ -147,6 +147,7 @@ export function MarketplaceWorkspace() {
   const selectedTargetLabel =
     INSTALL_TARGET_OPTIONS.find((option) => option.value === preferences.marketplaceInstallTarget)?.label ??
     preferences.marketplaceInstallTarget;
+  const selectedCollectionLabel = preferences.marketplaceInstallCollection.trim() || "raiz";
 
   useEffect(() => {
     setQuery(marketplaceQuery);
@@ -281,6 +282,20 @@ export function MarketplaceWorkspace() {
                         </option>
                       ))}
                     </SelectInput>
+                  </div>
+
+                  <div className="relative min-w-[220px]">
+                    <SealCheckIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" weight="bold" />
+                    <TextInput
+                      className="pl-9"
+                      onChange={(event) =>
+                        updatePreferences({
+                          marketplaceInstallCollection: event.target.value,
+                        })
+                      }
+                      placeholder="Coleccion opcional"
+                      value={preferences.marketplaceInstallCollection}
+                    />
                   </div>
 
                   <button
@@ -437,7 +452,9 @@ export function MarketplaceWorkspace() {
                           <span>Instalacion</span>
                         </div>
                         <p className="mt-3 text-[13px] leading-6 text-[var(--muted)]">
-                          Esta skill se instalara en <span className="text-[var(--text)]">{selectedTargetLabel}</span>.
+                          Esta skill se instalara en <span className="text-[var(--text)]">{selectedTargetLabel}</span>
+                          {" / "}
+                          <span className="text-[var(--text)]">{selectedCollectionLabel}</span>.
                         </p>
                         <button
                           className={`mt-4 inline-flex w-full items-center justify-center rounded-[10px] border px-4 py-3 text-sm transition ${
@@ -457,6 +474,16 @@ export function MarketplaceWorkspace() {
                       </div>
 
                       <div className="mt-4 rounded-[16px] border border-[var(--border)] p-5">
+                        <div className="mb-4 rounded-[14px] border border-[var(--border)] px-4 py-3">
+                          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+                            <FolderSimpleIcon className="h-3.5 w-3.5" weight="bold" />
+                            <span>Destino relativo</span>
+                          </div>
+                          <p className="mt-2 break-all text-[13px] leading-6 text-[var(--text)]">
+                            {selectedTargetLabel} / {selectedCollectionLabel} / {selectedMarketplaceSkill.slug}
+                          </p>
+                        </div>
+
                         <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
                           <LinkSimpleIcon className="h-3.5 w-3.5" weight="bold" />
                           <span>Enlaces</span>

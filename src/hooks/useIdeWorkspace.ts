@@ -204,6 +204,7 @@ export function useIdeWorkspace() {
     });
 
     return invoke<MarketplaceInstallResult>("install_marketplace_skill", {
+      collection: preferences.marketplaceInstallCollection,
       skill,
       target: preferences.marketplaceInstallTarget,
     })

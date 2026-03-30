@@ -10,6 +10,7 @@ export type IdePreferences = {
   highlightActiveLine: boolean;
   lineHeight: number;
   lineNumbers: "on" | "off" | "relative";
+  marketplaceInstallCollection: string;
   marketplaceInstallTarget: MarketplaceInstallTarget;
   markdownWordWrap: boolean;
   minimap: boolean;

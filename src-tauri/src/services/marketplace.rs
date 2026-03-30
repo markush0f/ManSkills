@@ -84,13 +84,14 @@ impl MarketplaceService {
         &self,
         skill: MarketplaceSkill,
         target: String,
+        collection: Option<String>,
     ) -> Result<MarketplaceInstallResult, String> {
         let github_url = skill
             .github_url
             .clone()
             .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
         let reference = parse_github_tree_url(&github_url)?;
-        let install_root = resolve_install_root(&target)?;
+        let install_root = resolve_install_root(&target, collection.as_deref())?;
 
         fs::create_dir_all(&install_root)
             .map_err(|_| "No se pudo preparar el directorio de instalacion.".to_string())?;
@@ -351,8 +352,8 @@ fn map_api_error(status: u16, payload: &Value) -> String {
     }
 }
 
-fn resolve_install_root(target: &str) -> Result<PathBuf, String> {
-    match target {
+fn resolve_install_root(target: &str, collection: Option<&str>) -> Result<PathBuf, String> {
+    let mut root = match target {
         "codex" => dirs::home_dir()
             .map(|home| home.join(".codex").join("skills"))
             .ok_or_else(|| "No se pudo resolver el home para instalar en Codex.".to_string()),
@@ -363,7 +364,46 @@ fn resolve_install_root(target: &str) -> Result<PathBuf, String> {
             .map(|path| path.join(".agents").join("skills"))
             .map_err(|_| "No se pudo resolver el workspace actual.".to_string()),
         _ => Err("Destino de instalacion no soportado.".to_string()),
+    }?;
+
+    if let Some(segments) = normalize_install_collection(collection)? {
+        for segment in segments {
+            root.push(segment);
+        }
     }
+
+    Ok(root)
+}
+
+fn normalize_install_collection(collection: Option<&str>) -> Result<Option<Vec<String>>, String> {
+    let Some(raw_collection) = collection else {
+        return Ok(None);
+    };
+
+    let trimmed = raw_collection.trim().trim_matches(['/', '\\']);
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+
+    let mut segments = Vec::new();
+
+    for segment in trimmed.split(['/', '\\']) {
+        let value = segment.trim();
+        if value.is_empty() || value == "." || value == ".." {
+            return Err("La coleccion de instalacion no es valida.".to_string());
+        }
+
+        if !value
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.'))
+        {
+            return Err("La coleccion solo puede usar letras, numeros, '-', '_' y '.'.".to_string());
+        }
+
+        segments.push(value.to_string());
+    }
+
+    Ok(Some(segments))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -558,7 +598,10 @@ fn to_relative_path_buf(value: &str) -> PathBuf {
 mod tests {
     use serde_json::json;
 
-    use super::{build_search_request, parse_github_tree_url, parse_search_response, resolve_install_root};
+    use super::{
+        build_search_request, normalize_install_collection, parse_github_tree_url, parse_search_response,
+        resolve_install_root,
+    };
 
     #[test]
     fn parse_search_response_supports_skills_array_shape() {
@@ -634,10 +677,28 @@ mod tests {
 
     #[test]
     fn resolve_install_root_supports_workspace_target() {
-        let root = resolve_install_root("workspace").expect("workspace target should resolve");
+        let root = resolve_install_root("workspace", None).expect("workspace target should resolve");
 
         assert!(root.to_string_lossy().contains(".agents"));
         assert!(root.to_string_lossy().contains("skills"));
+    }
+
+    #[test]
+    fn resolve_install_root_appends_collection_segments() {
+        let root = resolve_install_root("workspace", Some("team/marketplace"))
+            .expect("workspace target with collection should resolve");
+
+        assert!(root.to_string_lossy().contains(".agents"));
+        assert!(root.to_string_lossy().contains("team"));
+        assert!(root.to_string_lossy().contains("marketplace"));
+    }
+
+    #[test]
+    fn normalize_install_collection_rejects_parent_segments() {
+        let error =
+            normalize_install_collection(Some("../private")).expect_err("parent segments should be rejected");
+
+        assert_eq!(error, "La coleccion de instalacion no es valida.");
     }
 
     #[test]

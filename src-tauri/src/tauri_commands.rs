@@ -19,8 +19,9 @@ pub fn search_marketplace_skills(
 pub fn install_marketplace_skill(
     skill: MarketplaceSkill,
     target: String,
+    collection: Option<String>,
 ) -> Result<MarketplaceInstallResult, String> {
-    MarketplaceService::new().install(skill, target)
+    MarketplaceService::new().install(skill, target, collection)
 }
 
 #[tauri::command]
