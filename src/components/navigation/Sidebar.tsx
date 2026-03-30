@@ -4,6 +4,7 @@ import { SidebarFooter } from "./sidebar/SidebarFooter";
 import { LocalTreeList } from "./sidebar/LocalTreeList";
 import { SidebarSearch } from "./sidebar/SidebarSearch";
 import { filterSystemSkillTreeNodes, filterTreeNodes } from "./sidebar/sidebarTreeUtils";
+import { ExpandIcon } from "./sidebar/SidebarTreeIcons";
 import { SystemSkillTreeList } from "./sidebar/SystemSkillTreeList";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
@@ -12,19 +13,32 @@ import { shellPanelClass } from "../shared/ui";
 function SidebarSection({
   action,
   children,
+  expanded,
+  onToggle,
   title,
 }: {
   action?: ReactNode;
   children: ReactNode;
+  expanded: boolean;
+  onToggle: () => void;
   title: string;
 }) {
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">{title}</p>
+        <button
+          className="flex min-w-0 items-center gap-1.5 rounded-[8px] px-1 py-1 text-left text-[10px] uppercase tracking-[0.22em] text-[var(--muted)] transition hover:bg-white/[0.03] hover:text-[var(--text)]"
+          onClick={onToggle}
+          type="button"
+        >
+          <span className="inline-flex h-3.5 w-3.5 items-center justify-center text-[var(--violet-strong)]">
+            <ExpandIcon expanded={expanded} />
+          </span>
+          <span className="truncate">{title}</span>
+        </button>
         {action}
       </div>
-      <div className="space-y-1.5">{children}</div>
+      {expanded ? <div className="space-y-1.5">{children}</div> : null}
     </section>
   );
 }
@@ -51,6 +65,10 @@ export function Sidebar() {
   } = useIde();
   const { isSidebarCompact: compact } = useIdeLayout();
   const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(() => new Set());
+  const [expandedSections, setExpandedSections] = useState(() => ({
+    systemSkills: true,
+    workspace: true,
+  }));
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const fileById = useMemo(() => new Map(files.map((file) => [file.id, file] as const)), [files]);
@@ -66,6 +84,8 @@ export function Sidebar() {
   const hasWorkspaceFiles = files.length > 0;
   const hasFilteredSystemSkills = filteredSystemSkillTree.length > 0;
   const hasFilteredWorkspaceFiles = filteredTree.length > 0;
+  const workspaceExpanded = searchActive || expandedSections.workspace;
+  const systemSkillsExpanded = searchActive || expandedSections.systemSkills;
 
   function toggleSystemSkillNode(nodeId: string) {
     setExpandedSystemSkillNodeIds((current) => {
@@ -79,6 +99,13 @@ export function Sidebar() {
 
       return next;
     });
+  }
+
+  function toggleSection(section: keyof typeof expandedSections) {
+    setExpandedSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
   }
 
   return (
@@ -103,7 +130,11 @@ export function Sidebar() {
         className={`relative z-[1] flex-1 overflow-auto border-r border-[var(--border)] bg-[var(--sidebar-surface)] ${compact ? "px-2 pb-2 pt-0" : "px-2 pb-2 pt-0"}`}
       >
         <div className="space-y-3 px-2.5 pb-3 pt-3">
-          <SidebarSection title="Workspace">
+          <SidebarSection
+            expanded={workspaceExpanded}
+            onToggle={() => toggleSection("workspace")}
+            title="Workspace"
+          >
             {hasFilteredWorkspaceFiles ? (
               <LocalTreeList
                 activeFileId={activeFileId}
@@ -135,6 +166,8 @@ export function Sidebar() {
                 </button>
               ) : undefined
             }
+            expanded={systemSkillsExpanded}
+            onToggle={() => toggleSection("systemSkills")}
             title="System Skills"
           >
             {systemSkillsLoading ? (
