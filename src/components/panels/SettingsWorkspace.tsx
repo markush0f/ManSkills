@@ -1,51 +1,31 @@
-import { useMemo, useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
+import { useSettingsSearch } from "../../hooks/useSettingsSearch";
 import { shellPanelClass } from "../shared/ui";
-import { hasCursorSettingsResults } from "../../settings/CursorSettingsSection";
-import { hasDisplaySettingsResults } from "../../settings/DisplaySettingsSection";
 import { SettingsCategoryNav } from "../../settings/SettingsCategoryNav";
 import { SettingsContentPanel } from "../../settings/SettingsContentPanel";
 import { SettingsProvider } from "../../settings/SettingsContext";
 import { SettingsTabsHeader } from "../../settings/SettingsTabsHeader";
-import { SETTINGS_CATEGORIES, type SettingsCategory } from "../../settings/settingsCategories";
 import { countSkills } from "../../settings/settingsUtils";
-import { hasTextEditorSettingsResults } from "../../settings/TextEditorSettingsSection";
-import { hasWorkspaceSettingsResults } from "../../settings/WorkspaceSettingsSection";
 
 export function SettingsWorkspace() {
   const { activeFile, openFiles, preferences, systemSkillScanMs, systemSkillTree, updatePreferences } = useIde();
   const { resetSidebarWidth, sidebarWidth } = useIdeLayout();
-  const [selectedCategory, setSelectedCategory] = useState<SettingsCategory>("text");
-  const [query, setQuery] = useState("");
   const systemSkillCount = countSkills(systemSkillTree);
   const activeFilePath = activeFile?.path ?? "No file selected";
-
-  const selectedCategoryLabel = useMemo(
-    () => SETTINGS_CATEGORIES.find((category) => category.id === selectedCategory)?.label ?? "Settings",
-    [selectedCategory],
-  );
-
-  const hasResults = useMemo(() => {
-    switch (selectedCategory) {
-      case "text":
-        return hasTextEditorSettingsResults(query);
-      case "cursor":
-        return hasCursorSettingsResults(query);
-      case "display":
-        return hasDisplaySettingsResults(query);
-      case "workspace":
-        return hasWorkspaceSettingsResults(
-          query,
-          activeFilePath,
-          openFiles.length,
-          systemSkillCount,
-          systemSkillScanMs,
-        );
-      default:
-        return false;
-    }
-  }, [activeFilePath, openFiles.length, query, selectedCategory, systemSkillCount, systemSkillScanMs]);
+  const {
+    hasResults,
+    query,
+    selectedCategory,
+    selectedCategoryLabel,
+    setQuery,
+    setSelectedCategory,
+  } = useSettingsSearch({
+    activeFilePath,
+    openTabsCount: openFiles.length,
+    systemSkillCount,
+    systemSkillScanMs,
+  });
 
   const settingsContextValue = {
     activeFilePath,
