@@ -7,7 +7,6 @@ type ContentView = "preview" | "code" | "split";
 
 type UseEditorSessionOptions = {
   activeFile: IdeFile | null;
-  activeFileSaveError: string | null;
   isSavingActiveFile: boolean;
   preferences: {
     saveShortcut: SaveShortcut;
@@ -18,7 +17,6 @@ type UseEditorSessionOptions = {
 
 export function useEditorSession({
   activeFile,
-  activeFileSaveError,
   isSavingActiveFile,
   preferences,
   saveActiveFile,
@@ -53,7 +51,7 @@ export function useEditorSession({
       activeFile.content !== activeFile.savedContent
     : false;
   const previewRailWidth = supportsPreview ? 126 : 0;
-  const saveErrorWidth = activeFileSaveError ? 244 : 0;
+  const saveStatusWidth = isSavingActiveFile ? 148 : 0;
 
   useEffect(() => {
     if (!activeFile) {
@@ -105,7 +103,7 @@ export function useEditorSession({
     draftContent,
     isMarkdown,
     previewRailWidth,
-    saveErrorWidth,
+    saveStatusWidth,
     selectContentView: (mode: ContentView) => {
       setContentViewState({ fileId: activeEditorFileId, mode });
 

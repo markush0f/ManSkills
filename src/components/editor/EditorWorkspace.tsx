@@ -63,7 +63,6 @@ export function EditorWorkspace() {
   const {
     activeFile,
     activeFileId,
-    activeFileSaveError,
     closeFile,
     isSavingActiveFile,
     openFile,
@@ -79,13 +78,12 @@ export function EditorWorkspace() {
     draftContent,
     isMarkdown,
     previewRailWidth,
-    saveErrorWidth,
+    saveStatusWidth,
     selectContentView,
     setDraftContent,
     supportsPreview,
   } = useEditorSession({
     activeFile,
-    activeFileSaveError,
     isSavingActiveFile,
     preferences,
     saveActiveFile,
@@ -211,7 +209,7 @@ export function EditorWorkspace() {
         <div
           className="h-full min-w-0 overflow-hidden"
           style={{
-            paddingRight: `${previewRailWidth + saveErrorWidth}px`,
+            paddingRight: `${previewRailWidth + saveStatusWidth}px`,
           }}
         >
           <WorkbenchTabsBar
@@ -224,15 +222,15 @@ export function EditorWorkspace() {
         {activeFile && supportsPreview && (
           <div
             className="absolute right-0 top-0 z-[2] grid h-full w-[126px] grid-cols-3 border-l border-[var(--border)] bg-[image:var(--topbar-bg)]"
-            style={{ right: `${activeFileSaveError ? `${saveErrorWidth}px` : "0px"}` }}
+            style={{ right: `${isSavingActiveFile ? `${saveStatusWidth}px` : "0px"}` }}
           >
             {PREVIEW_MODES.map(({ label, mode }) => renderPreviewModeButton(mode, label))}
           </div>
         )}
-        {activeFileSaveError && (
-          <div className="absolute right-0 top-0 z-[2] flex h-full w-[244px] items-center border-l border-[var(--border)] bg-[image:var(--topbar-bg)] px-3">
-            <span className="max-w-[220px] truncate text-[11px] text-[#ffb3a7]">
-              {activeFileSaveError}
+        {isSavingActiveFile && (
+          <div className="absolute right-0 top-0 z-[2] flex h-full w-[148px] items-center border-l border-[var(--border)] bg-[image:var(--topbar-bg)] px-3">
+            <span className="max-w-[120px] truncate text-[11px] text-[var(--cyan-strong)]">
+              Saving...
             </span>
           </div>
         )}
