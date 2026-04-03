@@ -4,24 +4,24 @@ import { useUiShell } from "../../contexts/UiShellContext";
 function getToastTone(kind: "success" | "error" | "info") {
   if (kind === "success") {
     return {
-      border: "border-[rgba(90,185,138,0.28)]",
-      dot: "bg-[#5ab98a]",
-      surface: "bg-[rgba(90,185,138,0.12)]",
+      border: "border-[var(--toast-success-border)]",
+      dot: "bg-[var(--toast-success-dot)]",
+      surface: "bg-[var(--toast-success-bg)]",
     };
   }
 
   if (kind === "error") {
     return {
-      border: "border-[rgba(207,94,79,0.28)]",
-      dot: "bg-[#cf5e4f]",
-      surface: "bg-[rgba(207,94,79,0.12)]",
+      border: "border-[var(--toast-error-border)]",
+      dot: "bg-[var(--toast-error-dot)]",
+      surface: "bg-[var(--toast-error-bg)]",
     };
   }
 
   return {
-    border: "border-[rgba(79,168,199,0.22)]",
-    dot: "bg-[var(--cyan)]",
-    surface: "bg-[rgba(79,168,199,0.1)]",
+    border: "border-[var(--toast-info-border)]",
+    dot: "bg-[var(--toast-info-dot)]",
+    surface: "bg-[var(--toast-info-bg)]",
   };
 }
 
@@ -39,22 +39,22 @@ export function ToastViewport() {
 
         return (
           <article
-            className={`pointer-events-auto rounded-[16px] border px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.28)] backdrop-blur-sm ${tone.border} ${tone.surface}`}
+            className={`pointer-events-auto rounded-[16px] border px-4 py-3 shadow-[var(--toast-shadow)] backdrop-blur-sm ${tone.border} ${tone.surface}`}
             key={toast.id}
           >
             <div className="flex items-start gap-3">
               <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} />
 
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium text-[var(--text)]">{toast.title}</p>
+                <p className="text-[13px] font-medium text-[var(--text-primary)]">{toast.title}</p>
                 {toast.description ? (
-                  <p className="mt-1 text-[12px] leading-5 text-[var(--muted)]">{toast.description}</p>
+                  <p className="mt-1 text-[12px] leading-5 text-[var(--text-muted)]">{toast.description}</p>
                 ) : null}
               </div>
 
               <button
                 aria-label="Dismiss toast"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-white/8 bg-white/[0.02] text-[var(--muted)] transition hover:border-white/12 hover:bg-white/[0.05] hover:text-[var(--text)]"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-[var(--toast-dismiss-border)] bg-[var(--toast-dismiss-bg)] text-[var(--text-muted)] transition hover:border-[var(--toast-dismiss-border-hover)] hover:bg-[var(--toast-dismiss-bg-hover)] hover:text-[var(--text-primary)]"
                 onClick={() => dismissToast(toast.id)}
                 type="button"
               >
