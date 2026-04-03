@@ -1,13 +1,13 @@
-import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import { SidebarFooter } from "./sidebar/SidebarFooter";
 import { LocalTreeList } from "./sidebar/LocalTreeList";
 import { SidebarSearch } from "./sidebar/SidebarSearch";
-import { filterSystemSkillTreeNodes, filterTreeNodes } from "./sidebar/sidebarTreeUtils";
 import { ExpandIcon } from "./sidebar/SidebarTreeIcons";
 import { SystemSkillTreeList } from "./sidebar/SystemSkillTreeList";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
+import { useSidebarState } from "../../contexts/SidebarContext";
 import { shellPanelClass } from "../shared/ui";
 
 function SidebarSection({
@@ -47,14 +47,9 @@ export function Sidebar() {
   const {
     activeFileId,
     clearSystemSkillActionError,
-    files,
-    isMarketplaceView,
-    isSettingsView,
     listSystemSkillFiles,
     listingSystemSkillIds,
     openFile,
-    openMarketplace,
-    openSettings,
     openingSystemSkillIds,
     openSystemSkill,
     openSystemSkillFile,
@@ -62,53 +57,22 @@ export function Sidebar() {
     systemSkillActionError,
     systemSkillsError,
     systemSkillsLoading,
-    systemSkillTree,
-    tree,
   } = useIde();
   const { isSidebarCompact: compact } = useIdeLayout();
-  const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(() => new Set());
-  const [expandedSections, setExpandedSections] = useState(() => ({
-    systemSkills: true,
-    workspace: true,
-  }));
-  const [query, setQuery] = useState("");
-  const deferredQuery = useDeferredValue(query);
-  const fileById = useMemo(() => new Map(files.map((file) => [file.id, file] as const)), [files]);
-  const filteredSystemSkillTree = useMemo(
-    () => filterSystemSkillTreeNodes(systemSkillTree, deferredQuery),
-    [deferredQuery, systemSkillTree],
-  );
-  const filteredTree = useMemo(
-    () => filterTreeNodes(tree, fileById, deferredQuery),
-    [deferredQuery, fileById, tree],
-  );
-  const searchActive = deferredQuery.trim().length > 0;
-  const hasWorkspaceFiles = files.length > 0;
-  const hasFilteredSystemSkills = filteredSystemSkillTree.length > 0;
-  const hasFilteredWorkspaceFiles = filteredTree.length > 0;
-  const workspaceExpanded = searchActive || expandedSections.workspace;
-  const systemSkillsExpanded = searchActive || expandedSections.systemSkills;
-
-  function toggleSystemSkillNode(nodeId: string) {
-    setExpandedSystemSkillNodeIds((current) => {
-      const next = new Set(current);
-
-      if (next.has(nodeId)) {
-        next.delete(nodeId);
-      } else {
-        next.add(nodeId);
-      }
-
-      return next;
-    });
-  }
-
-  function toggleSection(section: keyof typeof expandedSections) {
-    setExpandedSections((current) => ({
-      ...current,
-      [section]: !current[section],
-    }));
-  }
+  const {
+    expandedSystemSkillNodeIds,
+    fileById,
+    filteredSystemSkillTree,
+    filteredTree,
+    hasFilteredSystemSkills,
+    hasFilteredWorkspaceFiles,
+    hasWorkspaceFiles,
+    searchActive,
+    systemSkillsExpanded,
+    toggleSection,
+    toggleSystemSkillNode,
+    workspaceExpanded,
+  } = useSidebarState();
 
   return (
     <aside
@@ -117,16 +81,10 @@ export function Sidebar() {
     >
       <div className="relative z-[1] grid h-[var(--app-header-height)] grid-cols-[minmax(0,1fr)_72px] items-center gap-1.5 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
         <div className="min-w-0">
-          <SidebarSearch query={query} setQuery={setQuery} />
+          <SidebarSearch />
         </div>
         <div className="w-[72px] shrink-0">
-          <SidebarFooter
-            isMarketplaceView={isMarketplaceView}
-            isSettingsView={isSettingsView}
-            openMarketplace={openMarketplace}
-            openSettings={openSettings}
-            placement="header"
-          />
+          <SidebarFooter placement="header" />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { IdeProvider as IdeStateProvider } from "../contexts/IdeContext";
 import { IdeLayoutProvider } from "../contexts/IdeLayoutContext";
 import { MarketplaceStateProvider } from "../contexts/MarketplaceStateContext";
 import { PreferencesProvider } from "../contexts/PreferencesContext";
+import { SidebarProvider } from "../contexts/SidebarContext";
 import { SystemSkillsProvider } from "../contexts/SystemSkillsContext";
 import { UiShellProvider } from "../contexts/UiShellContext";
 import { WorkspaceStateProvider } from "../contexts/WorkspaceStateContext";
@@ -16,7 +17,9 @@ export function IdeProvider({ children }: { children: ReactNode }) {
           <SystemSkillsProvider>
             <MarketplaceStateProvider>
               <IdeLayoutProvider>
-                <IdeStateProvider>{children}</IdeStateProvider>
+                <SidebarProvider>
+                  <IdeStateProvider>{children}</IdeStateProvider>
+                </SidebarProvider>
               </IdeLayoutProvider>
             </MarketplaceStateProvider>
           </SystemSkillsProvider>

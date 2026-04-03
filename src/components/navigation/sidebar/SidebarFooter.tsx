@@ -1,14 +1,7 @@
 import { GearSixIcon } from "@phosphor-icons/react/dist/csr/GearSix";
 import { BagSimpleIcon } from "@phosphor-icons/react/dist/csr/BagSimple";
 import type { ReactNode } from "react";
-
-type SidebarFooterProps = {
-  isMarketplaceView: boolean;
-  isSettingsView: boolean;
-  openMarketplace: () => void;
-  openSettings: () => void;
-  placement?: "footer" | "header";
-};
+import { useIde } from "../../../contexts/IdeContext";
 
 function FooterButton({
   active,
@@ -58,12 +51,11 @@ function FooterButton({
 }
 
 export function SidebarFooter({
-  isMarketplaceView,
-  isSettingsView,
-  openMarketplace,
-  openSettings,
   placement = "footer",
-}: SidebarFooterProps) {
+}: {
+  placement?: "footer" | "header";
+}) {
+  const { isMarketplaceView, isSettingsView, openMarketplace, openSettings } = useIde();
   const isHeader = placement === "header";
 
   return (
