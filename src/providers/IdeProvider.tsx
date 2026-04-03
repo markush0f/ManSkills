@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
 import { IdeProvider as IdeStateProvider } from "../contexts/IdeContext";
 import { IdeLayoutProvider } from "../contexts/IdeLayoutContext";
+import { UiShellProvider } from "../contexts/UiShellContext";
 
 export function IdeProvider({ children }: { children: ReactNode }) {
   return (
-    <IdeLayoutProvider>
-      <IdeStateProvider>{children}</IdeStateProvider>
-    </IdeLayoutProvider>
+    <UiShellProvider>
+      <IdeLayoutProvider>
+        <IdeStateProvider>{children}</IdeStateProvider>
+      </IdeLayoutProvider>
+    </UiShellProvider>
   );
 }
