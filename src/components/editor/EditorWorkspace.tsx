@@ -7,9 +7,10 @@ import { useIde } from "../../contexts/IdeContext";
 import { useEditorSession } from "../../hooks/useEditorSession";
 import type { IdeFile, SaveShortcut } from "../../types";
 import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
+import { EmptyState } from "../shared/EmptyState";
+import { accentButtonClass, ghostButtonClass, shellPanelClass } from "../shared/ui";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
-import { shellPanelClass } from "../shared/ui";
 
 type ContentView = "preview" | "code" | "split";
 
@@ -66,6 +67,8 @@ export function EditorWorkspace() {
     closeFile,
     isSavingActiveFile,
     openFile,
+    openMarketplace,
+    openSettings,
     openFiles,
     preferences,
     saveActiveFile,
@@ -239,15 +242,22 @@ export function EditorWorkspace() {
       <div className="min-h-0 bg-[var(--editor-surface)]">
         {!activeFile ? (
           <div className="grid h-full place-items-center p-6">
-            <div className="max-w-[560px] rounded-[24px] border border-[var(--border)] bg-[linear-gradient(180deg,rgba(17,24,31,0.94),rgba(11,16,21,0.98))] p-6 text-left shadow-[0_24px_48px_rgba(0,0,0,0.24)]">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">Workspace Ready</p>
-              <h1 className="mt-3 text-[30px] font-semibold tracking-[-0.05em] text-[var(--text)]">
-                No hay ningun archivo abierto.
-              </h1>
-              <p className="mt-4 text-[14px] leading-7 text-[#c1ccd7]">
-                Abre una skill desde la sidebar para cargar sus ficheros reales desde disco. Los buffers solo
-                aparecen aqui cuando ya han sido abiertos o editados.
-              </p>
+            <div className="w-full max-w-[560px]">
+              <EmptyState
+                action={
+                  <div className="flex flex-wrap gap-3">
+                    <button className={accentButtonClass} onClick={openMarketplace} type="button">
+                      Open marketplace
+                    </button>
+                    <button className={ghostButtonClass} onClick={openSettings} type="button">
+                      Open settings
+                    </button>
+                  </div>
+                }
+                eyebrow="Workspace Ready"
+                message="Open a system skill from the sidebar to load real files into the workspace, or browse the marketplace to install a new skill."
+                title="No file is open"
+              />
             </div>
           </div>
         ) : supportsPreview && contentView === "preview" ? (
