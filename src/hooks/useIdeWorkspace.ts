@@ -1,15 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useMarketplaceState } from "../contexts/MarketplaceStateContext";
+import { usePreferences } from "../contexts/PreferencesContext";
+import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
+import { useWorkspaceState } from "../contexts/WorkspaceStateContext";
 import {
   buildSystemSkillFiles,
   getSystemSkillFileId,
   getSystemSkillMainFileId,
 } from "../ide/systemSkills";
-import { useSkillMarketplace } from "./useSkillMarketplace";
-import { useIdePreferences } from "./useIdePreferences";
-import { useSystemSkills } from "./useSystemSkills";
-import { useWorkspaceFiles } from "./useWorkspaceFiles";
 import type {
   MarketplaceInstallResult,
   MarketplaceSkill,
@@ -58,10 +58,10 @@ export function useIdeWorkspace() {
   );
   const [marketplaceInstallMessage, setMarketplaceInstallMessage] = useState<string | null>(null);
   const [marketplaceInstallError, setMarketplaceInstallError] = useState<string | null>(null);
-  const { preferences, updatePreferences } = useIdePreferences();
-  const marketplaceState = useSkillMarketplace();
-  const workspaceFiles = useWorkspaceFiles();
-  const systemSkillsState = useSystemSkills();
+  const { preferences, updatePreferences } = usePreferences();
+  const marketplaceState = useMarketplaceState();
+  const workspaceFiles = useWorkspaceState();
+  const systemSkillsState = useSystemSkillsState();
   const pendingWatchPathsRef = useRef<Set<string>>(new Set());
 
   const {
