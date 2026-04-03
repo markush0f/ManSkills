@@ -9,8 +9,6 @@ export type MarketplaceContextValue = {
   installMarketplaceSkill: (skill: MarketplaceSkill) => void;
   marketplaceError: string | null;
   marketplaceHasSearched: boolean;
-  marketplaceInstallError: string | null;
-  marketplaceInstallMessage: string | null;
   marketplaceLoading: boolean;
   marketplaceSearchMs: number | null;
   marketplaceSkills: MarketplaceSkill[];

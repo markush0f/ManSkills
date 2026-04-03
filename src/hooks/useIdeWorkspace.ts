@@ -47,7 +47,6 @@ export function useIdeWorkspace() {
   const { pushToast, uiState, updateUiState } = useUiShell();
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(uiState.workspaceView);
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
-  const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
   const [selectedMarketplaceSkill, setSelectedMarketplaceSkill] = useState<MarketplaceSkill | null>(null);
   const [installingMarketplaceSkillIds, setInstallingMarketplaceSkillIds] = useState<Set<string>>(
     () => new Set(),
@@ -58,8 +57,6 @@ export function useIdeWorkspace() {
   const [uninstallingMarketplaceSkillIds, setUninstallingMarketplaceSkillIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [marketplaceInstallMessage, setMarketplaceInstallMessage] = useState<string | null>(null);
-  const [marketplaceInstallError, setMarketplaceInstallError] = useState<string | null>(null);
   const { preferences, updatePreferences } = usePreferences();
   const marketplaceState = useMarketplaceState();
   const workspaceFiles = useWorkspaceState();
@@ -311,7 +308,6 @@ export function useIdeWorkspace() {
   ]);
 
   function openEditor() {
-    setActiveFileSaveError(null);
     setWorkspaceView("editor");
     updateUiState((current) => ({
       ...current,
@@ -328,7 +324,6 @@ export function useIdeWorkspace() {
   }
 
   function openMarketplace() {
-    setActiveFileSaveError(null);
     setWorkspaceView("marketplace");
     updateUiState((current) => ({
       ...current,
@@ -337,8 +332,6 @@ export function useIdeWorkspace() {
   }
 
   function openMarketplaceSkillDetail(skill: MarketplaceSkill) {
-    setMarketplaceInstallError(null);
-    setMarketplaceInstallMessage(null);
     setSelectedMarketplaceSkill(skill);
     setWorkspaceView("marketplace");
     updateUiState((current) => ({
@@ -387,8 +380,6 @@ export function useIdeWorkspace() {
   }
 
   function installMarketplaceSkill(skill: MarketplaceSkill) {
-    setMarketplaceInstallError(null);
-    setMarketplaceInstallMessage(null);
     setInstallingMarketplaceSkillIds((current) => {
       const next = new Set(current);
       next.add(skill.id);
@@ -401,7 +392,6 @@ export function useIdeWorkspace() {
       target: preferences.marketplaceInstallTarget,
     })
       .then((result) => {
-        setMarketplaceInstallMessage(`Skill instalada en ${result.installedPath}`);
         pushToast({
           description: result.installedPath,
           kind: "success",
@@ -416,9 +406,6 @@ export function useIdeWorkspace() {
             : error instanceof Error
               ? error.message
               : "No se pudo instalar la skill.";
-        setMarketplaceInstallError(
-          message,
-        );
         pushToast({
           description: message,
           kind: "error",
@@ -442,8 +429,6 @@ export function useIdeWorkspace() {
       return Promise.reject(new Error("La skill no esta instalada."));
     }
 
-    setMarketplaceInstallError(null);
-    setMarketplaceInstallMessage(null);
     setUpdatingMarketplaceSkillIds((current) => {
       const next = new Set(current);
       next.add(skill.id);
@@ -455,7 +440,6 @@ export function useIdeWorkspace() {
       skill,
     })
       .then((result) => {
-        setMarketplaceInstallMessage(`Skill actualizada en ${result.installedPath}`);
         pushToast({
           description: result.installedPath,
           kind: "success",
@@ -470,9 +454,6 @@ export function useIdeWorkspace() {
             : error instanceof Error
               ? error.message
               : "No se pudo actualizar la skill.";
-        setMarketplaceInstallError(
-          message,
-        );
         pushToast({
           description: message,
           kind: "error",
@@ -496,8 +477,6 @@ export function useIdeWorkspace() {
       return Promise.reject(new Error("La skill no esta instalada."));
     }
 
-    setMarketplaceInstallError(null);
-    setMarketplaceInstallMessage(null);
     setUninstallingMarketplaceSkillIds((current) => {
       const next = new Set(current);
       next.add(skill.id);
@@ -508,7 +487,6 @@ export function useIdeWorkspace() {
       rootPath: installedSkill.rootPath,
     })
       .then((result) => {
-        setMarketplaceInstallMessage(`Skill eliminada de ${result.removedPath}`);
         pushToast({
           description: result.removedPath,
           kind: "success",
@@ -523,9 +501,6 @@ export function useIdeWorkspace() {
             : error instanceof Error
               ? error.message
               : "No se pudo eliminar la skill.";
-        setMarketplaceInstallError(
-          message,
-        );
         pushToast({
           description: message,
           kind: "error",
@@ -553,7 +528,6 @@ export function useIdeWorkspace() {
   }
 
   function openFile(fileId: string) {
-    setActiveFileSaveError(null);
     openWorkspaceFile(fileId);
     setWorkspaceView("editor");
   }
@@ -595,8 +569,6 @@ export function useIdeWorkspace() {
     const contentToSave = nextContent ?? fileToSave.content;
 
     setIsSavingActiveFile(true);
-    setActiveFileSaveError(null);
-
     return invoke("save_system_skill_file", {
       rootPath: fileToSave.rootPath,
       relativePath: fileToSave.relativePath,
@@ -625,7 +597,6 @@ export function useIdeWorkspace() {
               return refreshSystemSkillTree();
             })
             .catch(() => {
-              setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
               pushToast({
                 description: fileToSave.relativePath,
                 kind: "error",
@@ -635,7 +606,6 @@ export function useIdeWorkspace() {
             });
       })
       .catch(() => {
-        setActiveFileSaveError("No se pudo guardar el archivo.");
         pushToast({
           description: fileToSave.relativePath,
           kind: "error",
@@ -651,7 +621,6 @@ export function useIdeWorkspace() {
   return {
     activeFile,
     activeFileId,
-    activeFileSaveError,
     clearSystemSkillActionError,
     closeFile,
     files,
@@ -667,8 +636,6 @@ export function useIdeWorkspace() {
     listingSystemSkillIds,
     marketplaceError,
     marketplaceHasSearched,
-    marketplaceInstallError,
-    marketplaceInstallMessage,
     marketplaceLoading,
     marketplaceQuery,
     marketplaceSearchMs,

@@ -18,8 +18,6 @@ export function useMarketplaceDetail() {
     isMarketplaceSkillUpdateAvailable,
     marketplaceError,
     marketplaceHasSearched,
-    marketplaceInstallError,
-    marketplaceInstallMessage,
     marketplaceLoading,
     marketplaceQuery,
     marketplaceSearchMs,
@@ -173,8 +171,6 @@ export function useMarketplaceDetail() {
       },
       marketplaceError,
       marketplaceHasSearched,
-      marketplaceInstallError,
-      marketplaceInstallMessage,
       marketplaceLoading,
       marketplaceSearchMs,
       marketplaceSkills,
@@ -209,7 +205,5 @@ export function useMarketplaceDetail() {
       setQuery,
       updatePreferences,
     },
-    marketplaceInstallError,
-    marketplaceInstallMessage,
   };
 }
