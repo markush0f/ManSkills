@@ -3,9 +3,8 @@ import { EyeIcon } from "@phosphor-icons/react/dist/csr/Eye";
 import { SplitHorizontalIcon } from "@phosphor-icons/react/dist/csr/SplitHorizontal";
 import Editor from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
-import { useDeferredValue, useEffect, useEffectEvent, useState } from "react";
 import { useIde } from "../../contexts/IdeContext";
-import { matchesSaveShortcut } from "../../ide/utils";
+import { useEditorSession } from "../../hooks/useEditorSession";
 import type { IdeFile, SaveShortcut } from "../../types";
 import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
 import { JsonPreview } from "./JsonPreview";
@@ -73,71 +72,25 @@ export function EditorWorkspace() {
     saveActiveFile,
     updateActiveFile,
   } = useIde();
-  const [contentViewState, setContentViewState] = useState<{ fileId: string; mode: ContentView }>({
-    fileId: "",
-    mode: "code",
+  const {
+    canSaveActiveFile,
+    contentView,
+    deferredContent,
+    draftContent,
+    isMarkdown,
+    previewRailWidth,
+    saveErrorWidth,
+    selectContentView,
+    setDraftContent,
+    supportsPreview,
+  } = useEditorSession({
+    activeFile,
+    activeFileSaveError,
+    isSavingActiveFile,
+    preferences,
+    saveActiveFile,
+    updateActiveFile,
   });
-  const [draftState, setDraftState] = useState<{ content: string; fileId: string }>({
-    content: "",
-    fileId: "",
-  });
-  const activeEditorFileId = activeFile?.id ?? "";
-  const contentView = contentViewState.fileId === activeEditorFileId ? contentViewState.mode : "code";
-  const draftContent =
-    draftState.fileId === activeEditorFileId ? draftState.content : activeFile?.content ?? "";
-  const isMarkdown = activeFile?.language === "md";
-  const isJson = activeFile?.language === "json";
-  const supportsPreview = isMarkdown || isJson;
-  const deferredContent = useDeferredValue(draftContent);
-  const canSaveActiveFile = activeFile
-    ? Boolean(activeFile.isWritable && activeFile.rootPath && activeFile.relativePath) &&
-      activeFile.content !== activeFile.savedContent
-    : false;
-  const previewRailWidth = supportsPreview ? 126 : 0;
-  const saveErrorWidth = activeFileSaveError ? 244 : 0;
-
-  useEffect(() => {
-    if (!activeFile) {
-      return;
-    }
-
-    if (draftContent === activeFile.content) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      updateActiveFile(draftContent);
-    }, 120);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [activeFile, draftContent, updateActiveFile]);
-
-  const handleWindowSaveShortcut = useEffectEvent((event: KeyboardEvent) => {
-    if (event.repeat || !canSaveActiveFile || isSavingActiveFile) {
-      return;
-    }
-
-    if (!matchesSaveShortcut(event, preferences.saveShortcut)) {
-      return;
-    }
-
-    event.preventDefault();
-    void saveActiveFile(draftContent);
-  });
-
-  useEffect(() => {
-    const listener = (event: KeyboardEvent) => {
-      handleWindowSaveShortcut(event);
-    };
-
-    window.addEventListener("keydown", listener, { capture: true });
-
-    return () => {
-      window.removeEventListener("keydown", listener, { capture: true });
-    };
-  }, []);
 
   function renderPreviewModeButton(
     mode: "code" | "preview" | "split",
@@ -153,7 +106,7 @@ export function EditorWorkspace() {
             ? "bg-white/[0.018] text-[var(--text)]"
             : "text-[var(--muted)] hover:bg-white/[0.01] hover:text-[var(--text)]"
         }`}
-        onClick={() => setContentViewState({ fileId: activeEditorFileId, mode })}
+        onClick={() => selectContentView(mode)}
         title={label}
         type="button"
       >
@@ -208,12 +161,7 @@ export function EditorWorkspace() {
           path={activeFile.path}
           theme="vs-dark"
           value={draftContent}
-          onChange={(value) =>
-            setDraftState({
-              content: value ?? "",
-              fileId: activeEditorFileId,
-            })
-          }
+          onChange={(value) => setDraftContent(value ?? "")}
           beforeMount={(monaco) => {
             monaco.editor.defineTheme("skills-dark", {
               base: "vs-dark",
