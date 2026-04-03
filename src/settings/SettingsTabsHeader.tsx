@@ -1,23 +1,11 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react/dist/csr/ArrowLeft";
 import { GearSixIcon } from "@phosphor-icons/react/dist/csr/GearSix";
-import type { IdeFile } from "../types";
+import { useIde } from "../contexts/IdeContext";
 import { WorkbenchTabsBar } from "../components/layout/WorkbenchTabsBar";
 
-type SettingsTabsHeaderProps = {
-  closeFile: (fileId: string) => void;
-  openFile: (fileId: string) => void;
-  openFiles: IdeFile[];
-  openSettings: () => void;
-  returnToEditor: () => void;
-};
+export function SettingsTabsHeader() {
+  const { closeFile, openEditor, openFile, openFiles, openSettings } = useIde();
 
-export function SettingsTabsHeader({
-  closeFile,
-  openFile,
-  openFiles,
-  openSettings,
-  returnToEditor,
-}: SettingsTabsHeaderProps) {
   return (
     <div className="h-[var(--app-header-height)] min-w-0 overflow-hidden border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
       <div className="flex h-full min-w-0 items-stretch">
@@ -35,7 +23,7 @@ export function SettingsTabsHeader({
             fileTabs={openFiles}
             onCloseTab={(tabId) => {
               if (tabId === "__settings__") {
-                returnToEditor();
+                openEditor();
                 return;
               }
 
@@ -56,7 +44,7 @@ export function SettingsTabsHeader({
           <button
             aria-label="Volver al editor"
             className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[var(--border)] bg-white/[0.02] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            onClick={returnToEditor}
+            onClick={openEditor}
             title="Volver"
             type="button"
           >

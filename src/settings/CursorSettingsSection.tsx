@@ -1,13 +1,6 @@
-import type { IdePreferences } from "../types";
 import { matchesSearch } from "./settingsUtils";
-import type { UpdatePreferences } from "./settingsTypes";
 import { CheckboxSetting, Section, SelectSetting } from "./SettingsRows";
-
-type CursorSettingsSectionProps = {
-  preferences: IdePreferences;
-  query: string;
-  updatePreferences: UpdatePreferences;
-};
+import { useSettings } from "./SettingsContext";
 
 export function hasCursorSettingsResults(query: string) {
   return (
@@ -18,11 +11,9 @@ export function hasCursorSettingsResults(query: string) {
   );
 }
 
-export function CursorSettingsSection({
-  preferences,
-  query,
-  updatePreferences,
-}: CursorSettingsSectionProps) {
+export function CursorSettingsSection() {
+  const { preferences, query, updatePreferences } = useSettings();
+
   if (!hasCursorSettingsResults(query)) {
     return null;
   }

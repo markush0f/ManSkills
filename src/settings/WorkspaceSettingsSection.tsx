@@ -1,20 +1,7 @@
-import type { IdePreferences } from "../types";
 import { InfoRow, Section } from "./SettingsRows";
-import type { UpdatePreferences } from "./settingsTypes";
 import { matchesSearch } from "./settingsUtils";
 import { SelectSetting } from "./SettingsRows";
-
-type WorkspaceSettingsSectionProps = {
-  activeFilePath: string;
-  openTabsCount: number;
-  preferences: IdePreferences;
-  query: string;
-  resetSidebarWidth: () => void;
-  sidebarWidth: number;
-  systemSkillCount: number;
-  systemSkillScanMs: number | null;
-  updatePreferences: UpdatePreferences;
-};
+import { useSettings } from "./SettingsContext";
 
 export function hasWorkspaceSettingsResults(
   query: string,
@@ -37,17 +24,19 @@ function formatScanDuration(systemSkillScanMs: number | null) {
   return systemSkillScanMs === null ? "Sin datos" : `${systemSkillScanMs} ms`;
 }
 
-export function WorkspaceSettingsSection({
-  activeFilePath,
-  openTabsCount,
-  preferences,
-  query,
-  resetSidebarWidth,
-  sidebarWidth,
-  systemSkillCount,
-  systemSkillScanMs,
-  updatePreferences,
-}: WorkspaceSettingsSectionProps) {
+export function WorkspaceSettingsSection() {
+  const {
+    activeFilePath,
+    openTabsCount,
+    preferences,
+    query,
+    resetSidebarWidth,
+    sidebarWidth,
+    systemSkillCount,
+    systemSkillScanMs,
+    updatePreferences,
+  } = useSettings();
+
   if (!hasWorkspaceSettingsResults(query, activeFilePath, openTabsCount, systemSkillCount, systemSkillScanMs)) {
     return null;
   }

@@ -1,13 +1,6 @@
-import type { IdePreferences } from "../types";
 import { matchesSearch } from "./settingsUtils";
-import type { UpdatePreferences } from "./settingsTypes";
 import { CheckboxSetting, NumberSetting, Section } from "./SettingsRows";
-
-type TextEditorSettingsSectionProps = {
-  preferences: IdePreferences;
-  query: string;
-  updatePreferences: UpdatePreferences;
-};
+import { useSettings } from "./SettingsContext";
 
 export function hasTextEditorSettingsResults(query: string) {
   return (
@@ -18,11 +11,9 @@ export function hasTextEditorSettingsResults(query: string) {
   );
 }
 
-export function TextEditorSettingsSection({
-  preferences,
-  query,
-  updatePreferences,
-}: TextEditorSettingsSectionProps) {
+export function TextEditorSettingsSection() {
+  const { preferences, query, updatePreferences } = useSettings();
+
   if (!hasTextEditorSettingsResults(query)) {
     return null;
   }
