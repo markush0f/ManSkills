@@ -6,7 +6,7 @@ import { MarketplaceToolbar } from "./marketplace/MarketplaceToolbar";
 import { MarketplaceTabsHeader } from "./MarketplaceTabsHeader";
 
 export function MarketplaceWorkspace() {
-  const { marketplaceContextValue, marketplaceInstallError, marketplaceInstallMessage } = useMarketplaceDetail();
+  const { marketplaceContextValue } = useMarketplaceDetail();
 
   return (
     <MarketplaceProvider value={marketplaceContextValue}>
@@ -21,18 +21,6 @@ export function MarketplaceWorkspace() {
             <div className="flex w-full min-h-full flex-col">
               <section className="min-h-full border-y border-[var(--border)] bg-[rgba(10,16,21,0.9)]">
                 <MarketplaceToolbar />
-
-                {marketplaceInstallError ? (
-                  <div className="border-b border-[#cf5e4f]/20 px-4 py-3 text-[12px] text-[#ffb3a7]">
-                    {marketplaceInstallError}
-                  </div>
-                ) : null}
-
-                {marketplaceInstallMessage ? (
-                  <div className="border-b border-[rgba(79,168,199,0.18)] px-4 py-3 text-[12px] text-[#a7dfd9]">
-                    {marketplaceInstallMessage}
-                  </div>
-                ) : null}
 
                 <MarketplaceBody />
               </section>

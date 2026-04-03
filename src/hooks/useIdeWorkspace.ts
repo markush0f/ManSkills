@@ -44,7 +44,7 @@ function parseMarketplaceTimestamp(value: string | null | undefined) {
 }
 
 export function useIdeWorkspace() {
-  const { uiState, updateUiState } = useUiShell();
+  const { pushToast, uiState, updateUiState } = useUiShell();
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(uiState.workspaceView);
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
@@ -402,16 +402,29 @@ export function useIdeWorkspace() {
     })
       .then((result) => {
         setMarketplaceInstallMessage(`Skill instalada en ${result.installedPath}`);
+        pushToast({
+          description: result.installedPath,
+          kind: "success",
+          title: `Installed ${skill.name}`,
+        });
         return refreshSystemSkillTree();
       })
       .catch((error: unknown) => {
-        setMarketplaceInstallError(
+        const message =
           typeof error === "string"
             ? error
             : error instanceof Error
               ? error.message
-              : "No se pudo instalar la skill.",
+              : "No se pudo instalar la skill.";
+        setMarketplaceInstallError(
+          message,
         );
+        pushToast({
+          description: message,
+          kind: "error",
+          sticky: true,
+          title: `Failed to install ${skill.name}`,
+        });
         throw error;
       })
       .finally(() => {
@@ -443,16 +456,29 @@ export function useIdeWorkspace() {
     })
       .then((result) => {
         setMarketplaceInstallMessage(`Skill actualizada en ${result.installedPath}`);
+        pushToast({
+          description: result.installedPath,
+          kind: "success",
+          title: `Updated ${skill.name}`,
+        });
         return refreshSystemSkillTree();
       })
       .catch((error: unknown) => {
-        setMarketplaceInstallError(
+        const message =
           typeof error === "string"
             ? error
             : error instanceof Error
               ? error.message
-              : "No se pudo actualizar la skill.",
+              : "No se pudo actualizar la skill.";
+        setMarketplaceInstallError(
+          message,
         );
+        pushToast({
+          description: message,
+          kind: "error",
+          sticky: true,
+          title: `Failed to update ${skill.name}`,
+        });
         throw error;
       })
       .finally(() => {
@@ -483,16 +509,29 @@ export function useIdeWorkspace() {
     })
       .then((result) => {
         setMarketplaceInstallMessage(`Skill eliminada de ${result.removedPath}`);
+        pushToast({
+          description: result.removedPath,
+          kind: "success",
+          title: `Removed ${skill.name}`,
+        });
         return refreshSystemSkillTree();
       })
       .catch((error: unknown) => {
-        setMarketplaceInstallError(
+        const message =
           typeof error === "string"
             ? error
             : error instanceof Error
               ? error.message
-              : "No se pudo eliminar la skill.",
+              : "No se pudo eliminar la skill.";
+        setMarketplaceInstallError(
+          message,
         );
+        pushToast({
+          description: message,
+          kind: "error",
+          sticky: true,
+          title: `Failed to remove ${skill.name}`,
+        });
         throw error;
       })
       .finally(() => {
@@ -576,17 +615,33 @@ export function useIdeWorkspace() {
           return;
         }
 
-        return loadSystemSkillFiles(activeSkill)
-          .then((response) => {
-            mergeFiles(buildSystemSkillFiles(activeSkill, response));
-            return refreshSystemSkillTree();
-          })
-          .catch(() => {
-            setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
-          });
+          return loadSystemSkillFiles(activeSkill)
+            .then((response) => {
+              mergeFiles(buildSystemSkillFiles(activeSkill, response));
+              pushToast({
+                kind: "success",
+                title: `Saved ${fileToSave.relativePath}`,
+              });
+              return refreshSystemSkillTree();
+            })
+            .catch(() => {
+              setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
+              pushToast({
+                description: fileToSave.relativePath,
+                kind: "error",
+                sticky: true,
+                title: "Saved file but failed to refresh skill",
+              });
+            });
       })
       .catch(() => {
         setActiveFileSaveError("No se pudo guardar el archivo.");
+        pushToast({
+          description: fileToSave.relativePath,
+          kind: "error",
+          sticky: true,
+          title: "Failed to save file",
+        });
       })
       .finally(() => {
         setIsSavingActiveFile(false);
