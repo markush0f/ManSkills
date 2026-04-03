@@ -9,6 +9,13 @@ export type { MarketplaceInstallMetadata } from "./marketplace-install-metadata"
 export type { MarketplaceInstallResult, MarketplaceInstallTarget, MarketplaceUninstallResult } from "./marketplace-install-result";
 export type { MarketplaceSearchResponse } from "./marketplace-search-response";
 export type { MarketplaceSkill } from "./marketplace-skill";
+export type {
+  PersistedEditorPreviewMode,
+  PersistedSettingsCategory,
+  PersistedUiStateV1,
+  PersistedWorkspaceTab,
+  PersistedWorkspaceView,
+} from "./persisted-ui-state";
 export type { SaveShortcut } from "./save-shortcut";
 export type { SidebarView } from "./sidebar-view";
 export type { SkillScanResponse } from "./skill-scan-response";
