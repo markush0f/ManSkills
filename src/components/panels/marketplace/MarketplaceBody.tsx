@@ -1,65 +1,14 @@
-import type { MarketplaceSkill, SystemSkill } from "../../../types";
 import { MarketplaceCatalog } from "./MarketplaceCatalog";
 import { MarketplaceSkillDetail } from "./MarketplaceSkillDetail";
-import type { MarketplaceSkillState } from "./types";
+import { useMarketplace } from "./MarketplaceContext";
 
-type MarketplaceBodyProps = {
-  closeMarketplaceSkillDetail: () => void;
-  findInstalledMarketplaceSkill: (skill: MarketplaceSkill) => SystemSkill | null;
-  getSkillState: (skill: MarketplaceSkill) => MarketplaceSkillState;
-  marketplaceError: string | null;
-  marketplaceHasSearched: boolean;
-  marketplaceLoading: boolean;
-  marketplaceSkills: MarketplaceSkill[];
-  onDelete: (skill: MarketplaceSkill) => void;
-  onOpenDetail: (skill: MarketplaceSkill) => void;
-  onOpenInstalled: (skill: MarketplaceSkill) => void;
-  onReinstall: (skill: MarketplaceSkill) => void;
-  onUpdate: (skill: MarketplaceSkill) => void;
-  selectedCollectionLabel: string;
-  selectedInstalledCollectionLabel: string;
-  selectedInstalledPath: string | null;
-  selectedInstalledTargetLabel: string;
-  selectedMarketplaceSkill: MarketplaceSkill | null;
-  selectedSkillManifest: string;
-  selectedSkillManifestError: string | null;
-  selectedSkillManifestLoading: boolean;
-  selectedSkillState: MarketplaceSkillState;
-  selectedTargetLabel: string;
-  submitInstall: (skill: MarketplaceSkill) => void;
-  submitOpenInstalled: (skill: MarketplaceSkill) => void;
-  submitUninstall: (skill: MarketplaceSkill) => void;
-  submitUpdate: (skill: MarketplaceSkill) => void;
-};
+export function MarketplaceBody() {
+  const {
+    marketplaceError,
+    marketplaceLoading,
+    selectedMarketplaceSkill,
+  } = useMarketplace();
 
-export function MarketplaceBody({
-  closeMarketplaceSkillDetail,
-  findInstalledMarketplaceSkill,
-  getSkillState,
-  marketplaceError,
-  marketplaceHasSearched,
-  marketplaceLoading,
-  marketplaceSkills,
-  onDelete,
-  onOpenDetail,
-  onOpenInstalled,
-  onReinstall,
-  onUpdate,
-  selectedCollectionLabel,
-  selectedInstalledCollectionLabel,
-  selectedInstalledPath,
-  selectedInstalledTargetLabel,
-  selectedMarketplaceSkill,
-  selectedSkillManifest,
-  selectedSkillManifestError,
-  selectedSkillManifestLoading,
-  selectedSkillState,
-  selectedTargetLabel,
-  submitInstall,
-  submitOpenInstalled,
-  submitUninstall,
-  submitUpdate,
-}: MarketplaceBodyProps) {
   if (marketplaceError) {
     return <div className="px-4 py-4 text-[13px] text-[#ffb3a7]">{marketplaceError}</div>;
   }
@@ -73,38 +22,8 @@ export function MarketplaceBody({
   }
 
   if (selectedMarketplaceSkill) {
-    return (
-      <MarketplaceSkillDetail
-        manifest={selectedSkillManifest}
-        manifestError={selectedSkillManifestError}
-        manifestLoading={selectedSkillManifestLoading}
-        onBack={closeMarketplaceSkillDetail}
-        onInstall={submitInstall}
-        onOpenInstalled={submitOpenInstalled}
-        onUninstall={submitUninstall}
-        onUpdate={submitUpdate}
-        selectedCollectionLabel={selectedCollectionLabel}
-        selectedInstalledCollectionLabel={selectedInstalledCollectionLabel}
-        selectedInstalledPath={selectedInstalledPath}
-        selectedInstalledTargetLabel={selectedInstalledTargetLabel}
-        selectedSkillState={selectedSkillState}
-        selectedTargetLabel={selectedTargetLabel}
-        skill={selectedMarketplaceSkill}
-      />
-    );
+    return <MarketplaceSkillDetail />;
   }
 
-  return (
-    <MarketplaceCatalog
-      findInstalledMarketplaceSkill={findInstalledMarketplaceSkill}
-      getSkillState={getSkillState}
-      marketplaceHasSearched={marketplaceHasSearched}
-      marketplaceSkills={marketplaceSkills}
-      onDelete={onDelete}
-      onOpenDetail={onOpenDetail}
-      onOpenInstalled={onOpenInstalled}
-      onReinstall={onReinstall}
-      onUpdate={onUpdate}
-    />
-  );
+  return <MarketplaceCatalog />;
 }

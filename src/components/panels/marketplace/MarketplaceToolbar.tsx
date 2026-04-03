@@ -6,35 +6,22 @@ import { SealCheckIcon } from "@phosphor-icons/react/dist/csr/SealCheck";
 import type { MarketplaceInstallTarget } from "../../../types";
 import { SelectInput, TextInput } from "../../shared/formControls";
 import { ghostButtonClass } from "../../shared/ui";
+import { useMarketplace } from "./MarketplaceContext";
 import { INSTALL_TARGET_OPTIONS } from "./types";
 
-type MarketplaceToolbarProps = {
-  installCollection: string;
-  installTarget: MarketplaceInstallTarget;
-  marketplaceLoading: boolean;
-  marketplaceSearchMs: number | null;
-  marketplaceSkillsCount: number;
-  marketplaceTotal: number | null;
-  onInstallCollectionChange: (value: string) => void;
-  onInstallTargetChange: (target: MarketplaceInstallTarget) => void;
-  onQueryChange: (value: string) => void;
-  onSearch: () => void;
-  query: string;
-};
+export function MarketplaceToolbar() {
+  const {
+    marketplaceLoading,
+    marketplaceSearchMs,
+    marketplaceSkills,
+    marketplaceTotal,
+    onSearch,
+    preferences,
+    query,
+    setQuery,
+    updatePreferences,
+  } = useMarketplace();
 
-export function MarketplaceToolbar({
-  installCollection,
-  installTarget,
-  marketplaceLoading,
-  marketplaceSearchMs,
-  marketplaceSkillsCount,
-  marketplaceTotal,
-  onInstallCollectionChange,
-  onInstallTargetChange,
-  onQueryChange,
-  onSearch,
-  query,
-}: MarketplaceToolbarProps) {
   return (
     <div className="flex flex-col gap-4 border-b border-[var(--border)] px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
@@ -53,7 +40,7 @@ export function MarketplaceToolbar({
         <div className="mt-1 flex flex-wrap items-center gap-4 text-[12px] text-[var(--muted)]">
           <span className="inline-flex items-center gap-1.5">
             <BagSimpleIcon className="h-3.5 w-3.5" weight="bold" />
-            {marketplaceSkillsCount} de {marketplaceTotal ?? marketplaceSkillsCount} skills
+            {marketplaceSkills.length} de {marketplaceTotal ?? marketplaceSkills.length} skills
           </span>
           <span className="inline-flex items-center gap-1.5">
             <ArrowClockwiseIcon className="h-3.5 w-3.5" weight="bold" />
@@ -74,7 +61,7 @@ export function MarketplaceToolbar({
           <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
           <TextInput
             className="pl-9"
-            onChange={(event) => onQueryChange(event.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar en SkillsMP"
             value={query}
           />
@@ -87,8 +74,12 @@ export function MarketplaceToolbar({
           />
           <SelectInput
             className="min-w-[180px] pl-9"
-            onChange={(event) => onInstallTargetChange(event.target.value as MarketplaceInstallTarget)}
-            value={installTarget}
+            onChange={(event) =>
+              updatePreferences({
+                marketplaceInstallTarget: event.target.value as MarketplaceInstallTarget,
+              })
+            }
+            value={preferences.marketplaceInstallTarget}
           >
             {INSTALL_TARGET_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -105,9 +96,13 @@ export function MarketplaceToolbar({
           />
           <TextInput
             className="pl-9"
-            onChange={(event) => onInstallCollectionChange(event.target.value)}
+            onChange={(event) =>
+              updatePreferences({
+                marketplaceInstallCollection: event.target.value,
+              })
+            }
             placeholder="Coleccion opcional"
-            value={installCollection}
+            value={preferences.marketplaceInstallCollection}
           />
         </div>
 

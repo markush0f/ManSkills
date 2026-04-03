@@ -14,18 +14,7 @@ import {
   getMarketplaceSkillStateTone,
 } from "./marketplaceShared";
 import { MARKETPLACE_TABLE_COLUMNS, type MarketplaceSkillState } from "./types";
-
-type MarketplaceCatalogProps = {
-  findInstalledMarketplaceSkill: (skill: MarketplaceSkill) => SystemSkill | null;
-  getSkillState: (skill: MarketplaceSkill) => MarketplaceSkillState;
-  marketplaceHasSearched: boolean;
-  marketplaceSkills: MarketplaceSkill[];
-  onDelete: (skill: MarketplaceSkill) => void;
-  onOpenDetail: (skill: MarketplaceSkill) => void;
-  onOpenInstalled: (skill: MarketplaceSkill) => void;
-  onReinstall: (skill: MarketplaceSkill) => void;
-  onUpdate: (skill: MarketplaceSkill) => void;
-};
+import { useMarketplace } from "./MarketplaceContext";
 
 type MarketplaceSkillRowProps = {
   installedSkill: SystemSkill | null;
@@ -153,17 +142,18 @@ function MarketplaceSkillRow({
   );
 }
 
-export function MarketplaceCatalog({
-  findInstalledMarketplaceSkill,
-  getSkillState,
-  marketplaceHasSearched,
-  marketplaceSkills,
-  onDelete,
-  onOpenDetail,
-  onOpenInstalled,
-  onReinstall,
-  onUpdate,
-}: MarketplaceCatalogProps) {
+export function MarketplaceCatalog() {
+  const {
+    findInstalledMarketplaceSkill,
+    getSkillState,
+    marketplaceHasSearched,
+    marketplaceSkills,
+    onUninstall,
+    onUpdate,
+    openInstalledMarketplaceSkill,
+    openMarketplaceSkillDetail,
+  } = useMarketplace();
+
   if (marketplaceSkills.length === 0) {
     return marketplaceHasSearched ? (
       <div className="px-4 py-10 text-center text-[13px] text-[var(--muted)]">
@@ -211,10 +201,10 @@ export function MarketplaceCatalog({
             <MarketplaceSkillRow
               installedSkill={installedSkill}
               key={skill.id}
-              onDelete={onDelete}
-              onOpenDetail={onOpenDetail}
-              onOpenInstalled={onOpenInstalled}
-              onReinstall={onReinstall}
+              onDelete={onUninstall}
+              onOpenDetail={openMarketplaceSkillDetail}
+              onOpenInstalled={openInstalledMarketplaceSkill}
+              onReinstall={onUpdate}
               onUpdate={onUpdate}
               skill={skill}
               state={getSkillState(skill)}

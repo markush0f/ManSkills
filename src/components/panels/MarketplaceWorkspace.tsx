@@ -4,6 +4,7 @@ import { useIde } from "../../contexts/IdeContext";
 import type { MarketplaceSkill } from "../../types";
 import { shellPanelClass } from "../shared/ui";
 import { MarketplaceBody } from "./marketplace/MarketplaceBody";
+import { MarketplaceProvider } from "./marketplace/MarketplaceContext";
 import { MarketplaceToolbar } from "./marketplace/MarketplaceToolbar";
 import {
   INSTALL_TARGET_OPTIONS,
@@ -13,7 +14,6 @@ import { MarketplaceTabsHeader } from "./MarketplaceTabsHeader";
 
 export function MarketplaceWorkspace() {
   const {
-    closeFile,
     closeMarketplaceSkillDetail,
     findInstalledMarketplaceSkill,
     installingMarketplaceSkillIds,
@@ -28,11 +28,7 @@ export function MarketplaceWorkspace() {
     marketplaceSearchMs,
     marketplaceSkills,
     marketplaceTotal,
-    openEditor,
-    openFile,
-    openFiles,
     openInstalledMarketplaceSkill,
-    openMarketplace,
     openMarketplaceSkillDetail,
     preferences,
     refreshMarketplace,
@@ -155,100 +151,84 @@ export function MarketplaceWorkspace() {
   const selectedInstalledPath =
     selectedInstalledSkill?.marketplaceInstall?.installedPath ?? selectedInstalledSkill?.rootPath ?? null;
 
+  const marketplaceContextValue = {
+    closeMarketplaceSkillDetail,
+    findInstalledMarketplaceSkill,
+    getSkillState,
+    installMarketplaceSkill: (skill: MarketplaceSkill) => {
+      void installMarketplaceSkill(skill);
+    },
+    marketplaceError,
+    marketplaceHasSearched,
+    marketplaceInstallError,
+    marketplaceInstallMessage,
+    marketplaceLoading,
+    marketplaceSearchMs,
+    marketplaceSkills,
+    marketplaceTotal,
+    onSearch: () => {
+      if (query.trim().length > 0) {
+        submitSearch();
+        return;
+      }
+
+      void refreshMarketplace();
+    },
+    onUninstall: confirmAndUninstall,
+    onUpdate: (skill: MarketplaceSkill) => {
+      void updateMarketplaceSkill(skill);
+    },
+    openInstalledMarketplaceSkill,
+    openMarketplaceSkillDetail,
+    preferences,
+    query,
+    refreshMarketplace,
+    selectedCollectionLabel,
+    selectedInstalledCollectionLabel,
+    selectedInstalledPath,
+    selectedInstalledTargetLabel,
+    selectedMarketplaceSkill,
+    selectedSkillManifest,
+    selectedSkillManifestError,
+    selectedSkillManifestLoading,
+    selectedSkillState,
+    selectedTargetLabel,
+    setQuery,
+    updatePreferences,
+  };
+
   return (
-    <section
-      className={`${shellPanelClass} h-full min-h-0 min-w-0 overflow-hidden bg-[image:var(--editor-bg)]`}
-      style={{ fontFamily: "var(--font-soft)" }}
-    >
-      <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
-        <MarketplaceTabsHeader
-          closeFile={closeFile}
-          openFile={openFile}
-          openFiles={openFiles}
-          openMarketplace={openMarketplace}
-          returnToEditor={openEditor}
-        />
+    <MarketplaceProvider value={marketplaceContextValue}>
+      <section
+        className={`${shellPanelClass} h-full min-h-0 min-w-0 overflow-hidden bg-[image:var(--editor-bg)]`}
+        style={{ fontFamily: "var(--font-soft)" }}
+      >
+        <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+          <MarketplaceTabsHeader />
 
-        <div className="min-h-0 overflow-auto">
-          <div className="flex w-full min-h-full flex-col">
-            <section className="min-h-full border-y border-[var(--border)] bg-[rgba(10,16,21,0.9)]">
-              <MarketplaceToolbar
-                installCollection={preferences.marketplaceInstallCollection}
-                installTarget={preferences.marketplaceInstallTarget}
-                marketplaceLoading={marketplaceLoading}
-                marketplaceSearchMs={marketplaceSearchMs}
-                marketplaceSkillsCount={marketplaceSkills.length}
-                marketplaceTotal={marketplaceTotal}
-                onInstallCollectionChange={(marketplaceInstallCollection) =>
-                  updatePreferences({ marketplaceInstallCollection })
-                }
-                onInstallTargetChange={(marketplaceInstallTarget) =>
-                  updatePreferences({ marketplaceInstallTarget })
-                }
-                onQueryChange={setQuery}
-                onSearch={() => {
-                  if (query.trim().length > 0) {
-                    submitSearch();
-                    return;
-                  }
+          <div className="min-h-0 overflow-auto">
+            <div className="flex w-full min-h-full flex-col">
+              <section className="min-h-full border-y border-[var(--border)] bg-[rgba(10,16,21,0.9)]">
+                <MarketplaceToolbar />
 
-                  void refreshMarketplace();
-                }}
-                query={query}
-              />
+                {marketplaceInstallError ? (
+                  <div className="border-b border-[#cf5e4f]/20 px-4 py-3 text-[12px] text-[#ffb3a7]">
+                    {marketplaceInstallError}
+                  </div>
+                ) : null}
 
-              {marketplaceInstallError ? (
-                <div className="border-b border-[#cf5e4f]/20 px-4 py-3 text-[12px] text-[#ffb3a7]">
-                  {marketplaceInstallError}
-                </div>
-              ) : null}
+                {marketplaceInstallMessage ? (
+                  <div className="border-b border-[rgba(79,168,199,0.18)] px-4 py-3 text-[12px] text-[#a7dfd9]">
+                    {marketplaceInstallMessage}
+                  </div>
+                ) : null}
 
-              {marketplaceInstallMessage ? (
-                <div className="border-b border-[rgba(79,168,199,0.18)] px-4 py-3 text-[12px] text-[#a7dfd9]">
-                  {marketplaceInstallMessage}
-                </div>
-              ) : null}
-
-              <MarketplaceBody
-                closeMarketplaceSkillDetail={closeMarketplaceSkillDetail}
-                findInstalledMarketplaceSkill={findInstalledMarketplaceSkill}
-                getSkillState={getSkillState}
-                marketplaceError={marketplaceError}
-                marketplaceHasSearched={marketplaceHasSearched}
-                marketplaceLoading={marketplaceLoading}
-                marketplaceSkills={marketplaceSkills}
-                onDelete={confirmAndUninstall}
-                onOpenDetail={openMarketplaceSkillDetail}
-                onOpenInstalled={openInstalledMarketplaceSkill}
-                onReinstall={(skill) => {
-                  void updateMarketplaceSkill(skill);
-                }}
-                onUpdate={(skill) => {
-                  void updateMarketplaceSkill(skill);
-                }}
-                selectedCollectionLabel={selectedCollectionLabel}
-                selectedInstalledCollectionLabel={selectedInstalledCollectionLabel}
-                selectedInstalledPath={selectedInstalledPath}
-                selectedInstalledTargetLabel={selectedInstalledTargetLabel}
-                selectedMarketplaceSkill={selectedMarketplaceSkill}
-                selectedSkillManifest={selectedSkillManifest}
-                selectedSkillManifestError={selectedSkillManifestError}
-                selectedSkillManifestLoading={selectedSkillManifestLoading}
-                selectedSkillState={selectedSkillState}
-                selectedTargetLabel={selectedTargetLabel}
-                submitInstall={(skill) => {
-                  void installMarketplaceSkill(skill);
-                }}
-                submitOpenInstalled={openInstalledMarketplaceSkill}
-                submitUninstall={confirmAndUninstall}
-                submitUpdate={(skill) => {
-                  void updateMarketplaceSkill(skill);
-                }}
-              />
-            </section>
+                <MarketplaceBody />
+              </section>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </MarketplaceProvider>
   );
 }

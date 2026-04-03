@@ -10,7 +10,6 @@ import { SealCheckIcon } from "@phosphor-icons/react/dist/csr/SealCheck";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { UserIcon } from "@phosphor-icons/react/dist/csr/User";
-import type { MarketplaceSkill } from "../../../types";
 import { MarkdownPreview } from "../../editor/MarkdownPreview";
 import {
   ActionButton,
@@ -19,49 +18,39 @@ import {
   getMarketplaceSkillStateLabel,
   getMarketplaceSkillStateTone,
 } from "./marketplaceShared";
-import type { MarketplaceSkillState } from "./types";
+import { useMarketplace } from "./MarketplaceContext";
 
-type MarketplaceSkillDetailProps = {
-  manifest: string;
-  manifestError: string | null;
-  manifestLoading: boolean;
-  onBack: () => void;
-  onInstall: (skill: MarketplaceSkill) => void;
-  onOpenInstalled: (skill: MarketplaceSkill) => void;
-  onUninstall: (skill: MarketplaceSkill) => void;
-  onUpdate: (skill: MarketplaceSkill) => void;
-  selectedCollectionLabel: string;
-  selectedInstalledCollectionLabel: string;
-  selectedInstalledPath: string | null;
-  selectedInstalledTargetLabel: string;
-  selectedSkillState: MarketplaceSkillState;
-  selectedTargetLabel: string;
-  skill: MarketplaceSkill;
-};
+export function MarketplaceSkillDetail() {
+  const {
+    closeMarketplaceSkillDetail,
+    installMarketplaceSkill,
+    selectedSkillManifest,
+    selectedSkillManifestError,
+    selectedSkillManifestLoading,
+    onUninstall,
+    onUpdate,
+    openInstalledMarketplaceSkill,
+    selectedCollectionLabel,
+    selectedInstalledCollectionLabel,
+    selectedInstalledPath,
+    selectedInstalledTargetLabel,
+    selectedMarketplaceSkill,
+    selectedSkillState,
+    selectedTargetLabel,
+  } = useMarketplace();
 
-export function MarketplaceSkillDetail({
-  manifest,
-  manifestError,
-  manifestLoading,
-  onBack,
-  onInstall,
-  onOpenInstalled,
-  onUninstall,
-  onUpdate,
-  selectedCollectionLabel,
-  selectedInstalledCollectionLabel,
-  selectedInstalledPath,
-  selectedInstalledTargetLabel,
-  selectedSkillState,
-  selectedTargetLabel,
-  skill,
-}: MarketplaceSkillDetailProps) {
+  if (!selectedMarketplaceSkill) {
+    return null;
+  }
+
+  const skill = selectedMarketplaceSkill;
+
   return (
     <div className="px-4 py-5">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
         <button
           className="inline-flex items-center gap-2 text-[12px] uppercase tracking-[0.18em] text-[var(--muted)] transition hover:text-[var(--text)]"
-          onClick={onBack}
+          onClick={closeMarketplaceSkillDetail}
           type="button"
         >
           <ArrowLeftIcon className="h-4 w-4" weight="bold" />
@@ -70,7 +59,7 @@ export function MarketplaceSkillDetail({
 
         <div className="flex flex-wrap items-center gap-2">
           {selectedSkillState === "not_installed" ? (
-            <ActionButton onClick={() => onInstall(skill)} tone="primary">
+            <ActionButton onClick={() => installMarketplaceSkill(skill)} tone="primary">
               <DownloadSimpleIcon className="mr-2 h-4 w-4" weight="bold" />
               Descargar
             </ActionButton>
@@ -78,7 +67,7 @@ export function MarketplaceSkillDetail({
           {selectedSkillState === "installing" ? <ActionButton disabled>Descargando...</ActionButton> : null}
           {selectedSkillState === "installed" ? (
             <>
-              <ActionButton onClick={() => onOpenInstalled(skill)} tone="primary">
+              <ActionButton onClick={() => openInstalledMarketplaceSkill(skill)} tone="primary">
                 Abrir
               </ActionButton>
               <ActionButton onClick={() => onUpdate(skill)}>Reinstalar</ActionButton>
@@ -94,7 +83,7 @@ export function MarketplaceSkillDetail({
                 <ArrowClockwiseIcon className="mr-2 h-4 w-4" weight="bold" />
                 Actualizar
               </ActionButton>
-              <ActionButton onClick={() => onOpenInstalled(skill)}>Abrir</ActionButton>
+              <ActionButton onClick={() => openInstalledMarketplaceSkill(skill)}>Abrir</ActionButton>
               <ActionButton onClick={() => onUninstall(skill)} tone="danger">
                 <TrashIcon className="mr-2 h-4 w-4" weight="bold" />
                 Desinstalar
@@ -175,16 +164,18 @@ export function MarketplaceSkillDetail({
               </div>
             </div>
 
-            {manifestError ? <div className="px-5 py-5 text-[13px] text-[#ffb3a7]">{manifestError}</div> : null}
-            {!manifestError && manifestLoading ? (
+            {selectedSkillManifestError ? (
+              <div className="px-5 py-5 text-[13px] text-[#ffb3a7]">{selectedSkillManifestError}</div>
+            ) : null}
+            {!selectedSkillManifestError && selectedSkillManifestLoading ? (
               <div className="px-5 py-8 text-[13px] text-[var(--muted)]">Cargando SKILL.md...</div>
             ) : null}
-            {!manifestError && !manifestLoading && manifest ? (
+            {!selectedSkillManifestError && !selectedSkillManifestLoading && selectedSkillManifest ? (
               <div className="min-h-[420px]">
-                <MarkdownPreview compact content={manifest} />
+                <MarkdownPreview compact content={selectedSkillManifest} />
               </div>
             ) : null}
-            {!manifestError && !manifestLoading && !manifest ? (
+            {!selectedSkillManifestError && !selectedSkillManifestLoading && !selectedSkillManifest ? (
               <div className="px-5 py-8 text-[13px] text-[var(--muted)]">
                 No hay contenido disponible para SKILL.md.
               </div>
