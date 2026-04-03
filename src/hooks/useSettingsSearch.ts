@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useUiShell } from "../contexts/UiShellContext";
 import { hasCursorSettingsResults } from "../settings/CursorSettingsSection";
 import { hasDisplaySettingsResults } from "../settings/DisplaySettingsSection";
 import { SETTINGS_CATEGORIES, type SettingsCategory } from "../settings/settingsCategories";
@@ -18,8 +19,9 @@ export function useSettingsSearch({
   systemSkillCount,
   systemSkillScanMs,
 }: UseSettingsSearchOptions) {
-  const [selectedCategory, setSelectedCategory] = useState<SettingsCategory>("text");
-  const [query, setQuery] = useState("");
+  const { uiState, updateUiState } = useUiShell();
+  const [selectedCategory, setSelectedCategoryState] = useState<SettingsCategory>(uiState.settings.selectedCategory);
+  const [query, setQueryState] = useState(uiState.settings.query);
 
   const selectedCategoryLabel = useMemo(
     () => SETTINGS_CATEGORIES.find((category) => category.id === selectedCategory)?.label ?? "Settings",
@@ -46,6 +48,28 @@ export function useSettingsSearch({
         return false;
     }
   }, [activeFilePath, openTabsCount, query, selectedCategory, systemSkillCount, systemSkillScanMs]);
+
+  function setQuery(value: string) {
+    setQueryState(value);
+    updateUiState((current) => ({
+      ...current,
+      settings: {
+        ...current.settings,
+        query: value,
+      },
+    }));
+  }
+
+  function setSelectedCategory(category: SettingsCategory) {
+    setSelectedCategoryState(category);
+    updateUiState((current) => ({
+      ...current,
+      settings: {
+        ...current.settings,
+        selectedCategory: category,
+      },
+    }));
+  }
 
   return {
     hasResults,

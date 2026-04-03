@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { useIde } from "../contexts/IdeContext";
+import { useUiShell } from "../contexts/UiShellContext";
 import type { MarketplaceSkill } from "../types";
 import {
   INSTALL_TARGET_OPTIONS,
@@ -8,6 +9,7 @@ import {
 } from "../components/panels/marketplace/types";
 
 export function useMarketplaceDetail() {
+  const { uiState, updateUiState } = useUiShell();
   const {
     closeMarketplaceSkillDetail,
     findInstalledMarketplaceSkill,
@@ -35,7 +37,7 @@ export function useMarketplaceDetail() {
     updatingMarketplaceSkillIds,
     updatePreferences,
   } = useIde();
-  const [query, setQuery] = useState(marketplaceQuery);
+  const [query, setQueryState] = useState(uiState.marketplace.query || marketplaceQuery);
   const [selectedSkillManifest, setSelectedSkillManifest] = useState("");
   const [selectedSkillManifestError, setSelectedSkillManifestError] = useState<string | null>(null);
   const [selectedSkillManifestLoading, setSelectedSkillManifestLoading] = useState(false);
@@ -46,8 +48,12 @@ export function useMarketplaceDetail() {
   const selectedCollectionLabel = preferences.marketplaceInstallCollection.trim() || "raiz";
 
   useEffect(() => {
-    setQuery(marketplaceQuery);
-  }, [marketplaceQuery]);
+    if (uiState.marketplace.query.length > 0) {
+      return;
+    }
+
+    setQueryState(marketplaceQuery);
+  }, [marketplaceQuery, uiState.marketplace.query]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,6 +104,17 @@ export function useMarketplaceDetail() {
 
   function submitSearch() {
     void searchMarketplace(query.trim(), 1, 20);
+  }
+
+  function setQuery(value: string) {
+    setQueryState(value);
+    updateUiState((current) => ({
+      ...current,
+      marketplace: {
+        ...current.marketplace,
+        query: value,
+      },
+    }));
   }
 
   function getSkillState(skill: MarketplaceSkill): MarketplaceSkillState {
