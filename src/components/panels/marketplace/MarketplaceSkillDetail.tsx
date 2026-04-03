@@ -11,6 +11,7 @@ import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { UserIcon } from "@phosphor-icons/react/dist/csr/User";
 import { MarkdownPreview } from "../../editor/MarkdownPreview";
+import { SkeletonBlock } from "../../shared/SkeletonBlock";
 import {
   ActionButton,
   DetailMeta,
@@ -168,7 +169,13 @@ export function MarketplaceSkillDetail() {
               <div className="px-5 py-5 text-[13px] text-[#ffb3a7]">{selectedSkillManifestError}</div>
             ) : null}
             {!selectedSkillManifestError && selectedSkillManifestLoading ? (
-              <div className="px-5 py-8 text-[13px] text-[var(--muted)]">Cargando SKILL.md...</div>
+              <div className="space-y-3 px-5 py-8">
+                <SkeletonBlock className="h-4 w-28" />
+                <SkeletonBlock className="h-3 w-full" />
+                <SkeletonBlock className="h-3 w-[92%]" />
+                <SkeletonBlock className="h-3 w-[85%]" />
+                <SkeletonBlock className="h-3 w-[90%]" />
+              </div>
             ) : null}
             {!selectedSkillManifestError && !selectedSkillManifestLoading && selectedSkillManifest ? (
               <div className="min-h-[420px]">

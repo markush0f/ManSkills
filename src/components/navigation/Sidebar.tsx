@@ -8,6 +8,9 @@ import { SystemSkillTreeList } from "./sidebar/SystemSkillTreeList";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
 import { useSidebarState } from "../../contexts/SidebarContext";
+import { EmptyState } from "../shared/EmptyState";
+import { SkeletonBlock } from "../shared/SkeletonBlock";
+import { ghostButtonClass } from "../shared/ui";
 import { shellPanelClass } from "../shared/ui";
 
 function SidebarSection({
@@ -68,6 +71,7 @@ export function Sidebar() {
     hasFilteredWorkspaceFiles,
     hasWorkspaceFiles,
     searchActive,
+    setQuery,
     systemSkillsExpanded,
     toggleSection,
     toggleSystemSkillNode,
@@ -106,13 +110,17 @@ export function Sidebar() {
                 onOpenFile={openFile}
               />
             ) : (
-              <p className="rounded-[12px] border border-dashed border-[var(--border)] bg-black/10 px-3 py-2.5 text-xs leading-5 text-[var(--muted)]">
-                {searchActive
-                  ? "No hay buffers abiertos que coincidan con la busqueda."
-                  : hasWorkspaceFiles
-                    ? "No hay buffers visibles con el filtro actual."
-                    : "Todavia no has abierto ningun archivo. Usa la seccion de system skills para empezar."}
-              </p>
+              <EmptyState
+                eyebrow="Workspace"
+                message={
+                  searchActive
+                    ? "No open buffers match the current search."
+                    : hasWorkspaceFiles
+                      ? "No open buffers are visible with the current filter."
+                      : "Open a system skill to load its files into the workspace."
+                }
+                title={searchActive ? "No matching buffers" : "No open files"}
+              />
             )}
           </SidebarSection>
 
@@ -133,13 +141,22 @@ export function Sidebar() {
             title="System Skills"
           >
             {systemSkillsLoading ? (
-              <p className="rounded-[12px] border border-dashed border-[var(--border)] bg-black/10 px-3 py-2.5 text-xs leading-5 text-[var(--muted)]">
-                Escaneando skills del sistema...
-              </p>
+              <div className="space-y-3 rounded-[12px] border border-dashed border-[var(--border)] bg-black/10 px-3 py-3">
+                <SkeletonBlock className="h-3 w-28" />
+                <SkeletonBlock className="h-3 w-full" />
+                <SkeletonBlock className="h-3 w-[88%]" />
+              </div>
             ) : systemSkillsError ? (
-              <p className="rounded-[12px] border border-dashed border-[#cf5e4f]/25 bg-[#cf5e4f]/10 px-3 py-2.5 text-xs leading-5 text-[#ffb3a7]">
-                {systemSkillsError}
-              </p>
+              <div className="space-y-3 rounded-[12px] border border-dashed border-[#cf5e4f]/25 bg-[#cf5e4f]/10 px-3 py-3">
+                <p className="text-xs leading-5 text-[#ffb3a7]">{systemSkillsError}</p>
+                <button
+                  className={ghostButtonClass}
+                  onClick={() => void refreshSystemSkillTree()}
+                  type="button"
+                >
+                  Retry scan
+                </button>
+              </div>
             ) : hasFilteredSystemSkills ? (
               <SystemSkillTreeList
                 activeFileId={activeFileId}
@@ -155,11 +172,22 @@ export function Sidebar() {
                 onToggleNode={toggleSystemSkillNode}
               />
             ) : (
-              <p className="rounded-[12px] border border-dashed border-[var(--border)] bg-black/10 px-3 py-2.5 text-xs leading-5 text-[var(--muted)]">
-                {searchActive
-                  ? "No hay resultados para esa busqueda."
-                  : "No se encontraron skills con manifiesto `SKILL.md`."}
-              </p>
+              <EmptyState
+                action={
+                  searchActive ? (
+                    <button className={ghostButtonClass} onClick={() => setQuery("")} type="button">
+                      Clear search
+                    </button>
+                  ) : undefined
+                }
+                eyebrow="System Skills"
+                message={
+                  searchActive
+                    ? "No system skills match the current search."
+                    : "No skills with a `SKILL.md` manifest were found."
+                }
+                title={searchActive ? "No search results" : "No system skills found"}
+              />
             )}
 
             {systemSkillActionError && (

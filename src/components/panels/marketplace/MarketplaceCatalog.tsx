@@ -15,6 +15,8 @@ import {
 } from "./marketplaceShared";
 import { MARKETPLACE_TABLE_COLUMNS, type MarketplaceSkillState } from "./types";
 import { useMarketplace } from "./MarketplaceContext";
+import { EmptyState } from "../../shared/EmptyState";
+import { ghostButtonClass } from "../../shared/ui";
 
 type MarketplaceSkillRowProps = {
   installedSkill: SystemSkill | null;
@@ -152,16 +154,41 @@ export function MarketplaceCatalog() {
     onUpdate,
     openInstalledMarketplaceSkill,
     openMarketplaceSkillDetail,
+    query,
+    refreshMarketplace,
+    setQuery,
   } = useMarketplace();
 
   if (marketplaceSkills.length === 0) {
     return marketplaceHasSearched ? (
-      <div className="px-4 py-10 text-center text-[13px] text-[var(--muted)]">
-        No hay skills que coincidan con la busqueda actual.
+      <div className="px-4 py-6">
+        <EmptyState
+          action={
+            query.trim().length > 0 ? (
+              <button
+                className={ghostButtonClass}
+                onClick={() => {
+                  setQuery("");
+                  void refreshMarketplace();
+                }}
+                type="button"
+              >
+                Clear search
+              </button>
+            ) : undefined
+          }
+          eyebrow="Marketplace"
+          message="No skills match the current search. Try a different term or clear the filter."
+          title="No matching skills"
+        />
       </div>
     ) : (
-      <div className="px-4 py-10 text-center text-[13px] text-[var(--muted)]">
-        Escribe una busqueda para consultar SkillsMP.
+      <div className="px-4 py-6">
+        <EmptyState
+          eyebrow="Marketplace"
+          message="Search SkillsMP to browse remote skills and install them into this workspace."
+          title="Start with a search"
+        />
       </div>
     );
   }
