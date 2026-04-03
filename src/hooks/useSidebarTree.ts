@@ -1,17 +1,21 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useUiShell } from "../contexts/UiShellContext";
 import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
 import { useWorkspaceState } from "../contexts/WorkspaceStateContext";
 import { filterSystemSkillTreeNodes, filterTreeNodes } from "../components/navigation/sidebar/sidebarTreeUtils";
 
 export function useSidebarTree() {
+  const { uiState, updateUiState } = useUiShell();
   const { files, tree } = useWorkspaceState();
   const { systemSkillTree } = useSystemSkillsState();
-  const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(() => new Set());
+  const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(
+    () => new Set(uiState.sidebar.expandedSystemSkillNodeIds),
+  );
   const [expandedSections, setExpandedSections] = useState(() => ({
-    systemSkills: true,
-    workspace: true,
+    systemSkills: uiState.sidebar.expandedSections.systemSkills,
+    workspace: uiState.sidebar.expandedSections.workspace,
   }));
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(uiState.sidebar.searchQuery);
   const deferredQuery = useDeferredValue(query);
   const fileById = useMemo(() => new Map(files.map((file) => [file.id, file] as const)), [files]);
   const filteredSystemSkillTree = useMemo(
@@ -49,6 +53,18 @@ export function useSidebarTree() {
       [section]: !current[section],
     }));
   }
+
+  useEffect(() => {
+    updateUiState((current) => ({
+      ...current,
+      sidebar: {
+        ...current.sidebar,
+        expandedSections,
+        expandedSystemSkillNodeIds: [...expandedSystemSkillNodeIds],
+        searchQuery: query,
+      },
+    }));
+  }, [expandedSections, expandedSystemSkillNodeIds, query, updateUiState]);
 
   return {
     expandedSystemSkillNodeIds,

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useUiShell } from "../contexts/UiShellContext";
 import { useMarketplaceState } from "../contexts/MarketplaceStateContext";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
@@ -43,7 +44,8 @@ function parseMarketplaceTimestamp(value: string | null | undefined) {
 }
 
 export function useIdeWorkspace() {
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
+  const { uiState, updateUiState } = useUiShell();
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(uiState.workspaceView);
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
   const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
   const [selectedMarketplaceSkill, setSelectedMarketplaceSkill] = useState<MarketplaceSkill | null>(null);
@@ -194,15 +196,27 @@ export function useIdeWorkspace() {
   function openEditor() {
     setActiveFileSaveError(null);
     setWorkspaceView("editor");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "editor",
+    }));
   }
 
   function openSettings() {
     setWorkspaceView("settings");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "settings",
+    }));
   }
 
   function openMarketplace() {
     setActiveFileSaveError(null);
     setWorkspaceView("marketplace");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "marketplace",
+    }));
   }
 
   function openMarketplaceSkillDetail(skill: MarketplaceSkill) {
@@ -210,6 +224,10 @@ export function useIdeWorkspace() {
     setMarketplaceInstallMessage(null);
     setSelectedMarketplaceSkill(skill);
     setWorkspaceView("marketplace");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "marketplace",
+    }));
   }
 
   function closeMarketplaceSkillDetail() {
