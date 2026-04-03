@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useEffectEvent, useState } from "react";
+import { useUiShell } from "../contexts/UiShellContext";
 import { matchesSaveShortcut } from "../ide/utils";
 import type { IdeFile, SaveShortcut } from "../types";
 
@@ -23,6 +24,7 @@ export function useEditorSession({
   saveActiveFile,
   updateActiveFile,
 }: UseEditorSessionOptions) {
+  const { uiState, updateUiState } = useUiShell();
   const [contentViewState, setContentViewState] = useState<{ fileId: string; mode: ContentView }>({
     fileId: "",
     mode: "code",
@@ -32,7 +34,14 @@ export function useEditorSession({
     fileId: "",
   });
   const activeEditorFileId = activeFile?.id ?? "";
-  const contentView = contentViewState.fileId === activeEditorFileId ? contentViewState.mode : "code";
+  const previewModeStorageKey = activeFile?.rootPath && activeFile.relativePath
+    ? `${activeFile.rootPath}:${activeFile.relativePath}`
+    : activeFile?.path ?? "";
+  const persistedContentView = previewModeStorageKey
+    ? uiState.editor.previewModeByFile[previewModeStorageKey]
+    : undefined;
+  const contentView =
+    contentViewState.fileId === activeEditorFileId ? contentViewState.mode : persistedContentView ?? "code";
   const draftContent =
     draftState.fileId === activeEditorFileId ? draftState.content : activeFile?.content ?? "";
   const isMarkdown = activeFile?.language === "md";
@@ -97,7 +106,24 @@ export function useEditorSession({
     isMarkdown,
     previewRailWidth,
     saveErrorWidth,
-    selectContentView: (mode: ContentView) => setContentViewState({ fileId: activeEditorFileId, mode }),
+    selectContentView: (mode: ContentView) => {
+      setContentViewState({ fileId: activeEditorFileId, mode });
+
+      if (!previewModeStorageKey) {
+        return;
+      }
+
+      updateUiState((current) => ({
+        ...current,
+        editor: {
+          ...current.editor,
+          previewModeByFile: {
+            ...current.editor.previewModeByFile,
+            [previewModeStorageKey]: mode,
+          },
+        },
+      }));
+    },
     setDraftContent: (content: string) =>
       setDraftState({
         content,
