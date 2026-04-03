@@ -65,6 +65,7 @@ export function useIdeWorkspace() {
   const workspaceFiles = useWorkspaceState();
   const systemSkillsState = useSystemSkillsState();
   const pendingWatchPathsRef = useRef<Set<string>>(new Set());
+  const hasRestoredWorkspaceSessionRef = useRef(false);
 
   const {
     activeFile,
@@ -76,7 +77,10 @@ export function useIdeWorkspace() {
     mergeFiles,
     mergeFilesAndOpen,
     openFile: openWorkspaceFile,
+    openFileIds,
     openFiles,
+    setActiveFileId,
+    setOpenFileIds,
     tree,
     updateActiveFile,
   } = workspaceFiles;
@@ -116,6 +120,46 @@ export function useIdeWorkspace() {
     const baseTitle = "Skills IDE";
     document.title = hasUnsavedChanges ? `* ${baseTitle}` : baseTitle;
   }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    updateUiState((current) => {
+      const nextOpenTabs = openFiles
+        .filter((file): file is typeof file & { relativePath: string; rootPath: string } => Boolean(file.rootPath && file.relativePath))
+        .map((file) => ({
+          relativePath: file.relativePath,
+          rootPath: file.rootPath,
+        }));
+      const nextActiveTab =
+        activeFile?.rootPath && activeFile.relativePath
+          ? {
+              relativePath: activeFile.relativePath,
+              rootPath: activeFile.rootPath,
+            }
+          : null;
+
+      const hasSameOpenTabs =
+        current.workspace.openTabs.length === nextOpenTabs.length &&
+        current.workspace.openTabs.every((tab, index) => {
+          const nextTab = nextOpenTabs[index];
+          return tab.relativePath === nextTab?.relativePath && tab.rootPath === nextTab?.rootPath;
+        });
+      const hasSameActiveTab =
+        current.workspace.activeTab?.relativePath === nextActiveTab?.relativePath &&
+        current.workspace.activeTab?.rootPath === nextActiveTab?.rootPath;
+
+      if (hasSameOpenTabs && hasSameActiveTab) {
+        return current;
+      }
+
+      return {
+        ...current,
+        workspace: {
+          activeTab: nextActiveTab,
+          openTabs: nextOpenTabs,
+        },
+      };
+    });
+  }, [activeFile, openFiles, updateUiState]);
 
   const refreshAffectedSystemSkills = useEffectEvent(async (changedPaths: string[]) => {
     const loadedRootPaths = new Set(
@@ -192,6 +236,79 @@ export function useIdeWorkspace() {
       unlisten();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (hasRestoredWorkspaceSessionRef.current || systemSkillsLoading) {
+      return;
+    }
+
+    hasRestoredWorkspaceSessionRef.current = true;
+
+    if (openFileIds.length > 0 || uiState.workspace.openTabs.length === 0) {
+      return;
+    }
+
+    void Promise.all(
+      uiState.workspace.openTabs.map(async (tab) => {
+        const skill = systemSkillByRootPath.get(tab.rootPath);
+        if (!skill) {
+          return null;
+        }
+
+        const response = await loadSystemSkillFiles(skill);
+        const createdFiles = buildSystemSkillFiles(skill, response);
+        const targetFileId =
+          createdFiles.find((file) => file.relativePath === tab.relativePath)?.id ??
+          createdFiles.find((file) => file.id === getSystemSkillMainFileId(skill))?.id ??
+          createdFiles[0]?.id;
+
+        return {
+          files: createdFiles,
+          targetFileId,
+          tab,
+        };
+      }),
+    )
+      .then((results) => {
+        if (cancelled) {
+          return;
+        }
+
+        const restored = results.filter((result): result is NonNullable<typeof result> => Boolean(result?.targetFileId));
+        if (restored.length === 0) {
+          return;
+        }
+
+        mergeFiles(restored.flatMap((result) => result.files));
+        setOpenFileIds(restored.map((result) => result.targetFileId));
+
+        const activeTab = uiState.workspace.activeTab;
+        const activeFileId =
+          restored.find(
+            (result) =>
+              result.tab.relativePath === activeTab?.relativePath && result.tab.rootPath === activeTab?.rootPath,
+          )?.targetFileId ?? restored[restored.length - 1]?.targetFileId ?? "";
+
+        setActiveFileId(activeFileId);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadSystemSkillFiles,
+    mergeFiles,
+    openFileIds.length,
+    setActiveFileId,
+    setOpenFileIds,
+    systemSkillByRootPath,
+    systemSkillsLoading,
+    uiState.workspace.activeTab,
+    uiState.workspace.openTabs,
+  ]);
 
   function openEditor() {
     setActiveFileSaveError(null);
