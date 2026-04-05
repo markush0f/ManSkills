@@ -153,7 +153,7 @@ fn default_scan_roots() -> Vec<String> {
     let mut roots = Vec::new();
 
     if let Ok(current_dir) = std::env::current_dir() {
-        extend_local_provider_roots(&mut roots, &current_dir);
+        extend_local_provider_roots_from_ancestors(&mut roots, &current_dir);
     }
 
     if let Some(home_dir) = dirs::home_dir() {
@@ -180,7 +180,7 @@ fn default_watch_roots() -> Vec<String> {
     let mut roots = Vec::new();
 
     if let Ok(current_dir) = std::env::current_dir() {
-        extend_local_provider_roots(&mut roots, &current_dir);
+        extend_local_provider_roots_from_ancestors(&mut roots, &current_dir);
     }
 
     if let Some(home_dir) = dirs::home_dir() {
@@ -201,6 +201,12 @@ fn default_watch_roots() -> Vec<String> {
     }
 
     roots
+}
+
+fn extend_local_provider_roots_from_ancestors(roots: &mut Vec<String>, start_dir: &Path) {
+    for base_dir in start_dir.ancestors() {
+        extend_local_provider_roots(roots, base_dir);
+    }
 }
 
 fn extend_local_provider_roots(roots: &mut Vec<String>, base_dir: &Path) {
@@ -229,7 +235,7 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{build_scan_roots, extend_local_provider_roots};
+    use super::{build_scan_roots, extend_local_provider_roots, extend_local_provider_roots_from_ancestors};
 
     #[test]
     fn default_scan_roots_should_stay_scoped_to_workspace_and_provider_locations() {
@@ -273,6 +279,22 @@ mod tests {
         assert!(roots.contains(&workspace.path.to_string_lossy().into_owned()));
         assert!(roots.contains(&local_agents.to_string_lossy().into_owned()));
         assert!(roots.contains(&local_skills.to_string_lossy().into_owned()));
+    }
+
+    #[test]
+    fn extend_local_provider_roots_from_ancestors_discovers_project_level_skill_dirs() {
+        let workspace = TestWorkspace::new("ancestor_provider_roots");
+        let project_root = workspace.path.join("project");
+        let nested_runtime_dir = project_root.join("src-tauri").join("target");
+        let project_agents = project_root.join(".agents").join("skills");
+
+        fs::create_dir_all(&nested_runtime_dir).expect("should create nested runtime directory");
+        fs::create_dir_all(&project_agents).expect("should create project .agents/skills directory");
+
+        let mut roots = Vec::new();
+        extend_local_provider_roots_from_ancestors(&mut roots, &nested_runtime_dir);
+
+        assert!(roots.contains(&project_agents.to_string_lossy().into_owned()));
     }
 
     struct TestWorkspace {
