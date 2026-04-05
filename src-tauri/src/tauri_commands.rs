@@ -1,8 +1,8 @@
 use crate::{
     models::{
         BackendLogSnapshot, MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill,
-        MarketplaceUninstallResult, SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse,
-        SystemSkillTreeFile,
+        MarketplaceUninstallResult, SkillScanResponse, SkillTreeResponse,
+        SystemSkillContentResponse, SystemSkillTreeFile,
     },
     services::{BackendLogService, MarketplaceService, SkillService},
 };
@@ -23,8 +23,7 @@ pub fn search_marketplace_skills(
     match &result {
         Ok(response) => logger.info(format!(
             "search_marketplace_skills success total={:?} page={}",
-            response.total,
-            response.page
+            response.total, response.page
         )),
         Err(error) => logger.error(format!("search_marketplace_skills failed: {error}")),
     }
@@ -59,7 +58,10 @@ pub fn install_marketplace_skill(
 #[tauri::command]
 pub fn load_marketplace_skill_manifest(skill: MarketplaceSkill) -> Result<String, String> {
     let logger = BackendLogService::shared();
-    logger.info(format!("load_marketplace_skill_manifest slug={}", skill.slug));
+    logger.info(format!(
+        "load_marketplace_skill_manifest slug={}",
+        skill.slug
+    ));
 
     let result = MarketplaceService::new().load_manifest(&skill);
     if let Err(error) = &result {
@@ -93,7 +95,9 @@ pub fn update_marketplace_skill(
 }
 
 #[tauri::command]
-pub fn uninstall_marketplace_skill(root_path: String) -> Result<MarketplaceUninstallResult, String> {
+pub fn uninstall_marketplace_skill(
+    root_path: String,
+) -> Result<MarketplaceUninstallResult, String> {
     let logger = BackendLogService::shared();
     logger.info(format!("uninstall_marketplace_skill root_path={root_path}"));
 
@@ -112,7 +116,9 @@ pub fn uninstall_marketplace_skill(root_path: String) -> Result<MarketplaceUnins
 #[tauri::command]
 pub fn scan_system_skills(scan_roots: Option<Vec<String>>) -> Result<SkillScanResponse, String> {
     let logger = BackendLogService::shared();
-    logger.info(format!("scan_system_skills requested scan_roots={scan_roots:?}"));
+    logger.info(format!(
+        "scan_system_skills requested scan_roots={scan_roots:?}"
+    ));
 
     let result = SkillService::new().scan(scan_roots);
     match &result {
@@ -175,7 +181,10 @@ pub fn list_system_skill_files(root_path: String) -> Result<Vec<SystemSkillTreeF
 
     let result = SkillService::new().list_from_root(root_path);
     match &result {
-        Ok(files) => logger.info(format!("list_system_skill_files success files={}", files.len())),
+        Ok(files) => logger.info(format!(
+            "list_system_skill_files success files={}",
+            files.len()
+        )),
         Err(error) => logger.error(format!("list_system_skill_files failed: {error}")),
     }
 

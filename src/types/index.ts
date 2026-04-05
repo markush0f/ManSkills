@@ -1,3 +1,4 @@
+export type { BackendLogSnapshot } from "./backend-log-snapshot";
 export type { BottomPanelView } from "./bottom-panel-view";
 export type { CursorPosition } from "./cursor-position";
 export type { Diagnostic } from "./diagnostic";

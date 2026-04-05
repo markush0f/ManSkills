@@ -60,7 +60,8 @@ impl SkillWatchService {
                 .collect::<Vec<_>>()
         ));
         if roots.is_empty() {
-            BackendLogService::shared().warn("skill watcher skipped because no watch roots were found");
+            BackendLogService::shared()
+                .warn("skill watcher skipped because no watch roots were found");
             return Ok(Self {
                 stop_signal: Arc::new(AtomicBool::new(false)),
                 event_thread: None,
@@ -181,7 +182,11 @@ fn collect_relevant_paths(event_result: notify::Result<Event>) -> BTreeSet<Strin
 fn is_relevant_event_kind(kind: &EventKind) -> bool {
     matches!(
         kind,
-        EventKind::Any | EventKind::Other | EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+        EventKind::Any
+            | EventKind::Other
+            | EventKind::Create(_)
+            | EventKind::Modify(_)
+            | EventKind::Remove(_)
     )
 }
 
