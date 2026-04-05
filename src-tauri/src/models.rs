@@ -1,3 +1,4 @@
+mod backend_log_snapshot;
 mod marketplace_install_metadata;
 mod marketplace_install_result;
 mod marketplace_uninstall_result;
@@ -12,6 +13,7 @@ mod system_skill_file;
 mod system_skill_tree_file;
 mod system_skill_tree_node;
 
+pub use backend_log_snapshot::BackendLogSnapshot;
 pub use marketplace_install_metadata::MarketplaceInstallMetadata;
 pub use marketplace_install_result::MarketplaceInstallResult;
 pub use marketplace_uninstall_result::MarketplaceUninstallResult;

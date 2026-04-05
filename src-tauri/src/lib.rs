@@ -10,14 +10,19 @@ fn load_project_env() {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     load_project_env();
+    services::BackendLogService::shared().info("backend startup");
 
     tauri::Builder::default()
         .setup(|app| {
+            services::BackendLogService::shared().info("installing skill watcher");
             services::SkillWatchState::install(&app.handle())?;
+            services::BackendLogService::shared().info("skill watcher installed");
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            tauri_commands::read_backend_logs,
+            tauri_commands::clear_backend_logs,
             tauri_commands::search_marketplace_skills,
             tauri_commands::install_marketplace_skill,
             tauri_commands::load_marketplace_skill_manifest,

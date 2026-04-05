@@ -15,7 +15,10 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{
     models::SkillWatchEvent,
-    services::support::{build_watch_roots, normalize_relative_path, SKILL_MANIFEST_NAME},
+    services::{
+        support::{build_watch_roots, normalize_relative_path, SKILL_MANIFEST_NAME},
+        BackendLogService,
+    },
 };
 
 const DEFAULT_WATCH_DEBOUNCE: Duration = Duration::from_millis(400);
@@ -49,7 +52,15 @@ impl SkillWatchService {
         F: Fn(SkillWatchEvent) + Send + Sync + 'static,
     {
         let roots = build_watch_roots(scan_roots);
+        BackendLogService::shared().info(format!(
+            "skill watcher starting with roots={:?}",
+            roots
+                .iter()
+                .map(|path| path.to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+        ));
         if roots.is_empty() {
+            BackendLogService::shared().warn("skill watcher skipped because no watch roots were found");
             return Ok(Self {
                 stop_signal: Arc::new(AtomicBool::new(false)),
                 event_thread: None,
@@ -137,6 +148,10 @@ fn watch_event_loop(
                     let event = SkillWatchEvent {
                         paths: changed_paths.into_iter().collect(),
                     };
+                    BackendLogService::shared().info(format!(
+                        "skill watcher emitted changed event paths={:?}",
+                        event.paths
+                    ));
                     notifier(event);
                     break;
                 }
