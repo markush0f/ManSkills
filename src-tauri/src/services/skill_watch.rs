@@ -10,7 +10,7 @@ use std::{
     time::Duration,
 };
 
-use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{
@@ -151,12 +151,23 @@ fn collect_relevant_paths(event_result: notify::Result<Event>) -> BTreeSet<Strin
         return BTreeSet::new();
     };
 
+    if !is_relevant_event_kind(&event.kind) {
+        return BTreeSet::new();
+    }
+
     event
         .paths
         .into_iter()
         .filter(|path| is_relevant_skill_change(path))
         .map(|path| normalize_relative_path(&path))
         .collect()
+}
+
+fn is_relevant_event_kind(kind: &EventKind) -> bool {
+    matches!(
+        kind,
+        EventKind::Any | EventKind::Other | EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+    )
 }
 
 fn is_relevant_skill_change(path: &Path) -> bool {
