@@ -9,9 +9,4 @@ pub const PROVIDER_SCAN_ROOT_ENV_KEYS: &[&str] = &[
     "GOOSE_HOME",
     "OPENAI_HOME",
     "ANTHROPIC_HOME",
-    "XDG_CONFIG_HOME",
-    "XDG_DATA_HOME",
-    "APPDATA",
-    "LOCALAPPDATA",
-    "PROGRAMDATA",
 ];
