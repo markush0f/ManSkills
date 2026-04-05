@@ -260,7 +260,7 @@ mod tests {
     fn extend_local_provider_roots_scopes_current_dir_to_provider_locations() {
         let workspace = TestWorkspace::new("local_provider_roots");
         let direct_skill = workspace.path.join("SKILL.md");
-        let local_agents = workspace.path.join(".agents");
+        let local_agents = workspace.path.join(".agents").join("skills");
         let local_skills = workspace.path.join("skills");
 
         fs::create_dir_all(&local_agents).expect("should create local .agents directory");
