@@ -153,7 +153,7 @@ fn default_scan_roots() -> Vec<String> {
     let mut roots = Vec::new();
 
     if let Ok(current_dir) = std::env::current_dir() {
-        roots.push(current_dir.to_string_lossy().into_owned());
+        extend_local_provider_roots(&mut roots, &current_dir);
     }
 
     if let Some(home_dir) = dirs::home_dir() {
@@ -180,7 +180,7 @@ fn default_watch_roots() -> Vec<String> {
     let mut roots = Vec::new();
 
     if let Ok(current_dir) = std::env::current_dir() {
-        roots.push(current_dir.to_string_lossy().into_owned());
+        extend_local_provider_roots(&mut roots, &current_dir);
     }
 
     if let Some(home_dir) = dirs::home_dir() {
@@ -203,9 +203,33 @@ fn default_watch_roots() -> Vec<String> {
     roots
 }
 
+fn extend_local_provider_roots(roots: &mut Vec<String>, base_dir: &Path) {
+    if base_dir.join(SKILL_MANIFEST_NAME).exists() {
+        roots.push(base_dir.to_string_lossy().into_owned());
+    }
+
+    let local_relative_directories = PROVIDER_SCAN_ROOT_HOME_DIRECTORIES
+        .iter()
+        .copied()
+        .chain(["skills"]);
+
+    for relative_directory in local_relative_directories {
+        let candidate = base_dir.join(relative_directory);
+        if candidate.exists() {
+            roots.push(candidate.to_string_lossy().into_owned());
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::build_scan_roots;
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use super::{build_scan_roots, extend_local_provider_roots};
 
     #[test]
     fn default_scan_roots_should_stay_scoped_to_workspace_and_provider_locations() {
@@ -229,6 +253,49 @@ mod tests {
                     || root == "/usr/share"),
                 "default scan roots should not include broad global directories"
             );
+        }
+    }
+
+    #[test]
+    fn extend_local_provider_roots_scopes_current_dir_to_provider_locations() {
+        let workspace = TestWorkspace::new("local_provider_roots");
+        let direct_skill = workspace.path.join("SKILL.md");
+        let local_agents = workspace.path.join(".agents");
+        let local_skills = workspace.path.join("skills");
+
+        fs::create_dir_all(&local_agents).expect("should create local .agents directory");
+        fs::create_dir_all(&local_skills).expect("should create local skills directory");
+        fs::write(&direct_skill, "# Root Skill\nSummary\n").expect("should write root manifest");
+
+        let mut roots = Vec::new();
+        extend_local_provider_roots(&mut roots, &workspace.path);
+
+        assert!(roots.contains(&workspace.path.to_string_lossy().into_owned()));
+        assert!(roots.contains(&local_agents.to_string_lossy().into_owned()));
+        assert!(roots.contains(&local_skills.to_string_lossy().into_owned()));
+    }
+
+    struct TestWorkspace {
+        path: PathBuf,
+    }
+
+    impl TestWorkspace {
+        fn new(prefix: &str) -> Self {
+            let unique_suffix = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system time should be after unix epoch")
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!("skills_ide_{prefix}_{unique_suffix}"));
+
+            fs::create_dir_all(&path).expect("should create temporary workspace");
+
+            Self { path }
+        }
+    }
+
+    impl Drop for TestWorkspace {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.path);
         }
     }
 }
