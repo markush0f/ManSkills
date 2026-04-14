@@ -20,6 +20,7 @@ export type PersistedUiStateV1 = {
   };
   sidebar: {
     expandedSections: {
+      providers: boolean;
       systemSkills: boolean;
       workspace: boolean;
     };

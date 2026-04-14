@@ -16,6 +16,7 @@ export const DEFAULT_PERSISTED_UI_STATE: PersistedUiStateV1 = {
   },
   sidebar: {
     expandedSections: {
+      providers: true,
       systemSkills: true,
       workspace: true,
     },

@@ -3,6 +3,7 @@ import { useUiShell } from "../contexts/UiShellContext";
 import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
 import { useWorkspaceState } from "../contexts/WorkspaceStateContext";
 import {
+  buildProviderSkillGroups,
   filterSystemSkillTreeNodes,
   filterTreeNodes,
   reshapeSystemSkillRootsForDisplay,
@@ -11,11 +12,12 @@ import {
 export function useSidebarTree() {
   const { uiState, updateUiState } = useUiShell();
   const { files, tree } = useWorkspaceState();
-  const { systemSkillTree } = useSystemSkillsState();
+  const { systemSkillTree, systemSkills } = useSystemSkillsState();
   const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(
     () => new Set(uiState.sidebar.expandedSystemSkillNodeIds),
   );
   const [expandedSections, setExpandedSections] = useState(() => ({
+    providers: uiState.sidebar.expandedSections.providers,
     systemSkills: uiState.sidebar.expandedSections.systemSkills,
     workspace: uiState.sidebar.expandedSections.workspace,
   }));
@@ -30,10 +32,16 @@ export function useSidebarTree() {
     () => filterTreeNodes(tree, fileById, deferredQuery),
     [deferredQuery, fileById, tree],
   );
+  const providerSkillGroups = useMemo(
+    () => buildProviderSkillGroups(systemSkills, deferredQuery),
+    [deferredQuery, systemSkills],
+  );
   const searchActive = deferredQuery.trim().length > 0;
   const hasWorkspaceFiles = files.length > 0;
+  const hasFilteredProviderSkills = providerSkillGroups.length > 0;
   const hasFilteredSystemSkills = filteredSystemSkillTree.length > 0;
   const hasFilteredWorkspaceFiles = filteredTree.length > 0;
+  const providersExpanded = searchActive || expandedSections.providers;
   const workspaceExpanded = searchActive || expandedSections.workspace;
   const systemSkillsExpanded = searchActive || expandedSections.systemSkills;
 
@@ -73,11 +81,14 @@ export function useSidebarTree() {
   return {
     expandedSystemSkillNodeIds,
     fileById,
+    hasFilteredProviderSkills,
     filteredSystemSkillTree,
     filteredTree,
     hasFilteredSystemSkills,
     hasFilteredWorkspaceFiles,
     hasWorkspaceFiles,
+    providerSkillGroups,
+    providersExpanded,
     query,
     searchActive,
     setQuery,
