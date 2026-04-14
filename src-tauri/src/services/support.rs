@@ -1,5 +1,6 @@
 use std::{
     collections::HashSet,
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -10,8 +11,6 @@ use crate::constants::{
 
 pub const SKILL_MANIFEST_NAME: &str = "SKILL.md";
 pub const PREVIEW_BYTES: u64 = 16 * 1024;
-pub const MAX_FILE_BYTES: u64 = 512 * 1024;
-pub const MAX_SKILL_FILES: usize = 256;
 pub const MAX_RESULTS: usize = 10_000;
 pub const DEFAULT_SUMMARY: &str = "Skill manifest detected on disk.";
 
@@ -149,6 +148,30 @@ pub(crate) fn classify_source(path: &Path) -> String {
     "system".to_string()
 }
 
+pub(crate) fn has_skill_container_parent(path: &Path) -> bool {
+    let Some(parent) = path.parent() else {
+        return false;
+    };
+
+    let Some(parent_name) = parent.file_name().and_then(|value| value.to_str()) else {
+        return false;
+    };
+
+    is_skill_container_name(parent_name)
+}
+
+pub(crate) fn is_skill_container_directory(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+        return false;
+    };
+
+    is_skill_container_name(name)
+}
+
+fn is_skill_container_name(value: &str) -> bool {
+    matches!(value.to_ascii_lowercase().as_str(), "skills" | "agents" | ".agents")
+}
+
 fn default_scan_roots() -> Vec<String> {
     let mut roots = Vec::new();
 
@@ -156,15 +179,8 @@ fn default_scan_roots() -> Vec<String> {
         extend_local_provider_roots_from_ancestors(&mut roots, &current_dir);
     }
 
-    if let Some(home_dir) = dirs::home_dir() {
-        for relative_directory in PROVIDER_SCAN_ROOT_HOME_DIRECTORIES {
-            roots.push(
-                home_dir
-                    .join(relative_directory)
-                    .to_string_lossy()
-                    .into_owned(),
-            );
-        }
+    for home_dir in provider_home_dirs() {
+        extend_provider_roots_for_home(&mut roots, &home_dir);
     }
 
     for env_key in PROVIDER_SCAN_ROOT_ENV_KEYS {
@@ -172,6 +188,8 @@ fn default_scan_roots() -> Vec<String> {
             roots.push(value);
         }
     }
+
+    extend_os_scan_roots(&mut roots);
 
     roots
 }
@@ -183,15 +201,8 @@ fn default_watch_roots() -> Vec<String> {
         extend_local_provider_roots_from_ancestors(&mut roots, &current_dir);
     }
 
-    if let Some(home_dir) = dirs::home_dir() {
-        for relative_directory in PROVIDER_SCAN_ROOT_HOME_DIRECTORIES {
-            roots.push(
-                home_dir
-                    .join(relative_directory)
-                    .to_string_lossy()
-                    .into_owned(),
-            );
-        }
+    for home_dir in provider_home_dirs() {
+        extend_provider_roots_for_home(&mut roots, &home_dir);
     }
 
     for env_key in PROVIDER_WATCH_ROOT_ENV_KEYS {
@@ -207,6 +218,109 @@ fn extend_local_provider_roots_from_ancestors(roots: &mut Vec<String>, start_dir
     for base_dir in start_dir.ancestors() {
         extend_local_provider_roots(roots, base_dir);
     }
+}
+
+fn provider_home_dirs() -> Vec<PathBuf> {
+    let mut homes = Vec::new();
+    let mut seen = HashSet::new();
+
+    if let Some(home_dir) = dirs::home_dir() {
+        let key = home_dir.to_string_lossy().into_owned();
+        if seen.insert(key) {
+            homes.push(home_dir);
+        }
+    }
+
+    for env_key in ["USERPROFILE", "HOME"] {
+        if let Ok(value) = std::env::var(env_key) {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            let home_dir = PathBuf::from(trimmed);
+            let key = home_dir.to_string_lossy().into_owned();
+            if seen.insert(key) {
+                homes.push(home_dir);
+            }
+        }
+    }
+
+    if let (Ok(home_drive), Ok(home_path)) = (std::env::var("HOMEDRIVE"), std::env::var("HOMEPATH"))
+    {
+        let drive = home_drive.trim();
+        let path = home_path.trim();
+
+        if !drive.is_empty() && !path.is_empty() {
+            let home_dir = PathBuf::from(format!("{drive}{path}"));
+            let key = home_dir.to_string_lossy().into_owned();
+            if seen.insert(key) {
+                homes.push(home_dir);
+            }
+        }
+    }
+
+    homes
+}
+
+fn extend_provider_roots_for_home(roots: &mut Vec<String>, home_dir: &Path) {
+    for relative_directory in PROVIDER_SCAN_ROOT_HOME_DIRECTORIES {
+        roots.push(
+            home_dir
+                .join(relative_directory)
+                .to_string_lossy()
+                .into_owned(),
+        );
+    }
+}
+
+fn extend_os_scan_roots(roots: &mut Vec<String>) {
+    for root in discover_os_roots() {
+        roots.push(root.to_string_lossy().into_owned());
+    }
+}
+
+fn discover_os_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    let mut seen = HashSet::new();
+
+    let mut register = |candidate: PathBuf| {
+        if !candidate.exists() || !candidate.is_dir() {
+            return;
+        }
+
+        let key = candidate.to_string_lossy().into_owned();
+        if seen.insert(key) {
+            roots.push(candidate);
+        }
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+        for drive_letter in b'A'..=b'Z' {
+            let drive = format!("{}:\\", drive_letter as char);
+            register(PathBuf::from(drive));
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let mount_root = Path::new("/mnt");
+        if let Ok(entries) = fs::read_dir(mount_root) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+                    continue;
+                };
+
+                if name.len() == 1 && name.chars().all(|character| character.is_ascii_alphabetic()) {
+                    register(path);
+                }
+            }
+        }
+    }
+
+    roots
 }
 
 fn extend_local_provider_roots(roots: &mut Vec<String>, base_dir: &Path) {
@@ -231,11 +345,15 @@ fn extend_local_provider_roots(roots: &mut Vec<String>, base_dir: &Path) {
 mod tests {
     use std::{
         fs,
-        path::PathBuf,
+        path::{Path, PathBuf},
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{build_scan_roots, extend_local_provider_roots, extend_local_provider_roots_from_ancestors};
+    use super::{
+        build_scan_roots, discover_os_roots, extend_local_provider_roots,
+        extend_local_provider_roots_from_ancestors, extend_provider_roots_for_home,
+        has_skill_container_parent, is_skill_container_directory, provider_home_dirs,
+    };
 
     #[test]
     fn default_scan_roots_should_stay_scoped_to_workspace_and_provider_locations() {
@@ -289,12 +407,85 @@ mod tests {
         let project_agents = project_root.join(".agents").join("skills");
 
         fs::create_dir_all(&nested_runtime_dir).expect("should create nested runtime directory");
-        fs::create_dir_all(&project_agents).expect("should create project .agents/skills directory");
+        fs::create_dir_all(&project_agents)
+            .expect("should create project .agents/skills directory");
 
         let mut roots = Vec::new();
         extend_local_provider_roots_from_ancestors(&mut roots, &nested_runtime_dir);
 
         assert!(roots.contains(&project_agents.to_string_lossy().into_owned()));
+    }
+
+    #[test]
+    fn provider_home_dirs_includes_userprofile_when_present() {
+        let Ok(user_profile) = std::env::var("USERPROFILE") else {
+            return;
+        };
+
+        let expected = PathBuf::from(user_profile);
+        let homes = provider_home_dirs();
+
+        assert!(
+            homes.iter().any(|candidate| candidate == &expected),
+            "provider home directories should include USERPROFILE when it is present",
+        );
+    }
+
+    #[test]
+    fn extend_provider_roots_for_home_includes_windows_appdata_roots() {
+        let mut roots = Vec::new();
+        let fake_home = PathBuf::from("/tmp/skills_ide_windows_home");
+
+        extend_provider_roots_for_home(&mut roots, &fake_home);
+
+        assert!(roots.iter().any(|root| {
+            root.ends_with("AppData/Roaming/codex/skills")
+                || root.ends_with("AppData\\Roaming\\codex\\skills")
+        }));
+        assert!(roots.iter().any(|root| {
+            root.ends_with("AppData/Local/codex/skills")
+                || root.ends_with("AppData\\Local\\codex\\skills")
+        }));
+    }
+
+    #[test]
+    fn has_skill_container_parent_detects_agents_and_skills_paths() {
+        assert!(has_skill_container_parent(Path::new("/tmp/work/skills/sample")));
+        assert!(has_skill_container_parent(Path::new("/tmp/work/agents/sample")));
+        assert!(has_skill_container_parent(Path::new("/tmp/work/.agents/sample")));
+        assert!(!has_skill_container_parent(Path::new("/tmp/work/tools/sample")));
+    }
+
+    #[test]
+    fn is_skill_container_directory_detects_agents_and_skills_directory_names() {
+        assert!(is_skill_container_directory(Path::new("/tmp/work/skills")));
+        assert!(is_skill_container_directory(Path::new("/tmp/work/agents")));
+        assert!(is_skill_container_directory(Path::new("/tmp/work/.agents")));
+        assert!(!is_skill_container_directory(Path::new("/tmp/work/tools")));
+    }
+
+    #[test]
+    fn discover_os_roots_includes_mounted_windows_drives_when_present() {
+        let roots = discover_os_roots();
+        if Path::new("/mnt/c").exists() {
+            assert!(
+                roots.iter().any(|root| root == Path::new("/mnt/c")),
+                "expected /mnt/c to be included when present"
+            );
+        }
+    }
+
+    #[test]
+    fn default_watch_roots_does_not_include_broad_os_roots() {
+        let roots = super::build_watch_roots(None);
+
+        #[cfg(not(target_os = "windows"))]
+        if Path::new("/mnt/c").exists() {
+            assert!(
+                !roots.iter().any(|root| root == Path::new("/mnt/c")),
+                "watch roots should avoid broad OS roots to prevent endless refresh loops",
+            );
+        }
     }
 
     struct TestWorkspace {

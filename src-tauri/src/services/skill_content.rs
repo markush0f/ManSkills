@@ -9,7 +9,6 @@ use crate::{
     models::{SystemSkillContentResponse, SystemSkillFile, SystemSkillTreeFile},
     services::support::{
         detect_language, normalize_relative_path, prioritize_skill_manifest, should_skip_directory,
-        MAX_FILE_BYTES, MAX_SKILL_FILES,
     },
 };
 
@@ -103,14 +102,6 @@ impl SkillContentService {
                 continue;
             };
 
-            let Ok(metadata) = entry.metadata() else {
-                continue;
-            };
-
-            if metadata.len() > MAX_FILE_BYTES {
-                continue;
-            }
-
             let Ok(bytes) = fs::read(path) else {
                 continue;
             };
@@ -125,9 +116,6 @@ impl SkillContentService {
                 content,
             });
 
-            if discovered_files.len() >= MAX_SKILL_FILES {
-                break;
-            }
         }
 
         discovered_files
@@ -158,14 +146,6 @@ impl SkillContentService {
                 continue;
             };
 
-            let Ok(metadata) = entry.metadata() else {
-                continue;
-            };
-
-            if metadata.len() > MAX_FILE_BYTES {
-                continue;
-            }
-
             let relative_path = normalize_relative_path(relative_path);
 
             discovered_files.push(SystemSkillTreeFile {
@@ -174,9 +154,6 @@ impl SkillContentService {
                 language: detect_language(path).to_string(),
             });
 
-            if discovered_files.len() >= MAX_SKILL_FILES {
-                break;
-            }
         }
 
         discovered_files

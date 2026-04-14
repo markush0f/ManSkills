@@ -2,7 +2,7 @@ use crate::{
     models::{
         BackendLogSnapshot, MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill,
         MarketplaceUninstallResult, SkillScanResponse, SkillTreeResponse,
-        SystemSkillContentResponse, SystemSkillTreeFile,
+        SystemSkillContentResponse, SystemSkillTreeFile, SystemSkillTreeNode,
     },
     services::{BackendLogService, MarketplaceService, SkillService},
 };
@@ -146,9 +146,10 @@ pub fn scan_system_skills_tree(
     let result = SkillService::new().scan_tree(scan_roots);
     match &result {
         Ok(response) => logger.info(format!(
-            "scan_system_skills_tree success roots={:?} tree_roots={} duration_ms={}",
+            "scan_system_skills_tree success roots={:?} tree_roots={} skill_nodes={} duration_ms={}",
             response.scanned_roots,
             response.roots.len(),
+            count_skill_nodes(&response.roots),
             response.duration_ms
         )),
         Err(error) => logger.error(format!("scan_system_skills_tree failed: {error}")),
@@ -222,4 +223,14 @@ pub fn read_backend_logs() -> Result<BackendLogSnapshot, String> {
 #[tauri::command]
 pub fn clear_backend_logs() -> Result<(), String> {
     BackendLogService::shared().clear()
+}
+
+fn count_skill_nodes(nodes: &[SystemSkillTreeNode]) -> usize {
+    nodes
+        .iter()
+        .map(|node| {
+            let current = usize::from(node.kind == "skill");
+            current + count_skill_nodes(&node.children)
+        })
+        .sum()
 }

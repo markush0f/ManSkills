@@ -145,6 +145,51 @@ fn scan_surfaces_marketplace_install_metadata_when_present() {
     assert_eq!(metadata.installed_path, skill_root.to_string_lossy());
 }
 
+#[test]
+fn scan_detects_skill_directories_without_manifest_under_agents_or_skills() {
+    let workspace = TestWorkspace::new("scan_inferred_skill_dirs");
+    let inferred_skill_root = workspace.path.join("workspace").join("agents").join("ops-tooling");
+
+    fs::create_dir_all(&inferred_skill_root).expect("should create inferred skill directory");
+    fs::write(inferred_skill_root.join("notes.md"), "inferred directory content\n")
+        .expect("should write inferred skill file");
+
+    let response = SkillService::new()
+        .scan(Some(vec![workspace.path_string()]))
+        .expect("scan should succeed");
+
+    let inferred = response
+        .skills
+        .iter()
+        .find(|skill| skill.root_path == inferred_skill_root.to_string_lossy())
+        .expect("expected inferred skill directory to be scanned");
+
+    assert_eq!(inferred.name, "ops-tooling");
+    assert_eq!(inferred.summary, "Directory detected under agents/skills path.");
+}
+
+#[test]
+fn scan_detects_agents_or_skills_container_directories_as_roots() {
+    let workspace = TestWorkspace::new("scan_container_dirs");
+    let skills_container = workspace.path.join("company").join("skills");
+
+    fs::create_dir_all(skills_container.join("guides")).expect("should create skills container");
+    fs::write(skills_container.join("guides").join("readme.md"), "container content\n")
+        .expect("should write container file");
+
+    let response = SkillService::new()
+        .scan(Some(vec![workspace.path_string()]))
+        .expect("scan should succeed");
+
+    let container = response
+        .skills
+        .iter()
+        .find(|skill| skill.root_path == skills_container.to_string_lossy())
+        .expect("expected skills container to be scanned");
+
+    assert_eq!(container.name, "skills");
+}
+
 struct TestWorkspace {
     path: PathBuf,
 }

@@ -1,21 +1,19 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
     time::Instant,
 };
-
-use ignore::WalkBuilder;
 
 use crate::{
     models::{MarketplaceInstallMetadata, SkillScanResponse, SystemSkill},
     services::support::{
-        build_scan_roots, classify_source, is_skill_manifest, is_summary_candidate,
-        should_skip_directory, slugify_path, SkillPreview, DEFAULT_SUMMARY, MAX_RESULTS,
-        PREVIEW_BYTES,
+        build_scan_roots, classify_source, is_summary_candidate,
+        should_skip_directory, slugify_path, has_skill_container_parent,
+        is_skill_container_directory, SKILL_MANIFEST_NAME, SkillPreview, DEFAULT_SUMMARY,
+        MAX_RESULTS, PREVIEW_BYTES,
     },
 };
 
@@ -56,81 +54,17 @@ impl SkillCatalogService {
     }
 
     fn discover_skills(&self, roots: &[PathBuf]) -> Result<Vec<SystemSkill>, String> {
-        let results = Arc::new(Mutex::new(Vec::<SystemSkill>::new()));
-        let seen_manifests = Arc::new(Mutex::new(HashSet::<String>::new()));
-        let thread_count = std::thread::available_parallelism()
-            .map(|value| value.get())
-            .unwrap_or(4);
+        let mut results = HashMap::<String, SystemSkill>::new();
 
         for root in roots {
-            let results = Arc::clone(&results);
-            let seen_manifests = Arc::clone(&seen_manifests);
+            if results.len() >= MAX_RESULTS {
+                break;
+            }
 
-            WalkBuilder::new(root)
-                .hidden(false)
-                .follow_links(false)
-                .git_ignore(true)
-                .git_global(true)
-                .git_exclude(true)
-                .threads(thread_count)
-                .filter_entry(|entry| !should_skip_directory(entry.path()))
-                .build_parallel()
-                .run(|| {
-                    let results = Arc::clone(&results);
-                    let seen_manifests = Arc::clone(&seen_manifests);
-
-                    Box::new(move |entry_result| {
-                        let Ok(entry) = entry_result else {
-                            return ignore::WalkState::Continue;
-                        };
-
-                        let path = entry.path();
-                        if !is_skill_manifest(path) {
-                            return ignore::WalkState::Continue;
-                        }
-
-                        let manifest_key = path.to_string_lossy().into_owned();
-
-                        {
-                            let mut seen = seen_manifests.lock().expect("manifest set poisoned");
-                            if !seen.insert(manifest_key.clone()) {
-                                return ignore::WalkState::Continue;
-                            }
-                        }
-
-                        let Some(root_path) = path.parent() else {
-                            return ignore::WalkState::Continue;
-                        };
-
-                        let preview = read_skill_preview(path, root_path);
-                        let marketplace_install = read_marketplace_install_metadata(root_path);
-                        let skill = SystemSkill {
-                            id: manifest_key.clone(),
-                            slug: slugify_path(root_path),
-                            name: preview.name,
-                            summary: preview.summary,
-                            manifest_path: manifest_key,
-                            root_path: root_path.to_string_lossy().into_owned(),
-                            source: classify_source(root_path),
-                            marketplace_install,
-                        };
-
-                        let mut results = results.lock().expect("results poisoned");
-                        if results.len() >= MAX_RESULTS {
-                            return ignore::WalkState::Quit;
-                        }
-
-                        results.push(skill);
-                        ignore::WalkState::Continue
-                    })
-                });
+            scan_root_directories(root, &mut results);
         }
 
-        let results = results
-            .lock()
-            .map_err(|_| "scan results lock poisoned".to_string())?;
-
-        Ok(results.clone())
+        Ok(results.values().cloned().collect())
     }
 }
 
@@ -207,4 +141,88 @@ fn read_marketplace_install_metadata(root_path: &Path) -> Option<MarketplaceInst
     let content = fs::read_to_string(metadata_path).ok()?;
 
     serde_json::from_str(&content).ok()
+}
+
+fn inferred_skill_from_root(root_path: &Path) -> SystemSkill {
+    let root_path_string = root_path.to_string_lossy().into_owned();
+    let display_name = root_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_string())
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| "Detected Skill Directory".to_string());
+
+    SystemSkill {
+        id: format!("{root_path_string}:inferred"),
+        slug: slugify_path(root_path),
+        name: display_name,
+        summary: "Directory detected under agents/skills path.".to_string(),
+        manifest_path: root_path_string.clone(),
+        root_path: root_path_string,
+        source: classify_source(root_path),
+        marketplace_install: read_marketplace_install_metadata(root_path),
+    }
+}
+
+fn scan_root_directories(root: &Path, results: &mut HashMap<String, SystemSkill>) {
+    let mut stack = vec![root.to_path_buf()];
+    let mut visited_directories = HashSet::<String>::new();
+
+    while let Some(current_dir) = stack.pop() {
+        if !current_dir.is_dir() {
+            continue;
+        }
+
+        if should_skip_directory(&current_dir) {
+            continue;
+        }
+
+        let current_key = current_dir.to_string_lossy().into_owned();
+        if !visited_directories.insert(current_key.clone()) {
+            continue;
+        }
+
+        let manifest_path = current_dir.join(SKILL_MANIFEST_NAME);
+        if manifest_path.is_file() {
+            let preview = read_skill_preview(&manifest_path, &current_dir);
+            let marketplace_install = read_marketplace_install_metadata(&current_dir);
+            let skill = SystemSkill {
+                id: format!("{current_key}:manifest"),
+                slug: slugify_path(&current_dir),
+                name: preview.name,
+                summary: preview.summary,
+                manifest_path: manifest_path.to_string_lossy().into_owned(),
+                root_path: current_key.clone(),
+                source: classify_source(&current_dir),
+                marketplace_install,
+            };
+
+            // Manifest-backed records always replace inferred entries.
+            results.insert(current_key, skill);
+        } else if has_skill_container_parent(&current_dir) || is_skill_container_directory(&current_dir) {
+            if !results.contains_key(&current_key) {
+                results.insert(current_key.clone(), inferred_skill_from_root(&current_dir));
+            }
+        }
+
+        if results.len() >= MAX_RESULTS {
+            break;
+        }
+
+        let Ok(entries) = fs::read_dir(&current_dir) else {
+            continue;
+        };
+
+        for entry in entries.flatten() {
+            let Ok(file_type) = entry.file_type() else {
+                continue;
+            };
+
+            if !file_type.is_dir() || file_type.is_symlink() {
+                continue;
+            }
+
+            stack.push(entry.path());
+        }
+    }
 }
