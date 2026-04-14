@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   attachSystemSkillFileTree,
   collectSystemSkillIds,
@@ -61,18 +61,16 @@ export function useSystemSkills() {
     const nextSystemSkills = flattenSystemSkillTree(response.roots);
     const nextSkillIds = collectSystemSkillIds(response.roots);
 
-    startTransition(() => {
-      setBaseSystemSkillTree(response.roots);
-      setSystemSkills(nextSystemSkills);
-      setSystemSkillFilesBySkillId((current) =>
-        Object.fromEntries(
-          Object.entries(current).filter(([skillId]) => nextSkillIds.has(skillId)),
-        ),
-      );
-      setSystemSkillScanMs(response.durationMs);
-      setSystemSkillsError(null);
-      setSystemSkillsLoading(false);
-    });
+    setBaseSystemSkillTree(response.roots);
+    setSystemSkills(nextSystemSkills);
+    setSystemSkillFilesBySkillId((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([skillId]) => nextSkillIds.has(skillId)),
+      ),
+    );
+    setSystemSkillScanMs(response.durationMs);
+    setSystemSkillsError(null);
+    setSystemSkillsLoading(false);
   }
 
   function registerSkillFiles(skillId: string, files: SystemSkillTreeFile[] | SystemSkillFile[]) {
@@ -80,12 +78,10 @@ export function useSystemSkills() {
       ? toSystemSkillTreeFiles(files as SystemSkillFile[])
       : (files as SystemSkillTreeFile[]);
 
-    startTransition(() => {
-      setSystemSkillFilesBySkillId((current) => ({
-        ...current,
-        [skillId]: normalizedFiles,
-      }));
-    });
+    setSystemSkillFilesBySkillId((current) => ({
+      ...current,
+      [skillId]: normalizedFiles,
+    }));
   }
 
   function refreshSystemSkillTree() {

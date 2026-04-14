@@ -1,5 +1,26 @@
 import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../../types";
 
+const PROVIDER_CONTAINER_NAMES = new Set([
+  ".agents",
+  "agents",
+  ".codex",
+  "codex",
+  ".claude",
+  "claude",
+  ".cursor",
+  "cursor",
+  ".windsurf",
+  "windsurf",
+  ".roo",
+  "roo",
+  ".gemini",
+  "gemini",
+  ".kiro",
+  "kiro",
+  ".goose",
+  "goose",
+]);
+
 export function getFileTone(language?: IdeFile["language"]) {
   if (language === "md") {
     return "border-[#d79432]/25 bg-[#d79432]/10 text-[#ffd08b]";
@@ -105,4 +126,72 @@ export function filterSystemSkillTreeNodes(nodes: SystemSkillTreeNode[], query: 
 
     return filteredNodes;
   }, []);
+}
+
+export function reshapeSystemSkillRootsForDisplay(nodes: SystemSkillTreeNode[]): SystemSkillTreeNode[] {
+  return nodes.map((node) => {
+    const nextChildren = reshapeSystemSkillRootsForDisplay(node.children);
+
+    if (node.kind !== "root" || node.name.toLowerCase() !== "skills") {
+      if (nextChildren === node.children) {
+        return node;
+      }
+
+      return {
+        ...node,
+        children: nextChildren,
+      };
+    }
+
+    const { projectName, projectPath } = deriveProjectDisplayFromSkillsPath(node.path, node.name);
+    const skillsDirectoryNode: SystemSkillTreeNode = {
+      id: `${node.id}:display-skills`,
+      name: "skills",
+      path: node.path,
+      kind: "directory",
+      skill: null,
+      file: null,
+      children: nextChildren,
+    };
+
+    return {
+      ...node,
+      name: projectName,
+      path: projectPath,
+      children: [skillsDirectoryNode],
+    };
+  });
+}
+
+function deriveProjectDisplayFromSkillsPath(path: string, fallbackName: string) {
+  const parts = path.split(/[\\/]+/).filter(Boolean);
+  if (parts.length === 0) {
+    return {
+      projectName: fallbackName,
+      projectPath: path,
+    };
+  }
+
+  let projectIndex = parts.length - 2;
+  if (projectIndex >= 0 && PROVIDER_CONTAINER_NAMES.has(parts[projectIndex].toLowerCase())) {
+    projectIndex -= 1;
+  }
+
+  if (projectIndex < 0) {
+    return {
+      projectName: fallbackName,
+      projectPath: path,
+    };
+  }
+
+  const projectName = parts[projectIndex];
+  const projectPathParts = parts.slice(0, projectIndex + 1);
+  const projectPath = path.includes("\\")
+    ? projectPathParts.join("\\")
+    : `/${projectPathParts.join("/")}`;
+
+  return {
+    projectName,
+    projectPath,
+  };
 }

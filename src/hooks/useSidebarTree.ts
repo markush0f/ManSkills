@@ -2,7 +2,11 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useUiShell } from "../contexts/UiShellContext";
 import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
 import { useWorkspaceState } from "../contexts/WorkspaceStateContext";
-import { filterSystemSkillTreeNodes, filterTreeNodes } from "../components/navigation/sidebar/sidebarTreeUtils";
+import {
+  filterSystemSkillTreeNodes,
+  filterTreeNodes,
+  reshapeSystemSkillRootsForDisplay,
+} from "../components/navigation/sidebar/sidebarTreeUtils";
 
 export function useSidebarTree() {
   const { uiState, updateUiState } = useUiShell();
@@ -19,7 +23,7 @@ export function useSidebarTree() {
   const deferredQuery = useDeferredValue(query);
   const fileById = useMemo(() => new Map(files.map((file) => [file.id, file] as const)), [files]);
   const filteredSystemSkillTree = useMemo(
-    () => filterSystemSkillTreeNodes(systemSkillTree, deferredQuery),
+    () => reshapeSystemSkillRootsForDisplay(filterSystemSkillTreeNodes(systemSkillTree, deferredQuery)),
     [deferredQuery, systemSkillTree],
   );
   const filteredTree = useMemo(
