@@ -8,8 +8,8 @@ use reqwest::blocking::Client;
 use serde_json::Value;
 
 use crate::models::{
-    MarketplaceInstallMetadata, MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill,
-    MarketplaceUninstallResult,
+    MarketplaceInstallMetadata, MarketplaceInstallResult, MarketplaceSearchResponse,
+    MarketplaceSkill, MarketplaceUninstallResult,
 };
 
 const DEFAULT_LIMIT: u32 = 20;
@@ -152,7 +152,11 @@ impl MarketplaceService {
         })
     }
 
-    pub fn update(&self, skill: MarketplaceSkill, root_path: &str) -> Result<MarketplaceInstallResult, String> {
+    pub fn update(
+        &self,
+        skill: MarketplaceSkill,
+        root_path: &str,
+    ) -> Result<MarketplaceInstallResult, String> {
         let github_url = skill
             .github_url
             .clone()
@@ -200,7 +204,9 @@ impl MarketplaceService {
         Ok(MarketplaceInstallResult {
             skill_id: skill.id,
             slug: skill.slug,
-            target: metadata.install_target.unwrap_or_else(|| "workspace".to_string()),
+            target: metadata
+                .install_target
+                .unwrap_or_else(|| "workspace".to_string()),
             installed_path: final_root.to_string_lossy().into_owned(),
             file_count,
         })
@@ -208,14 +214,16 @@ impl MarketplaceService {
 
     pub fn uninstall(&self, root_path: &str) -> Result<MarketplaceUninstallResult, String> {
         let final_root = PathBuf::from(root_path);
-        let metadata = read_marketplace_install_metadata(&final_root)
-            .ok_or_else(|| "La skill seleccionada no esta gestionada por el marketplace.".to_string())?;
+        let metadata = read_marketplace_install_metadata(&final_root).ok_or_else(|| {
+            "La skill seleccionada no esta gestionada por el marketplace.".to_string()
+        })?;
 
         if !final_root.exists() {
             return Err("La skill instalada ya no existe en disco.".to_string());
         }
 
-        fs::remove_dir_all(&final_root).map_err(|_| "No se pudo eliminar la skill instalada.".to_string())?;
+        fs::remove_dir_all(&final_root)
+            .map_err(|_| "No se pudo eliminar la skill instalada.".to_string())?;
 
         Ok(MarketplaceUninstallResult {
             removed_path: final_root.to_string_lossy().into_owned(),
@@ -314,27 +322,25 @@ fn extract_total(payload: &Value) -> Option<u64> {
 }
 
 fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
-    let name = read_first_string(
-        skill,
-        &["name", "title", "skillName", "skill_name", "slug"],
-    )?;
-    let repository = read_first_string(
-        skill,
-        &["repository", "repo", "fullName", "full_name"],
-    )
-    .or_else(|| read_nested_string(skill, &["github", "repository"]))
-    .unwrap_or_else(|| "unknown/unknown".to_string());
+    let name = read_first_string(skill, &["name", "title", "skillName", "skill_name", "slug"])?;
+    let repository = read_first_string(skill, &["repository", "repo", "fullName", "full_name"])
+        .or_else(|| read_nested_string(skill, &["github", "repository"]))
+        .unwrap_or_else(|| "unknown/unknown".to_string());
     let author = read_first_string(skill, &["author", "owner"])
         .or_else(|| read_nested_string(skill, &["author", "login"]))
         .or_else(|| read_nested_string(skill, &["owner", "login"]))
-        .unwrap_or_else(|| repository.split('/').next().unwrap_or("unknown").to_string());
+        .unwrap_or_else(|| {
+            repository
+                .split('/')
+                .next()
+                .unwrap_or("unknown")
+                .to_string()
+        });
     let slug = read_first_string(skill, &["slug"]).unwrap_or_else(|| slugify(&name));
-    let id = read_first_string(skill, &["id", "uuid"]).unwrap_or_else(|| format!("{repository}:{slug}"));
-    let summary = read_first_string(
-        skill,
-        &["summary", "description", "excerpt", "tagline"],
-    )
-    .unwrap_or_else(|| DEFAULT_SUMMARY.to_string());
+    let id =
+        read_first_string(skill, &["id", "uuid"]).unwrap_or_else(|| format!("{repository}:{slug}"));
+    let summary = read_first_string(skill, &["summary", "description", "excerpt", "tagline"])
+        .unwrap_or_else(|| DEFAULT_SUMMARY.to_string());
     let stars = [
         skill.get("stars"),
         skill.get("starCount"),
@@ -406,7 +412,8 @@ fn read_u64(value: &Value) -> Option<u64> {
 }
 
 fn slugify(value: &str) -> String {
-    value.chars()
+    value
+        .chars()
         .map(|character| match character {
             'A'..='Z' => character.to_ascii_lowercase(),
             'a'..='z' | '0'..='9' => character,
@@ -435,7 +442,9 @@ fn map_api_error(status: u16, payload: &Value) -> String {
         (401, _) => "No se pudo autenticar con SkillsMP.".to_string(),
         (429, "DAILY_QUOTA_EXCEEDED") => "La cuota diaria de SkillsMP se ha agotado.".to_string(),
         (429, _) => "SkillsMP ha bloqueado temporalmente las consultas por cuota.".to_string(),
-        (400, "MISSING_QUERY") => "Debes escribir una busqueda para consultar SkillsMP.".to_string(),
+        (400, "MISSING_QUERY") => {
+            "Debes escribir una busqueda para consultar SkillsMP.".to_string()
+        }
         (500, _) => "SkillsMP devolvio un error interno.".to_string(),
         _ => "SkillsMP devolvio un error inesperado.".to_string(),
     }
@@ -482,11 +491,12 @@ fn normalize_install_collection(collection: Option<&str>) -> Result<Option<Vec<S
             return Err("La coleccion de instalacion no es valida.".to_string());
         }
 
-        if !value
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.'))
-        {
-            return Err("La coleccion solo puede usar letras, numeros, '-', '_' y '.'.".to_string());
+        if !value.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        }) {
+            return Err(
+                "La coleccion solo puede usar letras, numeros, '-', '_' y '.'.".to_string(),
+            );
         }
 
         segments.push(value.to_string());
@@ -542,13 +552,18 @@ fn build_temporary_skill_root(parent_root: &Path, slug: &str, suffix: &str) -> P
     parent_root.join(format!(".{slug}-{suffix}-{}", now_timestamp_string()))
 }
 
-fn replace_directory_atomically(temp_root: &Path, final_root: &Path, backup_root: &Path) -> Result<(), String> {
+fn replace_directory_atomically(
+    temp_root: &Path,
+    final_root: &Path,
+    backup_root: &Path,
+) -> Result<(), String> {
     if backup_root.exists() {
         let _ = fs::remove_dir_all(backup_root);
     }
 
-    fs::rename(final_root, backup_root)
-        .map_err(|_| "No se pudo preparar la carpeta actual para actualizar la skill.".to_string())?;
+    fs::rename(final_root, backup_root).map_err(|_| {
+        "No se pudo preparar la carpeta actual para actualizar la skill.".to_string()
+    })?;
 
     if let Err(_) = fs::rename(temp_root, final_root) {
         let _ = fs::remove_dir_all(final_root);
@@ -656,10 +671,9 @@ impl MarketplaceService {
         for entry in entries {
             match entry.entry_type.as_str() {
                 "file" => {
-                    let download_url = entry
-                        .download_url
-                        .as_deref()
-                        .ok_or_else(|| "GitHub no devolvio una URL de descarga para un archivo.".to_string())?;
+                    let download_url = entry.download_url.as_deref().ok_or_else(|| {
+                        "GitHub no devolvio una URL de descarga para un archivo.".to_string()
+                    })?;
                     let relative_path = entry
                         .path
                         .strip_prefix(&reference.path)
@@ -676,11 +690,16 @@ impl MarketplaceService {
                         .header("User-Agent", USER_AGENT)
                         .send()
                         .and_then(|response| response.error_for_status())
-                        .map_err(|_| "No se pudo descargar un archivo de la skill desde GitHub.".to_string())?
+                        .map_err(|_| {
+                            "No se pudo descargar un archivo de la skill desde GitHub.".to_string()
+                        })?
                         .bytes()
-                        .map_err(|_| "No se pudo leer un archivo descargado de la skill.".to_string())?;
-                    fs::write(destination, bytes)
-                        .map_err(|_| "No se pudo escribir un archivo de la skill instalada.".to_string())?;
+                        .map_err(|_| {
+                            "No se pudo leer un archivo descargado de la skill.".to_string()
+                        })?;
+                    fs::write(destination, bytes).map_err(|_| {
+                        "No se pudo escribir un archivo de la skill instalada.".to_string()
+                    })?;
                     file_count += 1;
                 }
                 "dir" => {
@@ -689,7 +708,8 @@ impl MarketplaceService {
                     } else {
                         format!("{current_relative}/{}", entry.name)
                     };
-                    file_count += self.download_directory(reference, output_root, &next_relative)?;
+                    file_count +=
+                        self.download_directory(reference, output_root, &next_relative)?;
                 }
                 _ => {}
             }
@@ -796,7 +816,10 @@ mod tests {
 
         assert_eq!(response.skills.len(), 1);
         assert_eq!(response.total, Some(695541));
-        assert_eq!(response.skills[0].repository, "aj-geddes/useful-ai-prompts-skills");
+        assert_eq!(
+            response.skills[0].repository,
+            "aj-geddes/useful-ai-prompts-skills"
+        );
         assert_eq!(
             response.skills[0].github_url.as_deref(),
             Some("https://github.com/aj-geddes/useful-ai-prompts-skills/tree/main/skills/api")
@@ -845,7 +868,8 @@ mod tests {
 
     #[test]
     fn resolve_install_root_supports_workspace_target() {
-        let root = resolve_install_root("workspace", None).expect("workspace target should resolve");
+        let root =
+            resolve_install_root("workspace", None).expect("workspace target should resolve");
 
         assert!(root.to_string_lossy().contains(".agents"));
         assert!(root.to_string_lossy().contains("skills"));
@@ -864,8 +888,8 @@ mod tests {
 
     #[test]
     fn normalize_install_collection_rejects_parent_segments() {
-        let error =
-            normalize_install_collection(Some("../private")).expect_err("parent segments should be rejected");
+        let error = normalize_install_collection(Some("../private"))
+            .expect_err("parent segments should be rejected");
 
         assert_eq!(error, "La coleccion de instalacion no es valida.");
     }
@@ -896,7 +920,9 @@ mod tests {
             skill_id: Some("skill_123".to_string()),
             slug: "example-skill".to_string(),
             name: "Example Skill".to_string(),
-            github_url: Some("https://github.com/example/repo/tree/main/skills/example".to_string()),
+            github_url: Some(
+                "https://github.com/example/repo/tree/main/skills/example".to_string(),
+            ),
             skill_url: Some("https://skillsmp.com/skills/example".to_string()),
             remote_updated_at: Some("1710000000".to_string()),
             install_target: Some("codex".to_string()),
@@ -926,11 +952,18 @@ mod tests {
         let installed_root = workspace.path.join("example-skill");
         fs::create_dir_all(&installed_root).expect("should create installed root");
 
-        let metadata = build_marketplace_install_metadata(&skill, "workspace", Some("team"), &installed_root, None);
+        let metadata = build_marketplace_install_metadata(
+            &skill,
+            "workspace",
+            Some("team"),
+            &installed_root,
+            None,
+        );
         super::write_marketplace_install_metadata(&installed_root, &metadata)
             .expect("metadata should be written");
 
-        let parsed = read_marketplace_install_metadata(&installed_root).expect("metadata should parse");
+        let parsed =
+            read_marketplace_install_metadata(&installed_root).expect("metadata should parse");
 
         assert_eq!(parsed.skill_id.as_deref(), Some("skill_123"));
         assert_eq!(parsed.install_target.as_deref(), Some("workspace"));
@@ -946,12 +979,16 @@ mod tests {
         let missing_temp_root = workspace.path.join(".installed-skill-update");
 
         fs::create_dir_all(&final_root).expect("should create existing directory");
-        fs::write(final_root.join("SKILL.md"), "# Original\n").expect("should write original manifest");
+        fs::write(final_root.join("SKILL.md"), "# Original\n")
+            .expect("should write original manifest");
 
         let error = replace_directory_atomically(&missing_temp_root, &final_root, &backup_root)
             .expect_err("missing replacement directory should fail");
 
-        assert_eq!(error, "No se pudo reemplazar la skill instalada con la nueva version.");
+        assert_eq!(
+            error,
+            "No se pudo reemplazar la skill instalada con la nueva version."
+        );
         assert!(final_root.exists());
         assert!(final_root.join("SKILL.md").exists());
         assert!(!backup_root.exists());
@@ -967,7 +1004,9 @@ mod tests {
             author: "example".to_string(),
             stars: Some(42),
             updated_at: Some("1712345678".to_string()),
-            github_url: Some("https://github.com/example/repo/tree/main/skills/example".to_string()),
+            github_url: Some(
+                "https://github.com/example/repo/tree/main/skills/example".to_string(),
+            ),
             skill_url: Some("https://skillsmp.com/skills/example".to_string()),
         }
     }
@@ -982,7 +1021,8 @@ mod tests {
                 .duration_since(UNIX_EPOCH)
                 .expect("system time should be after unix epoch")
                 .as_nanos();
-            let path = std::env::temp_dir().join(format!("skills_ide_marketplace_{prefix}_{unique_suffix}"));
+            let path = std::env::temp_dir()
+                .join(format!("skills_ide_marketplace_{prefix}_{unique_suffix}"));
 
             fs::create_dir_all(&path).expect("should create temporary workspace");
 

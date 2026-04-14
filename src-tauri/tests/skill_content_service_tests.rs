@@ -12,11 +12,15 @@ fn list_from_root_should_return_skill_files_without_content_and_with_manifest_fi
     let skill_root = workspace.path.join("listable-skill");
 
     fs::create_dir_all(skill_root.join("docs")).expect("should create skill directory");
-    fs::write(skill_root.join("config.json"), "{\n  \"name\": \"listable\"\n}\n")
-        .expect("should write config file");
+    fs::write(
+        skill_root.join("config.json"),
+        "{\n  \"name\": \"listable\"\n}\n",
+    )
+    .expect("should write config file");
     fs::write(skill_root.join("SKILL.md"), "# Listable Skill\nSummary\n")
         .expect("should write manifest");
-    fs::write(skill_root.join("docs").join("notes.md"), "Hello\n").expect("should write nested file");
+    fs::write(skill_root.join("docs").join("notes.md"), "Hello\n")
+        .expect("should write nested file");
 
     let files = SkillService::new()
         .list_from_root(skill_root.to_string_lossy())
@@ -28,7 +32,10 @@ fn list_from_root_should_return_skill_files_without_content_and_with_manifest_fi
         .collect::<Vec<_>>();
 
     assert_eq!(relative_paths[0], "SKILL.md");
-    assert_eq!(relative_paths, vec!["SKILL.md", "config.json", "docs/notes.md"]);
+    assert_eq!(
+        relative_paths,
+        vec!["SKILL.md", "config.json", "docs/notes.md"]
+    );
 }
 
 struct TestWorkspace {
