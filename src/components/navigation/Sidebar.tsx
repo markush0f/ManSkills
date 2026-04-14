@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 
 import { SidebarFooter } from "./sidebar/SidebarFooter";
 import { LocalTreeList } from "./sidebar/LocalTreeList";
+import { ProviderSkillList } from "./sidebar/ProviderSkillList";
 import { SidebarSearch } from "./sidebar/SidebarSearch";
 import { ExpandIcon } from "./sidebar/SidebarTreeIcons";
 import { SystemSkillTreeList } from "./sidebar/SystemSkillTreeList";
@@ -58,6 +59,7 @@ export function Sidebar() {
     openSystemSkillFile,
     refreshSystemSkillTree,
     systemSkillActionError,
+    systemSkills,
     systemSkillsError,
     systemSkillsLoading,
   } = useIde();
@@ -65,11 +67,14 @@ export function Sidebar() {
   const {
     expandedSystemSkillNodeIds,
     fileById,
+    hasFilteredProviderSkills,
     filteredSystemSkillTree,
     filteredTree,
     hasFilteredSystemSkills,
     hasFilteredWorkspaceFiles,
     hasWorkspaceFiles,
+    providerSkillGroups,
+    providersExpanded,
     searchActive,
     setQuery,
     systemSkillsExpanded,
@@ -201,6 +206,45 @@ export function Sidebar() {
                   Clear
                 </button>
               </div>
+            )}
+          </SidebarSection>
+
+          <SidebarSection
+            expanded={providersExpanded}
+            onToggle={() => toggleSection("providers")}
+            title="Providers"
+          >
+            {systemSkillsLoading ? (
+              <div className="space-y-3 rounded-[12px] border border-dashed border-[var(--border)] bg-black/10 px-3 py-3">
+                <SkeletonBlock className="h-3 w-20" />
+                <SkeletonBlock className="h-3 w-full" />
+              </div>
+            ) : hasFilteredProviderSkills ? (
+              <ProviderSkillList
+                compact={compact}
+                groups={providerSkillGroups}
+                onOpenSkill={openSystemSkill}
+                searchActive={searchActive}
+              />
+            ) : (
+              <EmptyState
+                action={
+                  searchActive ? (
+                    <button className={ghostButtonClass} onClick={() => setQuery("")} type="button">
+                      Clear search
+                    </button>
+                  ) : undefined
+                }
+                eyebrow="Providers"
+                message={
+                  searchActive
+                    ? "No providers match the current search."
+                    : systemSkills.length > 0
+                      ? "No providers could be inferred from the detected skill paths."
+                      : "No system skills are available yet."
+                }
+                title={searchActive ? "No provider matches" : "No providers found"}
+              />
             )}
           </SidebarSection>
         </div>
