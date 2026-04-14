@@ -11,6 +11,17 @@ fn load_project_env() {
 pub fn run() {
     load_project_env();
     services::BackendLogService::shared().info("backend startup");
+    services::BackendLogService::shared().info(format!(
+        "resolved skill roots scan={:?} watch={:?}",
+        services::build_scan_roots(None)
+            .into_iter()
+            .map(|path| path.to_string_lossy().into_owned())
+            .collect::<Vec<_>>(),
+        services::build_watch_roots(None)
+            .into_iter()
+            .map(|path| path.to_string_lossy().into_owned())
+            .collect::<Vec<_>>()
+    ));
 
     tauri::Builder::default()
         .setup(|app| {

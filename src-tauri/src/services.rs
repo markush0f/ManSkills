@@ -11,3 +11,4 @@ pub use backend_log::BackendLogService;
 pub use marketplace::MarketplaceService;
 pub use skill_service::SkillService;
 pub use skill_watch::{SkillWatchService, SkillWatchState};
+pub(crate) use support::{build_scan_roots, build_watch_roots};
