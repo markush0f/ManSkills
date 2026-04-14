@@ -19,6 +19,14 @@ export function ProviderSkillList({
   const [expandedProviderIds, setExpandedProviderIds] = useState<Set<string>>(
     () => new Set(groups.map((group) => group.key)),
   );
+  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(
+    () =>
+      new Set(
+        groups.flatMap((group) =>
+          group.folders.map((folder) => `${group.key}:${folder.key}`),
+        ),
+      ),
+  );
 
   useEffect(() => {
     setExpandedProviderIds((current) => {
@@ -26,6 +34,19 @@ export function ProviderSkillList({
       for (const group of groups) {
         if (!next.has(group.key)) {
           next.add(group.key);
+        }
+      }
+      return next;
+    });
+
+    setExpandedFolderIds((current) => {
+      const next = new Set(current);
+      for (const group of groups) {
+        for (const folder of group.folders) {
+          const id = `${group.key}:${folder.key}`;
+          if (!next.has(id)) {
+            next.add(id);
+          }
         }
       }
       return next;
@@ -39,6 +60,19 @@ export function ProviderSkillList({
         next.delete(providerKey);
       } else {
         next.add(providerKey);
+      }
+      return next;
+    });
+  }
+
+  function toggleFolder(providerKey: string, folderKey: string) {
+    const id = `${providerKey}:${folderKey}`;
+    setExpandedFolderIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
       }
       return next;
     });
@@ -77,29 +111,55 @@ export function ProviderSkillList({
           </button>
 
           {(searchActive || expandedProviderIds.has(group.key)) ? (
-            <div className="space-y-1">
-              {group.folders
-                .flatMap((folder) => folder.skills)
-                .sort((left, right) =>
-                  left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
-                )
-                .map((skill) => (
-                  <button
-                    key={skill.id}
-                    className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
-                      compact ? "px-2 py-1.5 text-[12px]" : "px-2.5 py-1.5 text-[13px]"
-                    }`}
-                    onClick={() => onOpenSkill(skill)}
-                    style={{ paddingLeft: (compact ? 8 : 12) + (compact ? 12 : 16) }}
-                    title={skill.name}
-                    type="button"
-                  >
-                    <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent-strong)]">
-                      <SkillNodeIcon />
-                    </span>
-                    <span className="truncate">{skill.name}</span>
-                  </button>
-                ))}
+            <div className="space-y-1.5">
+              {group.folders.map((folder) => {
+                const folderId = `${group.key}:${folder.key}`;
+                const folderExpanded = searchActive || expandedFolderIds.has(folderId);
+
+                return (
+                  <div key={folder.key} className="space-y-1">
+                    <button
+                      className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
+                        compact ? "px-2 py-1.5 text-[12px]" : "px-2.5 py-1.5 text-[13px]"
+                      }`}
+                      onClick={() => toggleFolder(group.key, folder.key)}
+                      style={{ paddingLeft: (compact ? 8 : 12) + (compact ? 12 : 16) }}
+                      title={folder.label}
+                      type="button"
+                    >
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
+                        <ExpandIcon expanded={folderExpanded} />
+                      </span>
+                      <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--violet)]">
+                        <FolderNodeIcon expanded={folderExpanded} name={folder.label} path={folder.label} />
+                      </span>
+                      <span className="truncate">{folder.label}</span>
+                    </button>
+
+                    {folderExpanded ? (
+                      <div className="space-y-1">
+                        {folder.skills.map((skill) => (
+                          <button
+                            key={skill.id}
+                            className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
+                              compact ? "px-2 py-1.5 text-[12px]" : "px-2.5 py-1.5 text-[13px]"
+                            }`}
+                            onClick={() => onOpenSkill(skill)}
+                            style={{ paddingLeft: (compact ? 8 : 12) + (compact ? 24 : 32) }}
+                            title={skill.name}
+                            type="button"
+                          >
+                            <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent-strong)]">
+                              <SkillNodeIcon />
+                            </span>
+                            <span className="truncate">{skill.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           ) : null}
         </div>

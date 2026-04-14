@@ -334,13 +334,12 @@ function detectSkillFolder(skill: SystemSkill): { key: string; label: string } {
     return { key: "root", label: skill.rootPath };
   }
 
-  const parentDisplayPath = skill.rootPath.includes("\\")
-    ? parentNormalizedPath.replace(/\//g, "\\")
-    : parentNormalizedPath;
+  const parentSegments = parentNormalizedPath.split("/").filter(Boolean);
+  const parentDirectoryName = parentSegments[parentSegments.length - 1] ?? parentNormalizedPath;
 
   return {
     key: parentNormalizedPath.toLowerCase(),
-    label: parentDisplayPath,
+    label: parentDirectoryName,
   };
 }
 
