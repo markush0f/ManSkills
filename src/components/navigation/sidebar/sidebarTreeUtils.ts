@@ -130,7 +130,7 @@ export function filterSystemSkillTreeNodes(nodes: SystemSkillTreeNode[], query: 
 }
 
 export function reshapeSystemSkillRootsForDisplay(nodes: SystemSkillTreeNode[]): SystemSkillTreeNode[] {
-  return nodes.map((node) => {
+  const transformedNodes = nodes.map((node) => {
     const nextChildren = reshapeSystemSkillRootsForDisplay(node.children);
 
     if (node.kind !== "root" || node.name.toLowerCase() !== "skills") {
@@ -144,11 +144,12 @@ export function reshapeSystemSkillRootsForDisplay(nodes: SystemSkillTreeNode[]):
       };
     }
 
-    const { projectName, projectPath } = deriveProjectDisplayFromSkillsPath(node.path, node.name);
-    const skillsDirectoryNode: SystemSkillTreeNode = {
-      id: `${node.id}:display-skills`,
-      name: "skills",
-      path: node.path,
+    const { projectName, projectPath, providerDirectoryName, providerDirectoryPath } =
+      deriveProjectDisplayFromSkillsPath(node.path, node.name);
+    const providerDirectoryNode: SystemSkillTreeNode = {
+      id: `${node.id}:provider:${providerDirectoryName.toLowerCase()}`,
+      name: providerDirectoryName,
+      path: providerDirectoryPath,
       kind: "directory",
       skill: null,
       file: null,
@@ -159,9 +160,11 @@ export function reshapeSystemSkillRootsForDisplay(nodes: SystemSkillTreeNode[]):
       ...node,
       name: projectName,
       path: projectPath,
-      children: [skillsDirectoryNode],
+      children: [providerDirectoryNode],
     };
   });
+
+  return mergeProjectRoots(transformedNodes);
 }
 
 export type ProviderSkillGroup = {
@@ -349,10 +352,13 @@ function deriveProjectDisplayFromSkillsPath(path: string, fallbackName: string) 
     return {
       projectName: fallbackName,
       projectPath: path,
+      providerDirectoryName: "skills",
+      providerDirectoryPath: path,
     };
   }
 
-  let projectIndex = parts.length - 2;
+  const skillsIndex = parts.length - 1;
+  let projectIndex = skillsIndex - 1;
   if (projectIndex >= 0 && PROVIDER_CONTAINER_NAMES.has(parts[projectIndex].toLowerCase())) {
     projectIndex -= 1;
   }
@@ -361,6 +367,8 @@ function deriveProjectDisplayFromSkillsPath(path: string, fallbackName: string) 
     return {
       projectName: fallbackName,
       projectPath: path,
+      providerDirectoryName: "skills",
+      providerDirectoryPath: path,
     };
   }
 
@@ -369,9 +377,139 @@ function deriveProjectDisplayFromSkillsPath(path: string, fallbackName: string) 
   const projectPath = path.includes("\\")
     ? projectPathParts.join("\\")
     : `/${projectPathParts.join("/")}`;
+  const providerIndex = projectIndex + 1;
+  const providerDirectoryName = (parts[providerIndex] ?? "skills").replace(/^\./, "");
+  const providerPathParts = parts.slice(0, providerIndex + 1);
+  const providerDirectoryPath = path.includes("\\")
+    ? providerPathParts.join("\\")
+    : `/${providerPathParts.join("/")}`;
 
   return {
     projectName,
     projectPath,
+    providerDirectoryName,
+    providerDirectoryPath,
   };
+}
+
+function mergeProjectRoots(nodes: SystemSkillTreeNode[]) {
+  const mergedProjectRoots = new Map<string, SystemSkillTreeNode>();
+  const passthroughNodes: SystemSkillTreeNode[] = [];
+
+  for (const node of nodes) {
+    if (node.kind !== "root") {
+      passthroughNodes.push(node);
+      continue;
+    }
+
+    const projectKey = normalizePathKey(node.path);
+    const existing = mergedProjectRoots.get(projectKey);
+
+    if (!existing) {
+      mergedProjectRoots.set(projectKey, {
+        ...node,
+        children: node.children.map((child) => cloneNode(child)),
+      });
+      continue;
+    }
+
+    existing.children = mergeProviderDirectories(existing.children, node.children);
+  }
+
+  const mergedRoots = [...mergedProjectRoots.values()].sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
+  );
+
+  return [...mergedRoots, ...passthroughNodes];
+}
+
+function mergeProviderDirectories(
+  currentDirectories: SystemSkillTreeNode[],
+  incomingDirectories: SystemSkillTreeNode[],
+) {
+  const mergedByProvider = new Map<string, SystemSkillTreeNode>();
+
+  for (const directory of currentDirectories) {
+    const providerKey = directory.name.toLowerCase();
+    mergedByProvider.set(providerKey, cloneNode(directory));
+  }
+
+  for (const directory of incomingDirectories) {
+    const providerKey = directory.name.toLowerCase();
+    const existing = mergedByProvider.get(providerKey);
+
+    if (!existing) {
+      mergedByProvider.set(providerKey, cloneNode(directory));
+      continue;
+    }
+
+    existing.children = mergeNodeChildren(existing.children, directory.children);
+  }
+
+  return [...mergedByProvider.values()].sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
+  );
+}
+
+function mergeNodeChildren(currentChildren: SystemSkillTreeNode[], incomingChildren: SystemSkillTreeNode[]) {
+  const merged = new Map<string, SystemSkillTreeNode>();
+
+  const registerNode = (node: SystemSkillTreeNode) => {
+    const nodeKey = nodeIdentity(node);
+    const existing = merged.get(nodeKey);
+
+    if (!existing) {
+      merged.set(nodeKey, cloneNode(node));
+      return;
+    }
+
+    if (existing.kind === "directory" && node.kind === "directory") {
+      existing.children = mergeNodeChildren(existing.children, node.children);
+    }
+  };
+
+  for (const child of currentChildren) {
+    registerNode(child);
+  }
+
+  for (const child of incomingChildren) {
+    registerNode(child);
+  }
+
+  return [...merged.values()].sort((left, right) => {
+    if (left.kind !== right.kind) {
+      return left.kind === "directory" ? -1 : 1;
+    }
+
+    return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+  });
+}
+
+function cloneNode(node: SystemSkillTreeNode): SystemSkillTreeNode {
+  return {
+    ...node,
+    children: node.children.map((child) => cloneNode(child)),
+  };
+}
+
+function nodeIdentity(node: SystemSkillTreeNode) {
+  if (node.kind === "skill" && node.skill) {
+    return `skill:${normalizePathKey(node.skill.rootPath)}`;
+  }
+
+  if (node.kind === "file" && node.file) {
+    return `file:${node.file.id}`;
+  }
+
+  return `${node.kind}:${normalizePathKey(node.path)}`;
+}
+
+function normalizePathKey(path: string) {
+  let normalized = path.replace(/\\/g, "/").toLowerCase();
+
+  while (normalized.length > 1 && normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+
+  return normalized;
 }
