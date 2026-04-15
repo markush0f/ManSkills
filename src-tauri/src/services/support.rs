@@ -45,13 +45,36 @@ fn build_roots(raw_roots: Vec<String>) -> Vec<PathBuf> {
             continue;
         }
 
-        let key = root.to_string_lossy().into_owned();
+        let canonical = canonicalize_or_self(&root);
+        let key = normalized_path_key(&canonical);
         if seen.insert(key) {
-            roots.push(root);
+            roots.push(canonical);
         }
     }
 
     roots
+}
+
+fn canonicalize_or_self(path: &Path) -> PathBuf {
+    fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
+pub(crate) fn normalized_path_key(path: &Path) -> String {
+    let canonical = canonicalize_or_self(path);
+    let mut normalized = canonical
+        .to_string_lossy()
+        .replace('\\', "/")
+        .to_ascii_lowercase();
+
+    if let Some(stripped) = normalized.strip_prefix("//?/") {
+        normalized = stripped.to_string();
+    }
+
+    while normalized.len() > 1 && normalized.ends_with('/') {
+        normalized.pop();
+    }
+
+    normalized
 }
 
 pub(crate) fn should_skip_directory(path: &Path) -> bool {
@@ -129,7 +152,7 @@ pub(crate) fn slugify_path(path: &Path) -> String {
 }
 
 pub(crate) fn classify_source(path: &Path) -> String {
-    let normalized = path.to_string_lossy().to_ascii_lowercase();
+    let normalized = normalized_path_key(path);
 
     if MANAGED_SKILL_SOURCE_PATTERNS
         .iter()
@@ -139,37 +162,13 @@ pub(crate) fn classify_source(path: &Path) -> String {
     }
 
     if let Ok(current_dir) = std::env::current_dir() {
-        let current_dir = current_dir.to_string_lossy().to_ascii_lowercase();
-        if normalized.starts_with(&current_dir) {
+        let current_dir = normalized_path_key(&current_dir);
+        if normalized == current_dir || normalized.starts_with(&format!("{current_dir}/")) {
             return "workspace".to_string();
         }
     }
 
     "system".to_string()
-}
-
-pub(crate) fn has_skill_container_parent(path: &Path) -> bool {
-    let Some(parent) = path.parent() else {
-        return false;
-    };
-
-    let Some(parent_name) = parent.file_name().and_then(|value| value.to_str()) else {
-        return false;
-    };
-
-    is_skill_container_name(parent_name)
-}
-
-pub(crate) fn is_skill_container_directory(path: &Path) -> bool {
-    let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
-        return false;
-    };
-
-    is_skill_container_name(name)
-}
-
-fn is_skill_container_name(value: &str) -> bool {
-    matches!(value.to_ascii_lowercase().as_str(), "skills" | "agents" | ".agents")
 }
 
 fn default_scan_roots() -> Vec<String> {
@@ -352,7 +351,7 @@ mod tests {
     use super::{
         build_scan_roots, discover_os_roots, extend_local_provider_roots,
         extend_local_provider_roots_from_ancestors, extend_provider_roots_for_home,
-        has_skill_container_parent, is_skill_container_directory, provider_home_dirs,
+        normalized_path_key, provider_home_dirs,
     };
 
     #[test]
@@ -449,22 +448,6 @@ mod tests {
     }
 
     #[test]
-    fn has_skill_container_parent_detects_agents_and_skills_paths() {
-        assert!(has_skill_container_parent(Path::new("/tmp/work/skills/sample")));
-        assert!(has_skill_container_parent(Path::new("/tmp/work/agents/sample")));
-        assert!(has_skill_container_parent(Path::new("/tmp/work/.agents/sample")));
-        assert!(!has_skill_container_parent(Path::new("/tmp/work/tools/sample")));
-    }
-
-    #[test]
-    fn is_skill_container_directory_detects_agents_and_skills_directory_names() {
-        assert!(is_skill_container_directory(Path::new("/tmp/work/skills")));
-        assert!(is_skill_container_directory(Path::new("/tmp/work/agents")));
-        assert!(is_skill_container_directory(Path::new("/tmp/work/.agents")));
-        assert!(!is_skill_container_directory(Path::new("/tmp/work/tools")));
-    }
-
-    #[test]
     fn discover_os_roots_includes_mounted_windows_drives_when_present() {
         let roots = discover_os_roots();
         if Path::new("/mnt/c").exists() {
@@ -486,6 +469,18 @@ mod tests {
                 "watch roots should avoid broad OS roots to prevent endless refresh loops",
             );
         }
+    }
+
+    #[test]
+    fn classify_source_detects_managed_paths_with_windows_separators() {
+        let source = super::classify_source(Path::new(r"C:\Users\abram\.codex\skills\cpp-lint"));
+        assert_eq!(source, "managed");
+    }
+
+    #[test]
+    fn normalized_path_key_normalizes_case_and_separators() {
+        let normalized = normalized_path_key(Path::new(r"C:\Users\Abram\.Codex\skills\Cpp-Lint\"));
+        assert_eq!(normalized, "c:/users/abram/.codex/skills/cpp-lint");
     }
 
     struct TestWorkspace {

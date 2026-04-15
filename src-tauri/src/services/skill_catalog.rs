@@ -11,9 +11,8 @@ use crate::{
     models::{MarketplaceInstallMetadata, SkillScanResponse, SystemSkill},
     services::support::{
         build_scan_roots, classify_source, is_summary_candidate,
-        should_skip_directory, slugify_path, has_skill_container_parent,
-        is_skill_container_directory, SKILL_MANIFEST_NAME, SkillPreview, DEFAULT_SUMMARY,
-        MAX_RESULTS, PREVIEW_BYTES,
+        should_skip_directory, slugify_path, normalized_path_key, SKILL_MANIFEST_NAME,
+        SkillPreview, DEFAULT_SUMMARY, MAX_RESULTS, PREVIEW_BYTES,
     },
 };
 
@@ -143,27 +142,6 @@ fn read_marketplace_install_metadata(root_path: &Path) -> Option<MarketplaceInst
     serde_json::from_str(&content).ok()
 }
 
-fn inferred_skill_from_root(root_path: &Path) -> SystemSkill {
-    let root_path_string = root_path.to_string_lossy().into_owned();
-    let display_name = root_path
-        .file_name()
-        .and_then(|value| value.to_str())
-        .map(|value| value.to_string())
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| "Detected Skill Directory".to_string());
-
-    SystemSkill {
-        id: format!("{root_path_string}:inferred"),
-        slug: slugify_path(root_path),
-        name: display_name,
-        summary: "Directory detected under agents/skills path.".to_string(),
-        manifest_path: root_path_string.clone(),
-        root_path: root_path_string,
-        source: classify_source(root_path),
-        marketplace_install: read_marketplace_install_metadata(root_path),
-    }
-}
-
 fn scan_root_directories(root: &Path, results: &mut HashMap<String, SystemSkill>) {
     let mut stack = vec![root.to_path_buf()];
     let mut visited_directories = HashSet::<String>::new();
@@ -178,7 +156,8 @@ fn scan_root_directories(root: &Path, results: &mut HashMap<String, SystemSkill>
         }
 
         let current_key = current_dir.to_string_lossy().into_owned();
-        if !visited_directories.insert(current_key.clone()) {
+        let current_normalized_key = normalized_path_key(&current_dir);
+        if !visited_directories.insert(current_normalized_key.clone()) {
             continue;
         }
 
@@ -197,12 +176,7 @@ fn scan_root_directories(root: &Path, results: &mut HashMap<String, SystemSkill>
                 marketplace_install,
             };
 
-            // Manifest-backed records always replace inferred entries.
-            results.insert(current_key, skill);
-        } else if has_skill_container_parent(&current_dir) || is_skill_container_directory(&current_dir) {
-            if !results.contains_key(&current_key) {
-                results.insert(current_key.clone(), inferred_skill_from_root(&current_dir));
-            }
+            results.insert(current_normalized_key, skill);
         }
 
         if results.len() >= MAX_RESULTS {
