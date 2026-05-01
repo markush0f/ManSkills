@@ -10,6 +10,7 @@ export type { MarketplaceInstallMetadata } from "./marketplace-install-metadata"
 export type { MarketplaceInstallResult, MarketplaceInstallTarget, MarketplaceUninstallResult } from "./marketplace-install-result";
 export type { MarketplaceSearchResponse } from "./marketplace-search-response";
 export type { MarketplaceSkill } from "./marketplace-skill";
+export type { MarketplaceSource } from "./marketplace-source";
 export type {
   PersistedEditorPreviewMode,
   PersistedSettingsCategory,
