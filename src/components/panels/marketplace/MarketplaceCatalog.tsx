@@ -3,10 +3,12 @@ import { BagSimpleIcon } from "@phosphor-icons/react/dist/csr/BagSimple";
 import { CalendarBlankIcon } from "@phosphor-icons/react/dist/csr/CalendarBlank";
 import { DownloadSimpleIcon } from "@phosphor-icons/react/dist/csr/DownloadSimple";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
+import { LinkSimpleIcon } from "@phosphor-icons/react/dist/csr/LinkSimple";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { UserIcon } from "@phosphor-icons/react/dist/csr/User";
-import type { MarketplaceSkill, SystemSkill } from "../../../types";
+import type { MarketplaceSkill, MarketplaceSource, SystemSkill } from "../../../types";
 import {
   ActionButton,
   formatUpdatedAt,
@@ -28,6 +30,45 @@ type MarketplaceSkillRowProps = {
   skill: MarketplaceSkill;
   state: MarketplaceSkillState;
 };
+
+function MarketplaceSourceCard({
+  onBrowse,
+  source,
+}: {
+  onBrowse: (source: MarketplaceSource) => void;
+  source: MarketplaceSource;
+}) {
+  return (
+    <article className="rounded-[16px] border border-[var(--border)] bg-white/[0.015] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2 text-[14px] font-medium text-[var(--text)]">
+            <FolderSimpleIcon className="h-4 w-4 shrink-0 text-[var(--accent-strong)]" weight="duotone" />
+            <span className="truncate">{source.source}</span>
+          </h2>
+          <p className="mt-1 text-[12px] text-[var(--muted)]">
+            {source.skillCount} skills - {source.totalInstalls.toLocaleString("es")} installs
+          </p>
+        </div>
+        <a
+          className="shrink-0 text-[var(--muted)] transition hover:text-[var(--text)]"
+          href={source.githubUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+          title="Abrir repositorio"
+        >
+          <LinkSimpleIcon className="h-4 w-4" weight="bold" />
+        </a>
+      </div>
+
+      <div className="mt-4 flex items-center gap-2">
+        <ActionButton onClick={() => onBrowse(source)} tone="primary">
+          Ver skills
+        </ActionButton>
+      </div>
+    </article>
+  );
+}
 
 function MarketplaceSkillRow({
   installedSkill,
@@ -75,7 +116,7 @@ function MarketplaceSkillRow({
 
       <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] lg:justify-self-end">
         <StarIcon className="h-3.5 w-3.5 shrink-0 text-[var(--warning-strong,#f5c451)]" weight="fill" />
-        <span>{skill.stars !== null ? `${skill.stars}` : "Sin stars"}</span>
+        <span>{skill.stars !== null ? `${skill.stars}` : "Sin datos"}</span>
       </div>
 
       <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-self-end">
@@ -146,10 +187,12 @@ function MarketplaceSkillRow({
 
 export function MarketplaceCatalog() {
   const {
+    browseSource,
     findInstalledMarketplaceSkill,
     getSkillState,
     marketplaceHasSearched,
     marketplaceSkills,
+    marketplaceTopSources,
     onUninstall,
     onUpdate,
     openInstalledMarketplaceSkill,
@@ -159,42 +202,68 @@ export function MarketplaceCatalog() {
     setQuery,
   } = useMarketplace();
 
+  const topSourcesSection = marketplaceTopSources.length > 0 ? (
+    <section className="border-b border-[var(--border)] px-4 py-5">
+      <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+        <FolderSimpleIcon className="h-3.5 w-3.5" weight="bold" />
+        <span>Top Sources</span>
+      </div>
+      <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+        {marketplaceTopSources.map((source) => (
+          <MarketplaceSourceCard
+            key={source.source}
+            onBrowse={browseSource}
+            source={source}
+          />
+        ))}
+      </div>
+    </section>
+  ) : null;
+
   if (marketplaceSkills.length === 0) {
     return marketplaceHasSearched ? (
-      <div className="px-4 py-6">
-        <EmptyState
-          action={
-            query.trim().length > 0 ? (
-              <button
-                className={ghostButtonClass}
-                onClick={() => {
-                  setQuery("");
-                  void refreshMarketplace();
-                }}
-                type="button"
-              >
-                Clear search
-              </button>
-            ) : undefined
-          }
-          eyebrow="Marketplace"
-          message="No skills match the current search. Try a different term or clear the filter."
-          title="No matching skills"
-        />
-      </div>
+      <>
+        {topSourcesSection}
+        <div className="px-4 py-6">
+          <EmptyState
+            action={
+              query.trim().length > 0 ? (
+                <button
+                  className={ghostButtonClass}
+                  onClick={() => {
+                    setQuery("");
+                    void refreshMarketplace();
+                  }}
+                  type="button"
+                >
+                  Clear search
+                </button>
+              ) : undefined
+            }
+            eyebrow="Marketplace"
+            message="No hay skills que coincidan con la busqueda actual. Prueba otro termino o limpia el filtro."
+            title="No matching skills"
+          />
+        </div>
+      </>
     ) : (
-      <div className="px-4 py-6">
-        <EmptyState
-          eyebrow="Marketplace"
-          message="Search SkillsMP to browse remote skills and install them into this workspace."
-          title="Start with a search"
-        />
-      </div>
+      <>
+        {topSourcesSection}
+        <div className="px-4 py-6">
+          <EmptyState
+            eyebrow="Marketplace"
+            message="Explora la Skills API local para descubrir skills e instalarlas en este workspace."
+            title="Start with a search"
+          />
+        </div>
+      </>
     );
   }
 
   return (
     <>
+      {topSourcesSection}
+
       <div
         className={`hidden border-b border-[var(--border)] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)] lg:grid ${MARKETPLACE_TABLE_COLUMNS} lg:gap-x-5`}
       >
@@ -212,7 +281,7 @@ export function MarketplaceCatalog() {
         </span>
         <span className="inline-flex items-center gap-1.5 lg:justify-self-end">
           <StarIcon className="h-3.5 w-3.5" weight="bold" />
-          Stars
+          Installs
         </span>
         <span className="inline-flex items-center gap-1.5 text-right lg:justify-self-end">
           <DownloadSimpleIcon className="h-3.5 w-3.5" weight="bold" />
