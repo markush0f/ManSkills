@@ -35,6 +35,7 @@ pub fn run() {
             tauri_commands::read_backend_logs,
             tauri_commands::clear_backend_logs,
             tauri_commands::search_marketplace_skills,
+            tauri_commands::load_marketplace_top_sources,
             tauri_commands::install_marketplace_skill,
             tauri_commands::load_marketplace_skill_manifest,
             tauri_commands::update_marketplace_skill,
