@@ -1,8 +1,14 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { MarketplaceInstallTarget, MarketplaceSkill, SystemSkill } from "../../../types";
+import type {
+  MarketplaceInstallTarget,
+  MarketplaceSkill,
+  MarketplaceSource,
+  SystemSkill,
+} from "../../../types";
 import type { MarketplaceSkillState } from "./types";
 
 export type MarketplaceContextValue = {
+  browseSource: (source: MarketplaceSource) => void;
   closeMarketplaceSkillDetail: () => void;
   findInstalledMarketplaceSkill: (skill: MarketplaceSkill) => SystemSkill | null;
   getSkillState: (skill: MarketplaceSkill) => MarketplaceSkillState;
@@ -12,6 +18,7 @@ export type MarketplaceContextValue = {
   marketplaceLoading: boolean;
   marketplaceSearchMs: number | null;
   marketplaceSkills: MarketplaceSkill[];
+  marketplaceTopSources: MarketplaceSource[];
   marketplaceTotal: number | null;
   onSearch: () => void;
   onUninstall: (skill: MarketplaceSkill) => void;
