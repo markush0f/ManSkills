@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useUiShell } from "../contexts/UiShellContext";
 import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
 import { useWorkspaceState } from "../contexts/WorkspaceStateContext";
@@ -8,6 +8,8 @@ import {
   filterTreeNodes,
   reshapeSystemSkillRootsForDisplay,
 } from "../components/navigation/sidebar/sidebarTreeUtils";
+
+const SIDEBAR_PERSIST_DEBOUNCE_MS = 600;
 
 export function useSidebarTree() {
   const { uiState, updateUiState } = useUiShell();
@@ -45,6 +47,8 @@ export function useSidebarTree() {
   const workspaceExpanded = searchActive || expandedSections.workspace;
   const systemSkillsExpanded = searchActive || expandedSections.systemSkills;
 
+  const pendingPersistRef = useRef<number | null>(null);
+
   function toggleSystemSkillNode(nodeId: string) {
     setExpandedSystemSkillNodeIds((current) => {
       const next = new Set(current);
@@ -67,15 +71,29 @@ export function useSidebarTree() {
   }
 
   useEffect(() => {
-    updateUiState((current) => ({
-      ...current,
-      sidebar: {
-        ...current.sidebar,
-        expandedSections,
-        expandedSystemSkillNodeIds: [...expandedSystemSkillNodeIds],
-        searchQuery: query,
-      },
-    }));
+    if (pendingPersistRef.current !== null) {
+      return;
+    }
+
+    pendingPersistRef.current = window.setTimeout(() => {
+      pendingPersistRef.current = null;
+      updateUiState((current) => ({
+        ...current,
+        sidebar: {
+          ...current.sidebar,
+          expandedSections,
+          expandedSystemSkillNodeIds: [...expandedSystemSkillNodeIds],
+          searchQuery: query,
+        },
+      }));
+    }, SIDEBAR_PERSIST_DEBOUNCE_MS);
+
+    return () => {
+      if (pendingPersistRef.current !== null) {
+        window.clearTimeout(pendingPersistRef.current);
+        pendingPersistRef.current = null;
+      }
+    };
   }, [expandedSections, expandedSystemSkillNodeIds, query, updateUiState]);
 
   return {

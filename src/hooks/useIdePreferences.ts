@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { IdePreferences } from "../types";
 
 const IDE_PREFERENCES_KEY = "skills-ide:preferences";
+const STORAGE_DEBOUNCE_MS = 400;
 
 export const DEFAULT_IDE_PREFERENCES: IdePreferences = {
   bracketPairGuides: true,
@@ -45,16 +46,45 @@ export function useIdePreferences() {
     }
   });
 
+  const pendingWriteRef = useRef<number | null>(null);
+  const lastSerializedRef = useRef<string>(JSON.stringify(preferences));
+
   useEffect(() => {
-    window.localStorage.setItem(IDE_PREFERENCES_KEY, JSON.stringify(preferences));
+    if (pendingWriteRef.current !== null) {
+      return;
+    }
+
+    pendingWriteRef.current = window.setTimeout(() => {
+      pendingWriteRef.current = null;
+      const nextSerialized = JSON.stringify(preferences);
+
+      if (nextSerialized === lastSerializedRef.current) {
+        return;
+      }
+
+      lastSerializedRef.current = nextSerialized;
+      window.localStorage.setItem(IDE_PREFERENCES_KEY, nextSerialized);
+    }, STORAGE_DEBOUNCE_MS);
+
+    return () => {
+      if (pendingWriteRef.current !== null) {
+        window.clearTimeout(pendingWriteRef.current);
+        pendingWriteRef.current = null;
+      }
+    };
   }, [preferences]);
 
-  function updatePreferences(nextPreferences: Partial<IdePreferences>) {
-    setPreferences((current) => ({
-      ...current,
-      ...nextPreferences,
-    }));
-  }
+  const updatePreferences = useCallback((nextPreferences: Partial<IdePreferences>) => {
+    setPreferences((current) => {
+      const next = { ...current, ...nextPreferences };
+
+      if (next === current) {
+        return current;
+      }
+
+      return next;
+    });
+  }, []);
 
   return {
     preferences,

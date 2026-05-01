@@ -63,6 +63,10 @@ export function useEditorSession({
     }
 
     const timeoutId = window.setTimeout(() => {
+      if (draftContent === activeFile.content) {
+        return;
+      }
+
       updateActiveFile(draftContent);
     }, 120);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PersistedUiStateV1 } from "../types";
 
 export const PERSISTED_UI_STATE_KEY = "skills-ide:ui-state:v1";
@@ -70,6 +70,8 @@ function normalizePersistedUiState(value: unknown): PersistedUiStateV1 {
   };
 }
 
+const STORAGE_DEBOUNCE_MS = 400;
+
 export function usePersistentUiState() {
   const [uiState, setUiState] = useState<PersistedUiStateV1>(() => {
     if (typeof window === "undefined") {
@@ -89,13 +91,48 @@ export function usePersistentUiState() {
     }
   });
 
+  const pendingWriteRef = useRef<number | null>(null);
+  const lastSerializedRef = useRef<string>(JSON.stringify(uiState));
+
   useEffect(() => {
-    window.localStorage.setItem(PERSISTED_UI_STATE_KEY, JSON.stringify(uiState));
+    if (pendingWriteRef.current !== null) {
+      return;
+    }
+
+    pendingWriteRef.current = window.setTimeout(() => {
+      pendingWriteRef.current = null;
+      const nextSerialized = JSON.stringify(uiState);
+
+      if (nextSerialized === lastSerializedRef.current) {
+        return;
+      }
+
+      lastSerializedRef.current = nextSerialized;
+      window.localStorage.setItem(PERSISTED_UI_STATE_KEY, nextSerialized);
+    }, STORAGE_DEBOUNCE_MS);
+
+    return () => {
+      if (pendingWriteRef.current !== null) {
+        window.clearTimeout(pendingWriteRef.current);
+        pendingWriteRef.current = null;
+      }
+    };
   }, [uiState]);
 
-  function updateUiState(updater: (current: PersistedUiStateV1) => PersistedUiStateV1) {
-    setUiState((current) => normalizePersistedUiState(updater(current)));
-  }
+  const updateUiState = useCallback(
+    (updater: (current: PersistedUiStateV1) => PersistedUiStateV1) => {
+      setUiState((current) => {
+        const next = normalizePersistedUiState(updater(current));
+
+        if (next === current) {
+          return current;
+        }
+
+        return next;
+      });
+    },
+    [],
+  );
 
   return {
     resetUiState: () => setUiState(DEFAULT_PERSISTED_UI_STATE),

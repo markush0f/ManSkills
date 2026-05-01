@@ -1,12 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useIde } from "../contexts/IdeContext";
 import { useUiShell } from "../contexts/UiShellContext";
-import type { MarketplaceSkill } from "../types";
+import type { MarketplaceSkill, MarketplaceSource } from "../types";
 import {
   INSTALL_TARGET_OPTIONS,
   type MarketplaceSkillState,
 } from "../components/panels/marketplace/types";
+
+const MARKETPLACE_QUERY_DEBOUNCE_MS = 400;
 
 export function useMarketplaceDetail() {
   const { uiState, updateUiState } = useUiShell();
@@ -22,6 +24,7 @@ export function useMarketplaceDetail() {
     marketplaceQuery,
     marketplaceSearchMs,
     marketplaceSkills,
+    marketplaceTopSources,
     marketplaceTotal,
     openInstalledMarketplaceSkill,
     openMarketplaceSkillDetail,
@@ -39,6 +42,7 @@ export function useMarketplaceDetail() {
   const [selectedSkillManifest, setSelectedSkillManifest] = useState("");
   const [selectedSkillManifestError, setSelectedSkillManifestError] = useState<string | null>(null);
   const [selectedSkillManifestLoading, setSelectedSkillManifestLoading] = useState(false);
+  const queryPersistRef = useRef<number | null>(null);
   const selectedInstalledSkill = selectedMarketplaceSkill ? findInstalledMarketplaceSkill(selectedMarketplaceSkill) : null;
   const selectedTargetLabel =
     INSTALL_TARGET_OPTIONS.find((option) => option.value === preferences.marketplaceInstallTarget)?.label ??
@@ -104,16 +108,32 @@ export function useMarketplaceDetail() {
     void searchMarketplace(query.trim(), 1, 20);
   }
 
-  function setQuery(value: string) {
-    setQueryState(value);
-    updateUiState((current) => ({
-      ...current,
-      marketplace: {
-        ...current.marketplace,
-        query: value,
-      },
-    }));
+  function browseSource(source: MarketplaceSource) {
+    setQuery(source.source);
+    void searchMarketplace(source.source, 1, 20);
   }
+
+  const setQuery = useCallback((value: string) => {
+    setQueryState(value);
+
+    if (queryPersistRef.current !== null) {
+      window.clearTimeout(queryPersistRef.current);
+    }
+
+    queryPersistRef.current = window.setTimeout(() => {
+      queryPersistRef.current = null;
+      updateUiState((current) => {
+        if (current.marketplace.query === value) {
+          return current;
+        }
+
+        return {
+          ...current,
+          marketplace: { ...current.marketplace, query: value },
+        };
+      });
+    }, MARKETPLACE_QUERY_DEBOUNCE_MS);
+  }, [updateUiState]);
 
   function getSkillState(skill: MarketplaceSkill): MarketplaceSkillState {
     if (uninstallingMarketplaceSkillIds.has(skill.id)) {
@@ -174,7 +194,9 @@ export function useMarketplaceDetail() {
       marketplaceLoading,
       marketplaceSearchMs,
       marketplaceSkills,
+      marketplaceTopSources,
       marketplaceTotal,
+      browseSource,
       onSearch: () => {
         if (query.trim().length > 0) {
           submitSearch();
