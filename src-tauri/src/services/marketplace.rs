@@ -4,24 +4,25 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use reqwest::blocking::Client;
+use serde::Deserialize;
 use serde_json::Value;
 
 use crate::models::{
     MarketplaceInstallMetadata, MarketplaceInstallResult, MarketplaceSearchResponse,
-    MarketplaceSkill, MarketplaceUninstallResult,
+    MarketplaceSkill, MarketplaceSource, MarketplaceUninstallResult,
 };
 
 const DEFAULT_LIMIT: u32 = 20;
 const DEFAULT_PAGE: u32 = 1;
 const MAX_LIMIT: u32 = 100;
-const SEARCH_URL: &str = "https://skillsmp.com/api/v1/skills/search";
+const DEFAULT_TOP_SOURCES_LIMIT: u32 = 12;
+const SKILLS_API_ROOT: &str = "http://localhost:3456/api/skills";
 const GITHUB_API_ROOT: &str = "https://api.github.com/repos";
-const API_KEY_ENV: &str = "SKILLSMP_API_KEY";
-const DEFAULT_SUMMARY: &str = "No summary provided by SkillsMP.";
+const DEFAULT_SUMMARY: &str = "Skill publicada en la API local.";
 const USER_AGENT: &str = "skills-ide-marketplace";
 const SKILL_MANIFEST_NAME: &str = "SKILL.md";
-const FEATURED_BROWSE_QUERY: &str = "skill";
 pub(crate) const MARKETPLACE_INSTALL_METADATA_FILE_NAME: &str = ".skills-ide-marketplace.json";
 const MARKETPLACE_INSTALLER_ID: &str = "skills-ide";
 
@@ -49,28 +50,26 @@ impl MarketplaceService {
         let normalized_query = query.unwrap_or_default().trim().to_string();
         let normalized_page = page.unwrap_or(DEFAULT_PAGE).max(1);
         let normalized_limit = limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
-        let search_request = build_search_request(&normalized_query);
+        let mut request = if normalized_query.is_empty() {
+            self.client
+                .get(format!("{SKILLS_API_ROOT}/top"))
+                .query(&[("limit", normalized_limit.to_string())])
+        } else {
+            self.client
+                .get(SKILLS_API_ROOT)
+                .query(&[
+                    ("query", normalized_query.clone()),
+                    ("page", normalized_page.to_string()),
+                    ("pageSize", normalized_limit.to_string()),
+                ])
+        };
+        request = request.header("User-Agent", USER_AGENT);
 
-        let api_key = std::env::var(API_KEY_ENV)
-            .map_err(|_| "Falta la variable de entorno SKILLSMP_API_KEY.".to_string())?;
-
-        let response = self
-            .client
-            .get(SEARCH_URL)
-            .bearer_auth(api_key)
-            .query(&[
-                ("q", search_request.request_query.as_str()),
-                ("page", &normalized_page.to_string()),
-                ("limit", &normalized_limit.to_string()),
-                ("sortBy", search_request.sort_by),
-            ])
-            .send()
-            .map_err(map_request_error)?;
-
+        let response = request.send().map_err(map_request_error)?;
         let status = response.status();
         let payload: Value = response
             .json()
-            .map_err(|_| "SkillsMP devolvio una respuesta no valida.".to_string())?;
+            .map_err(|_| "La Skills API devolvio una respuesta no valida.".to_string())?;
 
         if !status.is_success() {
             return Err(map_api_error(status.as_u16(), &payload));
@@ -78,11 +77,41 @@ impl MarketplaceService {
 
         parse_search_response(
             payload,
-            search_request.response_query,
+            normalized_query,
             normalized_page,
             normalized_limit,
             started_at.elapsed().as_millis(),
         )
+    }
+
+    pub fn top_sources(&self, limit: Option<u32>) -> Result<Vec<MarketplaceSource>, String> {
+        let normalized_limit = limit
+            .unwrap_or(DEFAULT_TOP_SOURCES_LIMIT)
+            .clamp(1, MAX_LIMIT);
+        let response = self
+            .client
+            .get(format!("{SKILLS_API_ROOT}/sources/top"))
+            .query(&[("limit", normalized_limit.to_string())])
+            .header("User-Agent", USER_AGENT)
+            .send()
+            .map_err(map_request_error)?;
+        let status = response.status();
+        let payload: Value = response
+            .json()
+            .map_err(|_| "La Skills API devolvio una respuesta no valida.".to_string())?;
+
+        if !status.is_success() {
+            return Err(map_api_error(status.as_u16(), &payload));
+        }
+
+        let Some(sources) = payload.get("sources").and_then(Value::as_array) else {
+            return Err("La Skills API no devolvio una lista de fuentes reconocible.".to_string());
+        };
+
+        Ok(sources
+            .iter()
+            .filter_map(parse_marketplace_source)
+            .collect())
     }
 
     pub fn install(
@@ -91,11 +120,6 @@ impl MarketplaceService {
         target: String,
         collection: Option<String>,
     ) -> Result<MarketplaceInstallResult, String> {
-        let github_url = skill
-            .github_url
-            .clone()
-            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
-        let reference = parse_github_tree_url(&github_url)?;
         let normalized_collection = normalize_install_collection(collection.as_deref())?;
         let normalized_collection_value = normalized_collection
             .as_ref()
@@ -122,7 +146,7 @@ impl MarketplaceService {
         fs::create_dir_all(&temp_root)
             .map_err(|_| "No se pudo crear el directorio temporal de instalacion.".to_string())?;
 
-        let install_result = self.download_directory(&reference, &temp_root, "")?;
+        let install_result = self.download_skill_files(&skill, &temp_root)?;
 
         if !temp_root.join(SKILL_MANIFEST_NAME).exists() {
             let _ = fs::remove_dir_all(&temp_root);
@@ -157,11 +181,6 @@ impl MarketplaceService {
         skill: MarketplaceSkill,
         root_path: &str,
     ) -> Result<MarketplaceInstallResult, String> {
-        let github_url = skill
-            .github_url
-            .clone()
-            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
-        let reference = parse_github_tree_url(&github_url)?;
         let final_root = PathBuf::from(root_path);
         let parent_root = final_root
             .parent()
@@ -178,7 +197,7 @@ impl MarketplaceService {
         fs::create_dir_all(&temp_root)
             .map_err(|_| "No se pudo crear el directorio temporal de actualizacion.".to_string())?;
 
-        let file_count = self.download_directory(&reference, &temp_root, "")?;
+        let file_count = self.download_skill_files(&skill, &temp_root)?;
 
         if !temp_root.join(SKILL_MANIFEST_NAME).exists() {
             let _ = fs::remove_dir_all(&temp_root);
@@ -232,13 +251,31 @@ impl MarketplaceService {
     }
 
     pub fn load_manifest(&self, skill: &MarketplaceSkill) -> Result<String, String> {
-        let github_url = skill
-            .github_url
-            .as_deref()
-            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
-        let reference = parse_github_tree_url(github_url)?;
+        let reference = parse_marketplace_skill_reference(skill)?;
+        let response = self
+            .client
+            .get(format!(
+                "{SKILLS_API_ROOT}/{}/{}/{}/content",
+                reference.owner, reference.repo, reference.skill_id
+            ))
+            .header("User-Agent", USER_AGENT)
+            .send()
+            .map_err(map_request_error)?;
+        let status = response.status();
+        let payload: Value = response
+            .json()
+            .map_err(|_| "La Skills API devolvio un manifiesto no valido.".to_string())?;
 
-        self.fetch_github_file_text(&reference, SKILL_MANIFEST_NAME)
+        if !status.is_success() {
+            return Err(map_api_error(status.as_u16(), &payload));
+        }
+
+        payload
+            .get("raw")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .filter(|content| !content.trim().is_empty())
+            .ok_or_else(|| "La Skills API no devolvio el contenido de SKILL.md.".to_string())
     }
 }
 
@@ -248,26 +285,52 @@ impl Default for MarketplaceService {
     }
 }
 
-struct SearchRequest<'a> {
-    request_query: String,
-    response_query: String,
-    sort_by: &'a str,
+#[derive(Debug)]
+struct MarketplaceSkillReference {
+    owner: String,
+    repo: String,
+    skill_id: String,
 }
 
-fn build_search_request(query: &str) -> SearchRequest<'static> {
-    if query.is_empty() {
-        return SearchRequest {
-            request_query: FEATURED_BROWSE_QUERY.to_string(),
-            response_query: String::new(),
-            sort_by: "stars",
-        };
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SkillsApiFilesResponse {
+    files: Vec<SkillsApiFile>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SkillsApiFile {
+    path: String,
+    content: String,
+    encoding: String,
+}
+
+fn parse_marketplace_skill_reference(
+    skill: &MarketplaceSkill,
+) -> Result<MarketplaceSkillReference, String> {
+    let mut segments = skill.repository.split('/');
+    let owner = segments
+        .next()
+        .filter(|segment| !segment.is_empty())
+        .ok_or_else(|| "La skill no incluye un owner valido.".to_string())?;
+    let repo = segments
+        .next()
+        .filter(|segment| !segment.is_empty())
+        .ok_or_else(|| "La skill no incluye un repositorio valido.".to_string())?;
+
+    if segments.next().is_some() {
+        return Err("La ruta del repositorio de la skill no es valida.".to_string());
     }
 
-    SearchRequest {
-        request_query: query.to_string(),
-        response_query: query.to_string(),
-        sort_by: "recent",
+    if skill.slug.trim().is_empty() {
+        return Err("La skill no incluye un identificador valido.".to_string());
     }
+
+    Ok(MarketplaceSkillReference {
+        owner: owner.to_string(),
+        repo: repo.to_string(),
+        skill_id: skill.slug.clone(),
+    })
 }
 
 fn parse_search_response(
@@ -278,7 +341,7 @@ fn parse_search_response(
     duration_ms: u128,
 ) -> Result<MarketplaceSearchResponse, String> {
     let Some(skills_array) = extract_skills_array(&payload) else {
-        return Err("SkillsMP no devolvio una lista de skills reconocible.".to_string());
+        return Err("La Skills API no devolvio una lista de skills reconocible.".to_string());
     };
 
     let skills = skills_array
@@ -322,10 +385,13 @@ fn extract_total(payload: &Value) -> Option<u64> {
 }
 
 fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
-    let name = read_first_string(skill, &["name", "title", "skillName", "skill_name", "slug"])?;
-    let repository = read_first_string(skill, &["repository", "repo", "fullName", "full_name"])
+    let repository = read_first_string(skill, &["source", "repository", "repo", "fullName", "full_name"])
         .or_else(|| read_nested_string(skill, &["github", "repository"]))
         .unwrap_or_else(|| "unknown/unknown".to_string());
+    let slug = read_first_string(skill, &["skillId", "slug", "name"])
+        .unwrap_or_else(|| repository.replace('/', "-"));
+    let name = read_first_string(skill, &["displayName", "name", "title", "skillName", "skill_name"])
+        .unwrap_or_else(|| slug.clone());
     let author = read_first_string(skill, &["author", "owner"])
         .or_else(|| read_nested_string(skill, &["author", "login"]))
         .or_else(|| read_nested_string(skill, &["owner", "login"]))
@@ -336,12 +402,12 @@ fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
                 .unwrap_or("unknown")
                 .to_string()
         });
-    let slug = read_first_string(skill, &["slug"]).unwrap_or_else(|| slugify(&name));
     let id =
         read_first_string(skill, &["id", "uuid"]).unwrap_or_else(|| format!("{repository}:{slug}"));
     let summary = read_first_string(skill, &["summary", "description", "excerpt", "tagline"])
-        .unwrap_or_else(|| DEFAULT_SUMMARY.to_string());
+        .unwrap_or_else(|| format!("{DEFAULT_SUMMARY} Repo: {repository}."));
     let stars = [
+        skill.get("installs"),
         skill.get("stars"),
         skill.get("starCount"),
         skill.get("stargazersCount"),
@@ -360,7 +426,17 @@ fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
     let github_url = read_first_string(skill, &["githubUrl"])
         .or_else(|| read_nested_string(skill, &["github", "url"]))
         .or_else(|| read_nested_string(skill, &["github", "treeUrl"]));
-    let skill_url = read_first_string(skill, &["skillUrl"]).or(url);
+    let skill_url = read_first_string(skill, &["skillUrl"])
+        .or(url)
+        .or_else(|| {
+            let mut segments = repository.split('/');
+            let owner = segments.next()?;
+            let repo = segments.next()?;
+            Some(format!(
+                "{SKILLS_API_ROOT}/{owner}/{repo}/{}",
+                slug
+            ))
+        });
 
     Some(MarketplaceSkill {
         id,
@@ -373,6 +449,25 @@ fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
         updated_at,
         github_url,
         skill_url,
+    })
+}
+
+fn parse_marketplace_source(source: &Value) -> Option<MarketplaceSource> {
+    let source_path = read_first_string(source, &["source"])?;
+    let owner = read_first_string(source, &["owner"])
+        .unwrap_or_else(|| source_path.split('/').next().unwrap_or("unknown").to_string());
+    let repo = read_first_string(source, &["repo"])
+        .unwrap_or_else(|| source_path.split('/').nth(1).unwrap_or("unknown").to_string());
+    let skill_count = source.get("skillCount").and_then(read_u64).unwrap_or(0);
+    let total_installs = source.get("totalInstalls").and_then(read_u64).unwrap_or(0);
+
+    Some(MarketplaceSource {
+        source: source_path.clone(),
+        owner,
+        repo,
+        skill_count,
+        total_installs,
+        github_url: format!("https://github.com/{source_path}"),
     })
 }
 
@@ -424,29 +519,29 @@ fn slugify(value: &str) -> String {
 
 fn map_request_error(error: reqwest::Error) -> String {
     if error.is_timeout() {
-        return "SkillsMP tardo demasiado en responder.".to_string();
+        return "La Skills API tardo demasiado en responder.".to_string();
     }
 
-    "No se pudo conectar con SkillsMP.".to_string()
+    "No se pudo conectar con la Skills API local.".to_string()
 }
 
 fn map_api_error(status: u16, payload: &Value) -> String {
-    let error_code = payload
-        .pointer("/error/code")
+    let message = payload
+        .get("message")
         .and_then(Value::as_str)
-        .unwrap_or_default();
+        .or_else(|| payload.get("error").and_then(Value::as_str));
 
-    match (status, error_code) {
-        (401, "INVALID_API_KEY") => "La API key de SkillsMP no es valida.".to_string(),
-        (401, "MISSING_API_KEY") => "La API key de SkillsMP no fue enviada.".to_string(),
-        (401, _) => "No se pudo autenticar con SkillsMP.".to_string(),
-        (429, "DAILY_QUOTA_EXCEEDED") => "La cuota diaria de SkillsMP se ha agotado.".to_string(),
-        (429, _) => "SkillsMP ha bloqueado temporalmente las consultas por cuota.".to_string(),
-        (400, "MISSING_QUERY") => {
-            "Debes escribir una busqueda para consultar SkillsMP.".to_string()
-        }
-        (500, _) => "SkillsMP devolvio un error interno.".to_string(),
-        _ => "SkillsMP devolvio un error inesperado.".to_string(),
+    match status {
+        400 => message
+            .map(str::to_string)
+            .unwrap_or_else(|| "La Skills API rechazo la solicitud.".to_string()),
+        404 => message
+            .map(str::to_string)
+            .unwrap_or_else(|| "La skill solicitada no existe en la Skills API.".to_string()),
+        500 => "La Skills API devolvio un error interno.".to_string(),
+        _ => message
+            .map(str::to_string)
+            .unwrap_or_else(|| "La Skills API devolvio un error inesperado.".to_string()),
     }
 }
 
@@ -618,6 +713,58 @@ struct GitHubEntry {
 }
 
 impl MarketplaceService {
+    fn download_skill_files(
+        &self,
+        skill: &MarketplaceSkill,
+        output_root: &Path,
+    ) -> Result<usize, String> {
+        let reference = parse_marketplace_skill_reference(skill)?;
+        let response = self
+            .client
+            .get(format!(
+                "{SKILLS_API_ROOT}/{}/{}/{}/files",
+                reference.owner, reference.repo, reference.skill_id
+            ))
+            .header("User-Agent", USER_AGENT)
+            .send()
+            .map_err(map_request_error)?;
+        let status = response.status();
+
+        if !status.is_success() {
+            let payload: Value = response
+                .json()
+                .map_err(|_| "La Skills API devolvio una respuesta no valida.".to_string())?;
+            return Err(map_api_error(status.as_u16(), &payload));
+        }
+
+        let payload: SkillsApiFilesResponse = response
+            .json()
+            .map_err(|_| "La Skills API devolvio archivos no validos para esta skill.".to_string())?;
+
+        if payload.files.is_empty() {
+            return Err("La Skills API no devolvio archivos para esta skill.".to_string());
+        }
+
+        let mut file_count = 0usize;
+
+        for file in payload.files {
+            let relative_path = normalize_download_path(&file.path)?;
+            let destination = output_root.join(relative_path);
+            if let Some(parent) = destination.parent() {
+                fs::create_dir_all(parent)
+                    .map_err(|_| "No se pudo crear la carpeta de destino.".to_string())?;
+            }
+
+            let bytes = decode_skill_file_content(&file)?;
+            fs::write(destination, bytes).map_err(|_| {
+                "No se pudo escribir un archivo de la skill instalada.".to_string()
+            })?;
+            file_count += 1;
+        }
+
+        Ok(file_count)
+    }
+
     fn fetch_github_file_text(
         &self,
         reference: &GitHubTreeReference,
@@ -765,6 +912,34 @@ impl MarketplaceService {
     }
 }
 
+fn normalize_download_path(path: &str) -> Result<PathBuf, String> {
+    let trimmed = path.trim().trim_matches('/');
+    if trimmed.is_empty() {
+        return Err("La Skills API devolvio una ruta de archivo vacia.".to_string());
+    }
+
+    let mut normalized = PathBuf::new();
+    for segment in trimmed.split('/') {
+        let part = segment.trim();
+        if part.is_empty() || part == "." || part == ".." {
+            return Err("La Skills API devolvio una ruta de archivo invalida.".to_string());
+        }
+        normalized.push(part);
+    }
+
+    Ok(normalized)
+}
+
+fn decode_skill_file_content(file: &SkillsApiFile) -> Result<Vec<u8>, String> {
+    match file.encoding.as_str() {
+        "utf-8" => Ok(file.content.as_bytes().to_vec()),
+        "base64" => STANDARD
+            .decode(file.content.as_bytes())
+            .map_err(|_| "La Skills API devolvio un archivo binario invalido.".to_string()),
+        _ => Err("La Skills API devolvio una codificacion de archivo no soportada.".to_string()),
+    }
+}
+
 fn to_relative_path_buf(value: &str) -> PathBuf {
     let mut path = PathBuf::new();
 
@@ -786,9 +961,10 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        build_marketplace_install_metadata, build_search_request, normalize_install_collection,
-        parse_github_tree_url, parse_search_response, read_marketplace_install_metadata,
-        replace_directory_atomically, resolve_install_root, MarketplaceSkill,
+        build_marketplace_install_metadata, normalize_install_collection, parse_github_tree_url,
+        parse_marketplace_skill_reference, parse_marketplace_source, parse_search_response,
+        read_marketplace_install_metadata, replace_directory_atomically, resolve_install_root,
+        MarketplaceSkill,
     };
 
     #[test]
@@ -796,33 +972,31 @@ mod tests {
         let payload = json!({
             "skills": [
                 {
-                    "id": "skill_123",
-                    "slug": "api-changelog-versioning",
-                    "name": "API Changelog & Versioning",
-                    "summary": "Document API changes cleanly.",
-                    "repository": "aj-geddes/useful-ai-prompts-skills",
-                    "author": "aj-geddes",
-                    "stars": 132,
-                    "updatedAt": "2026-03-04T07:30:00Z",
-                    "githubUrl": "https://github.com/aj-geddes/useful-ai-prompts-skills/tree/main/skills/api",
-                    "skillUrl": "https://skillsmp.com/skills/example"
+                    "source": "vercel-labs/agent-skills",
+                    "skillId": "vercel-react-best-practices",
+                    "name": "vercel-react-best-practices",
+                    "displayName": "Vercel React Best Practices",
+                    "installs": 69954,
+                    "owner": "vercel-labs",
+                    "repo": "agent-skills",
+                    "githubUrl": "https://github.com/vercel-labs/agent-skills"
                 }
             ],
-            "total": 695541
+            "total": 1
         });
 
         let response = parse_search_response(payload, "api".to_string(), 1, 20, 12)
             .expect("response should parse");
 
         assert_eq!(response.skills.len(), 1);
-        assert_eq!(response.total, Some(695541));
-        assert_eq!(
-            response.skills[0].repository,
-            "aj-geddes/useful-ai-prompts-skills"
-        );
+        assert_eq!(response.total, Some(1));
+        assert_eq!(response.skills[0].repository, "vercel-labs/agent-skills");
+        assert_eq!(response.skills[0].slug, "vercel-react-best-practices");
+        assert_eq!(response.skills[0].name, "Vercel React Best Practices");
+        assert_eq!(response.skills[0].stars, Some(69954));
         assert_eq!(
             response.skills[0].github_url.as_deref(),
-            Some("https://github.com/aj-geddes/useful-ai-prompts-skills/tree/main/skills/api")
+            Some("https://github.com/vercel-labs/agent-skills")
         );
     }
 
@@ -832,11 +1006,12 @@ mod tests {
             "data": {
                 "results": [
                     {
-                        "title": "Install",
-                        "description": "Install an external skill.",
-                        "repo": "nickdirienzo/nonnaclaw",
-                        "owner": { "login": "nickdirienzo" },
-                        "starCount": "3"
+                        "displayName": "Find Skills",
+                        "name": "find-skills",
+                        "source": "vercel-labs/skills",
+                        "owner": "vercel-labs",
+                        "repo": "skills",
+                        "installs": "49281"
                     }
                 ]
             },
@@ -848,9 +1023,9 @@ mod tests {
         let response = parse_search_response(payload, "install".to_string(), 1, 20, 5)
             .expect("response should parse");
 
-        assert_eq!(response.skills[0].name, "Install");
-        assert_eq!(response.skills[0].author, "nickdirienzo");
-        assert_eq!(response.skills[0].stars, Some(3));
+        assert_eq!(response.skills[0].name, "Find Skills");
+        assert_eq!(response.skills[0].author, "vercel-labs");
+        assert_eq!(response.skills[0].stars, Some(49281));
     }
 
     #[test]
@@ -895,21 +1070,34 @@ mod tests {
     }
 
     #[test]
-    fn build_search_request_uses_featured_defaults_for_empty_query() {
-        let request = build_search_request("");
+    fn parse_marketplace_source_supports_skills_api_shape() {
+        let source = json!({
+            "source": "vercel-labs/agent-skills",
+            "owner": "vercel-labs",
+            "repo": "agent-skills",
+            "skillCount": 12,
+            "totalInstalls": 123456
+        });
 
-        assert_eq!(request.request_query, "skill");
-        assert_eq!(request.response_query, "");
-        assert_eq!(request.sort_by, "stars");
+        let parsed = parse_marketplace_source(&source).expect("source should parse");
+
+        assert_eq!(parsed.source, "vercel-labs/agent-skills");
+        assert_eq!(parsed.skill_count, 12);
+        assert_eq!(parsed.total_installs, 123456);
+        assert_eq!(
+            parsed.github_url,
+            "https://github.com/vercel-labs/agent-skills"
+        );
     }
 
     #[test]
-    fn build_search_request_preserves_user_query() {
-        let request = build_search_request("rust");
+    fn parse_marketplace_skill_reference_reads_repository_and_slug() {
+        let reference =
+            parse_marketplace_skill_reference(&sample_marketplace_skill()).expect("reference");
 
-        assert_eq!(request.request_query, "rust");
-        assert_eq!(request.response_query, "rust");
-        assert_eq!(request.sort_by, "recent");
+        assert_eq!(reference.owner, "example");
+        assert_eq!(reference.repo, "repo");
+        assert_eq!(reference.skill_id, "example-skill");
     }
 
     #[test]
@@ -920,10 +1108,8 @@ mod tests {
             skill_id: Some("skill_123".to_string()),
             slug: "example-skill".to_string(),
             name: "Example Skill".to_string(),
-            github_url: Some(
-                "https://github.com/example/repo/tree/main/skills/example".to_string(),
-            ),
-            skill_url: Some("https://skillsmp.com/skills/example".to_string()),
+            github_url: Some("https://github.com/example/repo".to_string()),
+            skill_url: Some("http://localhost:3456/api/skills/example/repo/example-skill".to_string()),
             remote_updated_at: Some("1710000000".to_string()),
             install_target: Some("codex".to_string()),
             install_collection: Some("team/tools".to_string()),
@@ -1005,9 +1191,9 @@ mod tests {
             stars: Some(42),
             updated_at: Some("1712345678".to_string()),
             github_url: Some(
-                "https://github.com/example/repo/tree/main/skills/example".to_string(),
+                "https://github.com/example/repo".to_string(),
             ),
-            skill_url: Some("https://skillsmp.com/skills/example".to_string()),
+            skill_url: Some("http://localhost:3456/api/skills/example/repo/example-skill".to_string()),
         }
     }
 

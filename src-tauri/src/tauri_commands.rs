@@ -1,7 +1,7 @@
 use crate::{
     models::{
         BackendLogSnapshot, MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill,
-        MarketplaceUninstallResult, SkillScanResponse, SkillTreeResponse,
+        MarketplaceSource, MarketplaceUninstallResult, SkillScanResponse, SkillTreeResponse,
         SystemSkillContentResponse, SystemSkillTreeFile, SystemSkillTreeNode,
     },
     services::{BackendLogService, MarketplaceService, SkillService},
@@ -26,6 +26,23 @@ pub fn search_marketplace_skills(
             response.total, response.page
         )),
         Err(error) => logger.error(format!("search_marketplace_skills failed: {error}")),
+    }
+
+    result
+}
+
+#[tauri::command]
+pub fn load_marketplace_top_sources(limit: Option<u32>) -> Result<Vec<MarketplaceSource>, String> {
+    let logger = BackendLogService::shared();
+    logger.info(format!("load_marketplace_top_sources limit={limit:?}"));
+
+    let result = MarketplaceService::new().top_sources(limit);
+    match &result {
+        Ok(sources) => logger.info(format!(
+            "load_marketplace_top_sources success total={}",
+            sources.len()
+        )),
+        Err(error) => logger.error(format!("load_marketplace_top_sources failed: {error}")),
     }
 
     result
