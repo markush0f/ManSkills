@@ -29,12 +29,12 @@ export function MarketplaceToolbar() {
           <BagSimpleIcon className="h-5 w-5 text-[var(--accent-strong)]" weight="duotone" />
           <span>Marketplace</span>
           <a
-            href="https://skillsmp.com/"
+            href="http://localhost:3456/"
             className="text-[var(--accent)] hover:underline"
             rel="noopener noreferrer"
             target="_blank"
           >
-            (SkillsMP)
+            (Skills API)
           </a>
         </h1>
         <div className="mt-1 flex flex-wrap items-center gap-4 text-[12px] text-[var(--muted)]">
@@ -62,7 +62,7 @@ export function MarketplaceToolbar() {
           <TextInput
             className="pl-9"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar en SkillsMP"
+            placeholder="Buscar skills o repos"
             value={query}
           />
         </div>

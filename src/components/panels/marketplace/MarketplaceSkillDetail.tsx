@@ -127,8 +127,8 @@ export function MarketplaceSkillDetail() {
           <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
             <DetailMeta
               icon={<StarIcon className="h-3.5 w-3.5" weight="fill" />}
-              label="Stars"
-              value={skill.stars !== null ? String(skill.stars) : "Sin stars"}
+              label="Installs"
+              value={skill.stars !== null ? String(skill.stars) : "Sin datos"}
             />
             <DetailMeta
               icon={<CalendarBlankIcon className="h-3.5 w-3.5" weight="bold" />}
@@ -253,7 +253,7 @@ export function MarketplaceSkillDetail() {
                 >
                   <div className="flex items-center gap-2">
                     <LinkSimpleIcon className="h-4 w-4 shrink-0 text-[var(--accent-strong)]" weight="bold" />
-                    <span>Abrir pagina en SkillsMP</span>
+                    <span>Abrir detalle en Skills API</span>
                   </div>
                   <p className="mt-2 break-all text-[12px] leading-5 text-[var(--muted)]">{skill.skillUrl}</p>
                 </a>
