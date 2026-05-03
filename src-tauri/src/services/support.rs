@@ -393,9 +393,14 @@ mod tests {
         let mut roots = Vec::new();
         extend_local_provider_roots(&mut roots, &workspace.path);
 
-        assert!(roots.contains(&workspace.path.to_string_lossy().into_owned()));
-        assert!(roots.contains(&local_agents.to_string_lossy().into_owned()));
-        assert!(roots.contains(&local_skills.to_string_lossy().into_owned()));
+        let normalized_roots = roots
+            .iter()
+            .map(|root| normalized_path_key(Path::new(root)))
+            .collect::<Vec<_>>();
+
+        assert!(normalized_roots.contains(&normalized_path_key(&workspace.path)));
+        assert!(normalized_roots.contains(&normalized_path_key(&local_agents)));
+        assert!(normalized_roots.contains(&normalized_path_key(&local_skills)));
     }
 
     #[test]
@@ -412,7 +417,9 @@ mod tests {
         let mut roots = Vec::new();
         extend_local_provider_roots_from_ancestors(&mut roots, &nested_runtime_dir);
 
-        assert!(roots.contains(&project_agents.to_string_lossy().into_owned()));
+        assert!(roots.iter().any(|root| {
+            normalized_path_key(Path::new(root)) == normalized_path_key(&project_agents)
+        }));
     }
 
     #[test]
