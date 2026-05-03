@@ -25,7 +25,10 @@ fn scan_tree_builds_directory_hierarchy_for_skills() {
 
     let root = &response.roots[0];
     assert_eq!(root.kind, "root");
-    assert_eq!(normalized_path_key(Path::new(&root.path)), normalized_path_key(&workspace.path));
+    assert_eq!(
+        normalized_path_key(Path::new(&root.path)),
+        normalized_path_key(&workspace.path)
+    );
 
     let group_node = root
         .children
@@ -43,7 +46,10 @@ fn scan_tree_builds_directory_hierarchy_for_skills() {
         .find(|node| node.kind == "skill" && node.name == "My Skill")
         .expect("expected skill leaf");
 
-    assert_eq!(normalized_path_key(Path::new(&skill_node.path)), normalized_path_key(&nested_skill_root));
+    assert_eq!(
+        normalized_path_key(Path::new(&skill_node.path)),
+        normalized_path_key(&nested_skill_root)
+    );
     assert_eq!(
         skill_node
             .skill
@@ -125,7 +131,14 @@ fn scan_tree_promotes_nested_skills_directory_to_root() {
     assert_eq!(root.kind, "root");
     assert_eq!(
         normalized_path_key(Path::new(&root.path)),
-        normalized_path_key(&workspace.path.join("projects").join("demo").join(".agents").join("skills"))
+        normalized_path_key(
+            &workspace
+                .path
+                .join("projects")
+                .join("demo")
+                .join(".agents")
+                .join("skills")
+        )
     );
     assert_eq!(root.name, "skills");
 
@@ -135,7 +148,10 @@ fn scan_tree_promotes_nested_skills_directory_to_root() {
         .find(|node| node.kind == "skill" && node.name == "Release Helper")
         .expect("expected promoted skill leaf");
 
-    assert_eq!(normalized_path_key(Path::new(&skill_node.path)), normalized_path_key(&skill_root));
+    assert_eq!(
+        normalized_path_key(Path::new(&skill_node.path)),
+        normalized_path_key(&skill_root)
+    );
 }
 
 struct TestWorkspace {
@@ -167,7 +183,10 @@ impl Drop for TestWorkspace {
 }
 
 fn normalized_path_key(path: &Path) -> String {
-    let mut normalized = path.to_string_lossy().replace('\\', "/").to_ascii_lowercase();
+    let mut normalized = path
+        .to_string_lossy()
+        .replace('\\', "/")
+        .to_ascii_lowercase();
 
     if let Some(stripped) = normalized.strip_prefix("//?/") {
         normalized = stripped.to_string();

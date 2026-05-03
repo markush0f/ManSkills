@@ -55,13 +55,11 @@ impl MarketplaceService {
                 .get(format!("{SKILLS_API_ROOT}/top"))
                 .query(&[("limit", normalized_limit.to_string())])
         } else {
-            self.client
-                .get(SKILLS_API_ROOT)
-                .query(&[
-                    ("query", normalized_query.clone()),
-                    ("page", normalized_page.to_string()),
-                    ("pageSize", normalized_limit.to_string()),
-                ])
+            self.client.get(SKILLS_API_ROOT).query(&[
+                ("query", normalized_query.clone()),
+                ("page", normalized_page.to_string()),
+                ("pageSize", normalized_limit.to_string()),
+            ])
         };
         request = request.header("User-Agent", USER_AGENT);
 
@@ -385,13 +383,19 @@ fn extract_total(payload: &Value) -> Option<u64> {
 }
 
 fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
-    let repository = read_first_string(skill, &["source", "repository", "repo", "fullName", "full_name"])
-        .or_else(|| read_nested_string(skill, &["github", "repository"]))
-        .unwrap_or_else(|| "unknown/unknown".to_string());
+    let repository = read_first_string(
+        skill,
+        &["source", "repository", "repo", "fullName", "full_name"],
+    )
+    .or_else(|| read_nested_string(skill, &["github", "repository"]))
+    .unwrap_or_else(|| "unknown/unknown".to_string());
     let slug = read_first_string(skill, &["skillId", "slug", "name"])
         .unwrap_or_else(|| repository.replace('/', "-"));
-    let name = read_first_string(skill, &["displayName", "name", "title", "skillName", "skill_name"])
-        .unwrap_or_else(|| slug.clone());
+    let name = read_first_string(
+        skill,
+        &["displayName", "name", "title", "skillName", "skill_name"],
+    )
+    .unwrap_or_else(|| slug.clone());
     let author = read_first_string(skill, &["author", "owner"])
         .or_else(|| read_nested_string(skill, &["author", "login"]))
         .or_else(|| read_nested_string(skill, &["owner", "login"]))
@@ -426,17 +430,12 @@ fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
     let github_url = read_first_string(skill, &["githubUrl"])
         .or_else(|| read_nested_string(skill, &["github", "url"]))
         .or_else(|| read_nested_string(skill, &["github", "treeUrl"]));
-    let skill_url = read_first_string(skill, &["skillUrl"])
-        .or(url)
-        .or_else(|| {
-            let mut segments = repository.split('/');
-            let owner = segments.next()?;
-            let repo = segments.next()?;
-            Some(format!(
-                "{SKILLS_API_ROOT}/{owner}/{repo}/{}",
-                slug
-            ))
-        });
+    let skill_url = read_first_string(skill, &["skillUrl"]).or(url).or_else(|| {
+        let mut segments = repository.split('/');
+        let owner = segments.next()?;
+        let repo = segments.next()?;
+        Some(format!("{SKILLS_API_ROOT}/{owner}/{repo}/{}", slug))
+    });
 
     Some(MarketplaceSkill {
         id,
@@ -454,10 +453,20 @@ fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
 
 fn parse_marketplace_source(source: &Value) -> Option<MarketplaceSource> {
     let source_path = read_first_string(source, &["source"])?;
-    let owner = read_first_string(source, &["owner"])
-        .unwrap_or_else(|| source_path.split('/').next().unwrap_or("unknown").to_string());
-    let repo = read_first_string(source, &["repo"])
-        .unwrap_or_else(|| source_path.split('/').nth(1).unwrap_or("unknown").to_string());
+    let owner = read_first_string(source, &["owner"]).unwrap_or_else(|| {
+        source_path
+            .split('/')
+            .next()
+            .unwrap_or("unknown")
+            .to_string()
+    });
+    let repo = read_first_string(source, &["repo"]).unwrap_or_else(|| {
+        source_path
+            .split('/')
+            .nth(1)
+            .unwrap_or("unknown")
+            .to_string()
+    });
     let skill_count = source.get("skillCount").and_then(read_u64).unwrap_or(0);
     let total_installs = source.get("totalInstalls").and_then(read_u64).unwrap_or(0);
 
@@ -737,9 +746,9 @@ impl MarketplaceService {
             return Err(map_api_error(status.as_u16(), &payload));
         }
 
-        let payload: SkillsApiFilesResponse = response
-            .json()
-            .map_err(|_| "La Skills API devolvio archivos no validos para esta skill.".to_string())?;
+        let payload: SkillsApiFilesResponse = response.json().map_err(|_| {
+            "La Skills API devolvio archivos no validos para esta skill.".to_string()
+        })?;
 
         if payload.files.is_empty() {
             return Err("La Skills API no devolvio archivos para esta skill.".to_string());
@@ -756,9 +765,8 @@ impl MarketplaceService {
             }
 
             let bytes = decode_skill_file_content(&file)?;
-            fs::write(destination, bytes).map_err(|_| {
-                "No se pudo escribir un archivo de la skill instalada.".to_string()
-            })?;
+            fs::write(destination, bytes)
+                .map_err(|_| "No se pudo escribir un archivo de la skill instalada.".to_string())?;
             file_count += 1;
         }
 
@@ -1109,7 +1117,9 @@ mod tests {
             slug: "example-skill".to_string(),
             name: "Example Skill".to_string(),
             github_url: Some("https://github.com/example/repo".to_string()),
-            skill_url: Some("http://localhost:3456/api/skills/example/repo/example-skill".to_string()),
+            skill_url: Some(
+                "http://localhost:3456/api/skills/example/repo/example-skill".to_string(),
+            ),
             remote_updated_at: Some("1710000000".to_string()),
             install_target: Some("codex".to_string()),
             install_collection: Some("team/tools".to_string()),
@@ -1190,10 +1200,10 @@ mod tests {
             author: "example".to_string(),
             stars: Some(42),
             updated_at: Some("1712345678".to_string()),
-            github_url: Some(
-                "https://github.com/example/repo".to_string(),
+            github_url: Some("https://github.com/example/repo".to_string()),
+            skill_url: Some(
+                "http://localhost:3456/api/skills/example/repo/example-skill".to_string(),
             ),
-            skill_url: Some("http://localhost:3456/api/skills/example/repo/example-skill".to_string()),
         }
     }
 

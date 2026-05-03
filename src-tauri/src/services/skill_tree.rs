@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::{Path, PathBuf}, time::Instant};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 use crate::{
     models::{SkillTreeResponse, SystemSkill, SystemSkillTreeNode},
