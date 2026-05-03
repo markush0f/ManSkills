@@ -1,30 +1,95 @@
-# Skills IDE
+# Forja IDE
 
-Desktop workbench built with Tauri, React, TypeScript and Monaco to inspect and edit AI skill folders found on disk.
+Desktop workbench for discovering, browsing, editing, and organizing AI skill folders stored on disk.
 
-## What It Does
+The app is built with Tauri, Rust, React, TypeScript, and Monaco. It is optimized for local-first workflows where skills live across workspace folders, provider directories, Windows paths, and WSL environments.
 
-- Scans the current workspace and supported provider locations for `SKILL.md` manifests.
-- Renders a navigable system skill tree without eagerly loading every file into the UI.
-- Loads skill files on demand, opens them in Monaco, and writes updates back through the Tauri backend.
-- Watches relevant skill roots and refreshes the tree when manifests or skill files change on disk.
-- Preserves dirty editor buffers when a background refresh happens.
+## Highlights
 
-## Architecture
+- Scans local skill roots for `SKILL.md` manifests.
+- Supports workspace skills, provider-managed skills, custom scan roots, and WSL home directories.
+- Groups skills into `System Skills`, `Global`, and `Providers` views in the sidebar.
+- Loads file trees and file contents lazily instead of hydrating every skill up front.
+- Preserves unsaved editor buffers during background refreshes.
+- Watches relevant roots and refreshes skill trees when files change on disk.
+- Lets you configure skill classification rules from `Settings > Skills`.
+- Lets you right-click skill folders to hide or show directories from discovery.
+- Includes early marketplace flows for searching, installing, updating, and uninstalling skills.
+
+## Core Features
+
+- Skill discovery across local workspace roots and provider directories.
+- Monaco-based editing for skill files.
+- Sidebar views for:
+  - open workspace files
+  - system skill tree
+  - global skill roots
+  - provider buckets
+- Search and filtering for large skill collections.
+- Skill settings for:
+  - global roots
+  - provider directories
+  - hidden directories
+  - custom scan roots
+- File reveal actions from the UI.
+- Marketplace state and install target preferences.
+
+## Skill Discovery
+
+By default, the app keeps scan roots intentionally scoped. It does not scan an entire home directory blindly.
+
+Discovery includes:
+
+- current workspace and ancestor-local skill folders
+- supported provider locations under user home directories
+- configured custom scan roots
+- Windows provider paths
+- WSL distributions discovered through `\\wsl$` and `\\wsl.localhost`
+
+The classification settings are persisted in:
+
+- `~/.config/skills-ide/skill-classification.json`
+
+Those settings extend and control how the app interprets:
+
+- which roots count as global
+- which directory names count as providers
+- which directories should be skipped entirely
+- which extra filesystem roots should be scanned
+
+## Project Structure
 
 - `src-tauri/`
-  Tauri commands and Rust services for scan, tree building, lazy file listing, file loading, file saving and filesystem watching.
-- `src/hooks/`
-  Frontend state split by domain: workspace files, system skill discovery, editor preferences and the composed IDE facade.
+  Rust backend for scanning, tree building, file listing, file loading, file saving, watching, marketplace operations, and Tauri commands.
 - `src/components/`
-  Workbench layout, sidebar, settings surface and editor workspace.
-- `src/ide/systemSkills.ts`
-  Shared frontend helpers for system skill file ids, tree hydration and safe merge behavior for refreshed files.
+  Workbench UI, sidebar, settings, marketplace panels, and editor-facing components.
+- `src/hooks/`
+  Frontend state orchestration for workspace files, system skills, marketplace, preferences, and settings.
+- `src/settings/`
+  Settings screens and configuration-specific UI.
+- `src/ide/`
+  Shared frontend helpers for system skill file ids, hydration, and merge behavior.
 
-## Commands
+## Getting Started
+
+1. Install the standard Tauri prerequisites for your OS.
+2. Install Node.js and the Rust toolchain.
+3. Install dependencies:
+
+```bash
+npm install
+```
+
+4. Start the desktop app:
+
+```bash
+npm run tauri dev
+```
+
+## Scripts
 
 - `npm run dev`
-  Start the Vite frontend.
+  Start the Vite frontend only.
 - `npm run tauri dev`
   Start the desktop app in Tauri dev mode.
 - `npm run typecheck`
@@ -32,7 +97,7 @@ Desktop workbench built with Tauri, React, TypeScript and Monaco to inspect and 
 - `npm run lint`
   Run ESLint on the frontend codebase.
 - `npm run test:ui`
-  Run Vitest tests for the React app.
+  Run Vitest UI tests.
 - `npm run test:rust`
   Run Rust tests in `src-tauri`.
 - `npm run test`
@@ -40,15 +105,18 @@ Desktop workbench built with Tauri, React, TypeScript and Monaco to inspect and 
 - `npm run build`
   Typecheck and build the frontend bundle.
 
-## Current Scope
+## Development Notes
 
-- The app is focused on local skill discovery and editing.
-- Marketplace work is intentionally out of scope in this phase.
-- Create, rename and delete flows are not implemented yet.
-- Skill file nodes are listed lazily per skill; file contents are only loaded when a skill is opened.
+- Skill refreshes are debounced to avoid flooding the UI.
+- File contents are loaded on demand when a skill is opened.
+- Background refreshes update saved content without clobbering unsaved drafts.
+- Hidden directories are applied both to scanning and skill file listing.
+- Sidebar folder actions can write directly into the hidden-directory settings.
+- The external API layer is still in progress, so some integrations are intentionally incomplete.
 
-## Notes
+## Current Limitations
 
-- Default scan roots are intentionally scoped to the workspace and provider-specific directories, not the whole home directory.
-- Skill refreshes are debounced from the watcher to avoid flooding the UI.
-- Background refreshes update saved content without overwriting unsaved editor drafts.
+- Create, rename, and delete flows for skills are still limited.
+- Discovery rules are configurable, but they are still convention-driven around `SKILL.md` manifests.
+- The API is still in progress, especially around broader marketplace and server-backed workflows.
+- The product surface is broader than the README used to reflect, so some areas are still evolving quickly.
