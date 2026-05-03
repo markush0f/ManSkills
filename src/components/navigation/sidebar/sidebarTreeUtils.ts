@@ -1,5 +1,23 @@
-import type { IdeFile, SystemSkill, SystemSkillTreeNode, TreeNode } from "../../../types";
+import type {
+  IdeFile,
+  SkillClassificationSettings,
+  SystemSkill,
+  SystemSkillTreeNode,
+  TreeNode,
+} from "../../../types";
 import { findProviderAsset, findSpecialFolderAsset } from "../../../constants/provider-assets";
+
+const DEFAULT_GLOBAL_ROOTS = [
+  ".agents",
+  ".codex",
+  ".claude",
+  ".cursor",
+  ".windsurf",
+  ".roo",
+  ".gemini",
+  ".kiro",
+  ".goose",
+];
 
 export function getFileTone(language?: IdeFile["language"]) {
   if (language === "md") {
@@ -176,7 +194,11 @@ const PROVIDER_ORDER_INDEX = new Map<string, number>(
   PROVIDER_ORDER.map((key, index) => [key, index] as const),
 );
 
-export function buildProviderSkillGroups(skills: SystemSkill[], query: string): ProviderSkillGroup[] {
+export function buildProviderSkillGroups(
+  skills: SystemSkill[],
+  query: string,
+  skillClassificationSettings?: SkillClassificationSettings,
+): ProviderSkillGroup[] {
   const grouped = new Map<
     string,
     {
@@ -188,8 +210,8 @@ export function buildProviderSkillGroups(skills: SystemSkill[], query: string): 
   >();
 
   for (const skill of skills) {
-    const provider = detectSkillProvider(skill);
-    const folder = detectSkillFolder(skill);
+    const provider = detectSkillProvider(skill, skillClassificationSettings);
+    const folder = detectSkillFolder(skill, skillClassificationSettings);
     const existing = grouped.get(provider.key) ?? {
       key: provider.key,
       label: provider.label,
@@ -277,31 +299,33 @@ export function buildProviderSkillGroups(skills: SystemSkill[], query: string): 
   return groups;
 }
 
-export function classifySystemSkillSection(skill: SystemSkill): SystemSkillSection {
-  return describeSystemSkillLocation(skill).section;
+export function classifySystemSkillSection(
+  skill: SystemSkill,
+  skillClassificationSettings?: SkillClassificationSettings,
+): SystemSkillSection {
+  return describeSystemSkillLocation(skill, skillClassificationSettings).section;
 }
 
-export function describeSystemSkillLocation(skill: SystemSkill): SystemSkillLocation {
+export function describeSystemSkillLocation(
+  skill: SystemSkill,
+  skillClassificationSettings?: SkillClassificationSettings,
+): SystemSkillLocation {
   const containerPath = deriveSkillContainerPath(skill.rootPath);
-  const section = detectFolderSection(containerPath);
+  const section = detectFolderSection(containerPath, skillClassificationSettings);
   if (section === "global") {
-    const globalLocation = buildSkillFolderGroup(containerPath, "global");
-    if (
-      skill.gitRepositoryRootPath
-      && globalLocation.globalRootPath
-      && isPathWithinRoot(globalLocation.globalRootPath, skill.gitRepositoryRootPath)
-    ) {
-      return buildSkillFolderGroup(skill.gitRepositoryRootPath, "project");
+    const globalLocation = buildSkillFolderGroup(containerPath, "global", skillClassificationSettings);
+    if (skill.gitRepositoryRootPath && isPathWithinRoot(containerPath, skill.gitRepositoryRootPath)) {
+      return buildSkillFolderGroup(skill.gitRepositoryRootPath, "project", skillClassificationSettings);
     }
 
     return globalLocation;
   }
 
   if (skill.gitRepositoryRootPath) {
-    return buildSkillFolderGroup(skill.gitRepositoryRootPath, "project");
+    return buildSkillFolderGroup(skill.gitRepositoryRootPath, "project", skillClassificationSettings);
   }
 
-  return buildSkillFolderGroup(containerPath, "project");
+  return buildSkillFolderGroup(containerPath, "project", skillClassificationSettings);
 }
 
 export function filterSystemSkillTreeBySection(
@@ -327,7 +351,10 @@ export function filterSystemSkillTreeBySection(
     .filter((node): node is SystemSkillTreeNode => node !== null);
 }
 
-export function buildProjectSystemSkillTree(nodes: SystemSkillTreeNode[]): SystemSkillTreeNode[] {
+export function buildProjectSystemSkillTree(
+  nodes: SystemSkillTreeNode[],
+  skillClassificationSettings?: SkillClassificationSettings,
+): SystemSkillTreeNode[] {
   const projectRoots = new Map<string, SystemSkillTreeNode>();
 
   for (const skillNode of collectSkillNodes(nodes)) {
@@ -336,7 +363,7 @@ export function buildProjectSystemSkillTree(nodes: SystemSkillTreeNode[]): Syste
       continue;
     }
 
-    const location = describeSystemSkillLocation(skill);
+    const location = describeSystemSkillLocation(skill, skillClassificationSettings);
     if (location.section !== "project") {
       continue;
     }
@@ -359,7 +386,10 @@ export function buildProjectSystemSkillTree(nodes: SystemSkillTreeNode[]): Syste
   return sortSystemTreeNodes([...projectRoots.values()]);
 }
 
-export function buildGlobalSystemSkillTree(nodes: SystemSkillTreeNode[]): SystemSkillTreeNode[] {
+export function buildGlobalSystemSkillTree(
+  nodes: SystemSkillTreeNode[],
+  skillClassificationSettings?: SkillClassificationSettings,
+): SystemSkillTreeNode[] {
   const globalRoots = new Map<string, SystemSkillTreeNode>();
 
   for (const skillNode of collectSkillNodes(nodes)) {
@@ -368,7 +398,7 @@ export function buildGlobalSystemSkillTree(nodes: SystemSkillTreeNode[]): System
       continue;
     }
 
-    const location = describeSystemSkillLocation(skill);
+    const location = describeSystemSkillLocation(skill, skillClassificationSettings);
     if (location.section !== "global" || !location.globalRootLabel || !location.globalRootPath) {
       continue;
     }
@@ -416,9 +446,17 @@ export function buildGlobalSystemSkillTree(nodes: SystemSkillTreeNode[]): System
   return sortSystemTreeNodes([...globalRoots.values()]);
 }
 
-function detectSkillProvider(skill: SystemSkill): { key: string; label: string; assetPath: string | null } {
+function detectSkillProvider(
+  skill: SystemSkill,
+  skillClassificationSettings?: SkillClassificationSettings,
+): { key: string; label: string; assetPath: string | null } {
   const normalizedPath = skill.rootPath.replace(/\\/g, "/");
   const pathSegments = normalizedPath.split("/").filter(Boolean);
+
+  const customProvider = findCustomProviderDirectory(pathSegments, skillClassificationSettings);
+  if (customProvider) {
+    return customProvider;
+  }
 
   for (let index = pathSegments.length - 1; index >= 0; index -= 1) {
     const segment = pathSegments[index];
@@ -451,7 +489,7 @@ function detectSkillProvider(skill: SystemSkill): { key: string; label: string; 
   return { key: "other", label: "Other", assetPath: null };
 }
 
-function detectSkillFolder(skill: SystemSkill): {
+function detectSkillFolder(skill: SystemSkill, skillClassificationSettings?: SkillClassificationSettings): {
   key: string;
   label: string;
   path: string;
@@ -460,13 +498,17 @@ function detectSkillFolder(skill: SystemSkill): {
   globalRootPath: string | null;
   globalRelativePath: string | null;
 } {
-  return describeSystemSkillLocation(skill);
+  return describeSystemSkillLocation(skill, skillClassificationSettings);
 }
 
-function buildSkillFolderGroup(path: string, section: SystemSkillSection): SystemSkillLocation {
+function buildSkillFolderGroup(
+  path: string,
+  section: SystemSkillSection,
+  skillClassificationSettings?: SkillClassificationSettings,
+): SystemSkillLocation {
   const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$/, "");
   const parts = normalizedPath.split("/").filter(Boolean);
-  const globalInfo = section === "global" ? describeGlobalPath(normalizedPath) : null;
+  const globalInfo = section === "global" ? describeGlobalPath(normalizedPath, skillClassificationSettings) : null;
   const label = section === "global"
     ? globalInfo?.displayLabel || compactDisplayPath(parts) || parts[parts.length - 1] || path
     : compactDisplayPath(parts) || parts[parts.length - 1] || path;
@@ -482,12 +524,13 @@ function buildSkillFolderGroup(path: string, section: SystemSkillSection): Syste
   };
 }
 
-function detectFolderSection(path: string): SystemSkillSection {
+function detectFolderSection(path: string, skillClassificationSettings?: SkillClassificationSettings): SystemSkillSection {
   const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$/, "");
   const parts = normalizeDisplayParts(normalizedPath.split("/").filter(Boolean));
   const relevantParts = stripHomePrefix(parts);
+  const globalRoots = effectiveGlobalRoots(skillClassificationSettings);
 
-  return relevantParts.some((part) => part.startsWith(".")) ? "global" : "project";
+  return relevantParts.some((part) => globalRoots.has(part.toLowerCase())) ? "global" : "project";
 }
 
 function deriveSkillContainerPath(path: string) {
@@ -535,18 +578,7 @@ function deriveCompactRootDisplayFromSkillsPath(path: string, fallbackName: stri
 
 function compactDisplayPath(parts: string[]) {
   const normalizedParts = normalizeDisplayParts(parts);
-  let startIndex = 0;
-
-  if (normalizedParts[0] && /^[a-z]:$/i.test(normalizedParts[0])) {
-    startIndex = 1;
-  }
-
-  const homeContainer = normalizedParts[startIndex]?.toLowerCase();
-  if ((homeContainer === "users" || homeContainer === "home") && normalizedParts.length > startIndex + 1) {
-    startIndex += 1;
-  }
-
-  return normalizedParts.slice(startIndex).join("/");
+  return normalizedParts.slice(resolveHomeDisplayStartIndex(normalizedParts)).join("/");
 }
 
 function getProjectDisplayName(path: string) {
@@ -561,11 +593,12 @@ function getProjectDisplayName(path: string) {
   return compactDisplayPath(parts) || path;
 }
 
-function describeGlobalPath(path: string) {
+function describeGlobalPath(path: string, skillClassificationSettings?: SkillClassificationSettings) {
   const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$/, "");
   const parts = normalizeDisplayParts(normalizedPath.split("/").filter(Boolean));
   const homeRelativeParts = stripHomePrefix(parts);
-  const hiddenRootIndex = homeRelativeParts.findIndex((part) => part.startsWith("."));
+  const globalRoots = effectiveGlobalRoots(skillClassificationSettings);
+  const hiddenRootIndex = homeRelativeParts.findIndex((part) => globalRoots.has(part.toLowerCase()));
 
   if (hiddenRootIndex < 0) {
     return null;
@@ -592,18 +625,66 @@ function describeGlobalPath(path: string) {
 }
 
 function stripHomePrefix(parts: string[]) {
-  let startIndex = 0;
+  return parts.slice(resolveHomeRelativeStartIndex(parts));
+}
 
+function resolveHomeDisplayStartIndex(parts: string[]) {
   if (parts[0] && /^[a-z]:$/i.test(parts[0])) {
-    startIndex = 1;
+    const homeContainer = parts[1]?.toLowerCase();
+    if ((homeContainer === "users" || homeContainer === "home") && parts.length > 2) {
+      return 2;
+    }
+
+    return 1;
   }
 
-  const homeContainer = parts[startIndex]?.toLowerCase();
-  if ((homeContainer === "users" || homeContainer === "home") && parts.length > startIndex + 1) {
-    startIndex += 2;
+  if (isWslHost(parts[0])) {
+    const homeContainer = parts[2]?.toLowerCase();
+    if ((homeContainer === "home" || homeContainer === "root") && parts.length > 3) {
+      return 3;
+    }
+
+    return 2;
   }
 
-  return parts.slice(startIndex);
+  const homeContainer = parts[0]?.toLowerCase();
+  if ((homeContainer === "users" || homeContainer === "home") && parts.length > 1) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function resolveHomeRelativeStartIndex(parts: string[]) {
+  if (parts[0] && /^[a-z]:$/i.test(parts[0])) {
+    const homeContainer = parts[1]?.toLowerCase();
+    if ((homeContainer === "users" || homeContainer === "home") && parts.length > 2) {
+      return 3;
+    }
+
+    return 1;
+  }
+
+  if (isWslHost(parts[0])) {
+    const homeContainer = parts[2]?.toLowerCase();
+    if ((homeContainer === "home" || homeContainer === "root") && parts.length > 3) {
+      return 4;
+    }
+
+    return 2;
+  }
+
+  const homeContainer = parts[0]?.toLowerCase();
+  if ((homeContainer === "users" || homeContainer === "home") && parts.length > 1) {
+    return 2;
+  }
+
+  return 0;
+}
+
+function isWslHost(value?: string) {
+  const normalized = value?.toLowerCase();
+  return normalized === "wsl$" || normalized === "wsl.localhost";
 }
 
 function normalizeDisplayParts(parts: string[]) {
@@ -614,20 +695,75 @@ function normalizeDisplayParts(parts: string[]) {
   return parts;
 }
 
+function effectiveGlobalRoots(skillClassificationSettings?: SkillClassificationSettings) {
+  const roots = skillClassificationSettings ? skillClassificationSettings.globalRoots : DEFAULT_GLOBAL_ROOTS;
+  return new Set(
+    roots
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)
+      .map((value) => (value.startsWith(".") ? value : `.${value}`)),
+  );
+}
+
+function findCustomProviderDirectory(
+  pathSegments: string[],
+  skillClassificationSettings?: SkillClassificationSettings,
+) {
+  const customProviders = new Set(
+    (skillClassificationSettings?.providerDirectories ?? [])
+      .map((value) => value.trim().toLowerCase().replace(/^[./\\]+/, ""))
+      .filter(Boolean),
+  );
+
+  if (customProviders.size === 0) {
+    return null;
+  }
+
+  for (let index = pathSegments.length - 1; index >= 0; index -= 1) {
+    const segment = pathSegments[index]?.trim().toLowerCase().replace(/^[./\\]+/, "");
+    if (!segment || !customProviders.has(segment)) {
+      continue;
+    }
+
+    return {
+      assetPath: null,
+      key: segment,
+      label: segment
+        .split(/[-_\s]+/)
+        .filter(Boolean)
+        .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+        .join(" "),
+    };
+  }
+
+  return null;
+}
+
 function buildPathFromParts(parts: string[], originalPath: string) {
   if (parts.length === 0) {
     return originalPath;
   }
 
-  if (/^[a-z]:$/i.test(parts[0] ?? "")) {
-    return parts.join("/");
+  const normalizedOriginalPath = originalPath.replace(/\\/g, "/");
+  const normalizedParts = parts[0] === "?" ? parts.slice(1) : parts;
+
+  if (/^[a-z]:$/i.test(normalizedParts[0] ?? "")) {
+    return normalizedParts.join("/");
+  }
+
+  if (normalizedOriginalPath.startsWith("//?/")) {
+    return `//?/${normalizedParts.join("/")}`;
+  }
+
+  if (normalizedOriginalPath.startsWith("//")) {
+    return `//${normalizedParts.join("/")}`;
   }
 
   if (originalPath.includes("\\")) {
-    return parts.join("\\");
+    return normalizedParts.join("\\");
   }
 
-  return originalPath.startsWith("/") ? `/${parts.join("/")}` : parts.join("/");
+  return normalizedOriginalPath.startsWith("/") ? `/${normalizedParts.join("/")}` : normalizedParts.join("/");
 }
 
 function mergeProjectRoots(nodes: SystemSkillTreeNode[]) {

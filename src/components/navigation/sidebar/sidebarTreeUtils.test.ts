@@ -7,6 +7,13 @@ import {
   reshapeSystemSkillRootsForDisplay,
 } from "./sidebarTreeUtils";
 
+const customSkillSettings = {
+  customScanRoots: [],
+  globalRoots: [".markus"],
+  hiddenDirectories: [],
+  providerDirectories: ["markus"],
+};
+
 test("compacts system skill roots into a single display path", () => {
   const nodes = reshapeSystemSkillRootsForDisplay([
     createSkillsRoot("root:claude", "C:/Users/abram/.claude/skills", [createSkillNode("claude-skill")]),
@@ -190,6 +197,69 @@ test("strips windows extended path prefixes from compact global labels", () => {
   expect(groups[0]?.folders[0]?.label).toBe(".codex/tmp/plugins/plugins/codex-cache");
   expect(groups[0]?.folders[0]?.globalRootLabel).toBe(".codex");
   expect(groups[0]?.folders[0]?.globalRelativePath).toBe("tmp/plugins/plugins/codex-cache");
+});
+
+test("classifies configured custom global roots as global", () => {
+  expect(
+    classifySystemSkillSection(
+      createSystemSkill("global-markus", {
+        rootPath: "C:/Users/abram/.markus/skills/global-markus",
+      }),
+      customSkillSettings,
+    ),
+  ).toBe("global");
+});
+
+test("groups configured provider directories under a custom provider label", () => {
+  const groups = buildProviderSkillGroups(
+    [
+      createSystemSkill("markus-helper", {
+        rootPath: "C:/Users/abram/projects/markus/skills/markus-helper",
+        gitRepositoryRootPath: "C:/Users/abram/projects/markus",
+      }),
+    ],
+    "",
+    customSkillSettings,
+  );
+
+  expect(groups).toHaveLength(1);
+  expect(groups[0]?.key).toBe("markus");
+  expect(groups[0]?.label).toBe("Markus");
+});
+
+test("classifies WSL global skill paths as global with compact labels", () => {
+  const groups = buildProviderSkillGroups(
+    [
+      createSystemSkill("claude-wsl", {
+        rootPath: "//wsl$/Ubuntu/home/abram/.claude/skills/claude-wsl",
+      }),
+    ],
+    "",
+  );
+
+  expect(groups).toHaveLength(1);
+  expect(groups[0]?.folders[0]?.label).toBe(".claude");
+  expect(groups[0]?.folders[0]?.globalRootLabel).toBe(".claude");
+  expect(classifySystemSkillSection(createSystemSkill("claude-wsl", {
+    rootPath: "//wsl$/Ubuntu/home/abram/.claude/skills/claude-wsl",
+  }))).toBe("global");
+});
+
+test("compacts WSL project paths using the distro home prefix", () => {
+  const groups = buildProviderSkillGroups(
+    [
+      createSystemSkill("project-agent", {
+        source: "workspace",
+        rootPath: "//wsl.localhost/Ubuntu/home/abram/project-one/.agents/skills/project-agent",
+        gitRepositoryRootPath: "//wsl.localhost/Ubuntu/home/abram/project-one",
+      }),
+    ],
+    "",
+  );
+
+  expect(groups).toHaveLength(1);
+  expect(groups[0]?.folders[0]?.label).toBe("abram/project-one");
+  expect(groups[0]?.folders[0]?.section).toBe("project");
 });
 
 function createSkillsRoot(id: string, path: string, children: SystemSkillTreeNode[]): SystemSkillTreeNode {

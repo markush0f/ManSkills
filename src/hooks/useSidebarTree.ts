@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useSkillClassificationState } from "../contexts/SkillClassificationContext";
 import type { SystemSkill, SystemSkillTreeNode } from "../types";
 import { useUiShell } from "../contexts/UiShellContext";
 import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
@@ -57,6 +58,7 @@ export function useSidebarTree() {
   const { uiState, updateUiState } = useUiShell();
   const { files, tree } = useWorkspaceState();
   const { systemSkillTree, systemSkills } = useSystemSkillsState();
+  const { skillClassificationSettings } = useSkillClassificationState();
   const { preferences } = useIdePreferences();
   const [expandedSystemSkillNodeIds, setExpandedSystemSkillNodeIds] = useState<Set<string>>(
     () => new Set(uiState.sidebar.expandedSystemSkillNodeIds),
@@ -80,12 +82,12 @@ export function useSidebarTree() {
     [deferredQuery, systemSkillTree, preferences.systemSkillsOnlyGitProjects],
   );
   const filteredSystemSkillTree = useMemo(
-    () => buildProjectSystemSkillTree(baseFilteredSystemSkillTree),
-    [baseFilteredSystemSkillTree],
+    () => buildProjectSystemSkillTree(baseFilteredSystemSkillTree, skillClassificationSettings),
+    [baseFilteredSystemSkillTree, skillClassificationSettings],
   );
   const filteredGlobalSkillTree = useMemo(
-    () => buildGlobalSystemSkillTree(baseFilteredSystemSkillTree),
-    [baseFilteredSystemSkillTree],
+    () => buildGlobalSystemSkillTree(baseFilteredSystemSkillTree, skillClassificationSettings),
+    [baseFilteredSystemSkillTree, skillClassificationSettings],
   );
   const filteredTree = useMemo(
     () => filterTreeNodes(tree, fileById, deferredQuery),
@@ -97,8 +99,8 @@ export function useSidebarTree() {
     [systemSkills, preferences.systemSkillsOnlyGitProjects],
   );
   const providerSkillGroups = useMemo(
-    () => buildProviderSkillGroups(filteredSkillsForProviders, deferredQuery),
-    [deferredQuery, filteredSkillsForProviders],
+    () => buildProviderSkillGroups(filteredSkillsForProviders, deferredQuery, skillClassificationSettings),
+    [deferredQuery, filteredSkillsForProviders, skillClassificationSettings],
   );
   const searchActive = deferredQuery.trim().length > 0;
   const hasWorkspaceFiles = files.length > 0;
