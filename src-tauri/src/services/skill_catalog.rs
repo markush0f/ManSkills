@@ -10,9 +10,9 @@ use std::{
 use crate::{
     models::{MarketplaceInstallMetadata, SkillScanResponse, SystemSkill},
     services::support::{
-        build_scan_roots, classify_source, is_summary_candidate,
-        should_skip_directory, slugify_path, normalized_path_key, SKILL_MANIFEST_NAME,
-        SkillPreview, DEFAULT_SUMMARY, MAX_RESULTS, PREVIEW_BYTES,
+        build_scan_roots, build_skip_directory_names, classify_source, is_summary_candidate,
+        normalized_path_key, should_skip_directory, slugify_path, SkillPreview, DEFAULT_SUMMARY,
+        MAX_RESULTS, PREVIEW_BYTES, SKILL_MANIFEST_NAME,
     },
 };
 
@@ -65,13 +65,14 @@ impl SkillCatalogService {
 
     fn discover_skills(&self, roots: &[PathBuf]) -> Result<Vec<SystemSkill>, String> {
         let mut results = HashMap::<String, SystemSkill>::new();
+        let skip_directory_names = build_skip_directory_names();
 
         for root in roots {
             if results.len() >= MAX_RESULTS {
                 break;
             }
 
-            scan_root_directories(root, &mut results);
+            scan_root_directories(root, &skip_directory_names, &mut results);
         }
 
         Ok(results.values().cloned().collect())
@@ -155,6 +156,7 @@ fn read_marketplace_install_metadata(root_path: &Path) -> Option<MarketplaceInst
 
 fn scan_root_directories(
     root: &Path,
+    skip_directory_names: &HashSet<String>,
     results: &mut HashMap<String, SystemSkill>,
 ) {
     let mut stack = vec![root.to_path_buf()];
@@ -165,7 +167,7 @@ fn scan_root_directories(
             continue;
         }
 
-        if should_skip_directory(&current_dir) {
+        if should_skip_directory(&current_dir, skip_directory_names) {
             continue;
         }
 
