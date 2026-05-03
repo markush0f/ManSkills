@@ -1,4 +1,4 @@
-use std::{path::Path, time::Instant};
+use std::{collections::HashMap, path::{Path, PathBuf}, time::Instant};
 
 use crate::{
     models::{SkillTreeResponse, SystemSkill, SystemSkillTreeNode},
@@ -36,25 +36,16 @@ impl Default for SkillTreeService {
 }
 
 fn build_tree(scanned_roots: &[String], skills: Vec<SystemSkill>) -> Vec<SystemSkillTreeNode> {
-    let mut roots = scanned_roots
-        .iter()
-        .map(|root| SystemSkillTreeNode {
-            id: format!("root:{root}"),
-            name: node_name(Path::new(root), root),
-            path: root.clone(),
-            kind: "root".to_string(),
-            skill: None,
-            file: None,
-            children: Vec::new(),
-        })
-        .collect::<Vec<_>>();
+    let mut roots = Vec::<SystemSkillTreeNode>::new();
+    let mut root_indexes = HashMap::<String, usize>::new();
 
     for skill in skills {
-        let Some(root_index) = find_best_root_index(scanned_roots, &skill.root_path) else {
+        let Some(root_path) = find_best_root_path(scanned_roots, &skill.root_path) else {
             continue;
         };
 
-        let scan_root = Path::new(&scanned_roots[root_index]);
+        let root_index = ensure_root(&mut roots, &mut root_indexes, &root_path);
+        let scan_root = Path::new(&root_path);
         let skill_root_path = skill.root_path.clone();
         let skill_root = Path::new(&skill_root_path);
         let Ok(relative_path) = skill_root.strip_prefix(scan_root) else {
@@ -67,6 +58,29 @@ fn build_tree(scanned_roots: &[String], skills: Vec<SystemSkill>) -> Vec<SystemS
     roots.retain(|root| !root.children.is_empty());
     sort_tree_nodes(&mut roots);
     roots
+}
+
+fn ensure_root(
+    roots: &mut Vec<SystemSkillTreeNode>,
+    root_indexes: &mut HashMap<String, usize>,
+    root_path: &str,
+) -> usize {
+    if let Some(index) = root_indexes.get(root_path).copied() {
+        return index;
+    }
+
+    let index = roots.len();
+    roots.push(SystemSkillTreeNode {
+        id: format!("root:{root_path}"),
+        name: node_name(Path::new(root_path), root_path),
+        path: root_path.to_string(),
+        kind: "root".to_string(),
+        skill: None,
+        file: None,
+        children: Vec::new(),
+    });
+    root_indexes.insert(root_path.to_string(), index);
+    index
 }
 
 fn insert_skill(root: &mut SystemSkillTreeNode, relative_path: &Path, skill: SystemSkill) {
@@ -125,22 +139,46 @@ fn skill_leaf_node(skill: SystemSkill) -> SystemSkillTreeNode {
     }
 }
 
-fn find_best_root_index(scanned_roots: &[String], skill_root_path: &str) -> Option<usize> {
+fn find_best_root_path(scanned_roots: &[String], skill_root_path: &str) -> Option<String> {
     let skill_root = Path::new(skill_root_path);
 
-    scanned_roots
+    let best_scan_root = scanned_roots
         .iter()
-        .enumerate()
-        .filter_map(|(index, root)| {
+        .filter_map(|root| {
             let root_path = Path::new(root);
             if skill_root.starts_with(root_path) {
-                Some((index, component_count(root_path)))
+                Some((root.as_str(), component_count(root_path)))
             } else {
                 None
             }
         })
         .max_by_key(|(_, depth)| *depth)
-        .map(|(index, _)| index)
+        .map(|(root, _)| root.to_string())?;
+
+    let best_scan_root_path = Path::new(&best_scan_root);
+
+    if let Some(skills_container_root) = find_nearest_skills_container_root(skill_root) {
+        if skill_root.starts_with(&skills_container_root)
+            && component_count(&skills_container_root) > component_count(best_scan_root_path)
+        {
+            return Some(skills_container_root.to_string_lossy().into_owned());
+        }
+    }
+
+    Some(best_scan_root)
+}
+
+fn find_nearest_skills_container_root(skill_root: &Path) -> Option<PathBuf> {
+    skill_root
+        .ancestors()
+        .find(|ancestor| {
+            ancestor
+                .file_name()
+                .and_then(|value| value.to_str())
+                .map(|value| value.eq_ignore_ascii_case("skills"))
+                .unwrap_or(false)
+        })
+        .map(Path::to_path_buf)
 }
 
 fn component_count(path: &Path) -> usize {
