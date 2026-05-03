@@ -21,6 +21,7 @@ export const DEFAULT_IDE_PREFERENCES: IdePreferences = {
   saveShortcut: "mod+s",
   scrollBeyondLastLine: false,
   smoothScrolling: true,
+  systemSkillsOnlyGitProjects: false,
   tabSize: 4,
 };
 

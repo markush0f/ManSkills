@@ -1,5 +1,6 @@
 import { GearSixIcon } from "@phosphor-icons/react/dist/csr/GearSix";
 import { BagSimpleIcon } from "@phosphor-icons/react/dist/csr/BagSimple";
+import { FunnelSimpleIcon } from "@phosphor-icons/react/dist/csr/FunnelSimple";
 import type { ReactNode } from "react";
 import { useIde } from "../../../contexts/IdeContext";
 
@@ -52,8 +53,12 @@ function FooterButton({
 
 export function SidebarFooter({
   placement = "footer",
+  onOpenFilters,
+  filtersActive = false,
 }: {
   placement?: "footer" | "header";
+  onOpenFilters?: () => void;
+  filtersActive?: boolean;
 }) {
   const { isMarketplaceView, isSettingsView, openMarketplace, openSettings } = useIde();
   const isHeader = placement === "header";
@@ -69,10 +74,20 @@ export function SidebarFooter({
       <div
         className={
           isHeader
-            ? "flex w-[72px] items-center justify-end gap-1"
+            ? "flex items-center justify-end gap-1"
             : "flex items-center justify-center gap-2 rounded-[12px] border border-white/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.01))] p-1.5"
         }
       >
+        {onOpenFilters && (
+          <FooterButton
+            active={filtersActive}
+            icon={<FunnelSimpleIcon className="h-[18px] w-[18px]" weight="duotone" />}
+            label="Filtros"
+            onClick={onOpenFilters}
+            placement={placement}
+            tone="accent"
+          />
+        )}
         <FooterButton
           active={isMarketplaceView}
           icon={<BagSimpleIcon className="h-[18px] w-[18px]" weight="duotone" />}
