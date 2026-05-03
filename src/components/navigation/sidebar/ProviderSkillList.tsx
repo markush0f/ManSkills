@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState, type ReactNode } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import type { SystemSkill } from "../../../types";
+import { ContextMenu } from "../../shared/ContextMenu";
 import { ExpandIcon, FolderNodeIcon, SkillNodeIcon } from "./SidebarTreeIcons";
-import type { ProviderSkillGroup } from "./sidebarTreeUtils";
+import type { ProviderSkillFolderGroup, ProviderSkillGroup } from "./sidebarTreeUtils";
 
 type ProviderSkillListProps = {
   compact: boolean;
@@ -17,41 +20,14 @@ export function ProviderSkillList({
   searchActive,
 }: ProviderSkillListProps) {
   const [expandedProviderIds, setExpandedProviderIds] = useState<Set<string>>(
-    () => new Set(groups.map((group) => group.key)),
+    () => new Set(),
   );
   const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(
-    () =>
-      new Set(
-        groups.flatMap((group) =>
-          group.folders.map((folder) => `${group.key}:${folder.key}`),
-        ),
-      ),
+    () => new Set(),
   );
-
-  useEffect(() => {
-    setExpandedProviderIds((current) => {
-      const next = new Set(current);
-      for (const group of groups) {
-        if (!next.has(group.key)) {
-          next.add(group.key);
-        }
-      }
-      return next;
-    });
-
-    setExpandedFolderIds((current) => {
-      const next = new Set(current);
-      for (const group of groups) {
-        for (const folder of group.folders) {
-          const id = `${group.key}:${folder.key}`;
-          if (!next.has(id)) {
-            next.add(id);
-          }
-        }
-      }
-      return next;
-    });
-  }, [groups]);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string } | null>(
+    null,
+  );
 
   function toggleProvider(providerKey: string) {
     setExpandedProviderIds((current) => {
@@ -78,92 +54,231 @@ export function ProviderSkillList({
     });
   }
 
-  return (
-    <div className="space-y-1.5">
-      {groups.map((group) => (
-        <div key={group.key} className="space-y-1">
+  function renderSkillRows(skills: SystemSkill[], depth: number) {
+    return (
+      <div className="space-y-1">
+        {skills.map((skill) => (
           <button
-            className={`flex w-full items-center gap-2 rounded-[12px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
-              compact ? "px-2 py-1.5 text-[13px]" : "px-2.5 py-2 text-sm"
+            key={skill.id}
+            className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
+              compact ? "px-2 py-1.5 text-[12px]" : "px-2.5 py-1.5 text-[13px]"
             }`}
-            onClick={() => toggleProvider(group.key)}
-            title={group.label}
+            onClick={() => onOpenSkill(skill)}
+            style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
+            title={skill.name}
             type="button"
           >
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
-              <ExpandIcon expanded={searchActive || expandedProviderIds.has(group.key)} />
+            <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent-strong)]">
+              <SkillNodeIcon />
             </span>
-            <span className="inline-flex h-[18px] w-[18px] items-center justify-center text-[var(--accent-strong)]">
-              {group.assetPath ? (
-                <img
-                  alt={`${group.label} provider`}
-                  className="h-[18px] w-[18px] object-contain"
-                  src={group.assetPath}
-                />
-              ) : (
-                <FolderNodeIcon expanded={searchActive || expandedProviderIds.has(group.key)} name={group.label} root />
-              )}
-            </span>
-            <span className="truncate">{group.label}</span>
-            <span className="ml-auto shrink-0 rounded-full border border-[var(--border)] bg-white/[0.03] px-2 py-0.5 text-[10px] text-[var(--text)]">
-              {group.folders.reduce((total, folder) => total + folder.skills.length, 0)}
-            </span>
+            <span className="truncate">{skill.name}</span>
           </button>
+        ))}
+      </div>
+    );
+  }
 
-          {(searchActive || expandedProviderIds.has(group.key)) ? (
-            <div className="space-y-1.5">
-              {group.folders.map((folder) => {
-                const folderId = `${group.key}:${folder.key}`;
-                const folderExpanded = searchActive || expandedFolderIds.has(folderId);
+  function renderFolderNode({
+    groupKey,
+    nodeKey,
+    label,
+    path,
+    depth,
+    skills = [],
+    children,
+    contextPath = path,
+  }: {
+    groupKey: string;
+    nodeKey: string;
+    label: string;
+    path: string;
+    depth: number;
+    skills?: SystemSkill[];
+    children?: ReactNode;
+    contextPath?: string | null;
+  }) {
+    const folderId = `${groupKey}:${nodeKey}`;
+    const folderExpanded = searchActive || expandedFolderIds.has(folderId);
+    const content = children ?? (skills.length > 0 ? renderSkillRows(skills, depth + 1) : null);
 
-                return (
-                  <div key={folder.key} className="space-y-1">
-                    <button
-                      className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
-                        compact ? "px-2 py-1.5 text-[12px]" : "px-2.5 py-1.5 text-[13px]"
-                      }`}
-                      onClick={() => toggleFolder(group.key, folder.key)}
-                      style={{ paddingLeft: (compact ? 8 : 12) + (compact ? 12 : 16) }}
-                      title={folder.label}
-                      type="button"
-                    >
-                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
-                        <ExpandIcon expanded={folderExpanded} />
-                      </span>
-                      <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--violet)]">
-                        <FolderNodeIcon expanded={folderExpanded} name={folder.label} path={folder.label} />
-                      </span>
-                      <span className="truncate">{folder.label}</span>
-                    </button>
+    if (!content) {
+      return null;
+    }
 
-                    {folderExpanded ? (
-                      <div className="space-y-1">
-                        {folder.skills.map((skill) => (
-                          <button
-                            key={skill.id}
-                            className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
-                              compact ? "px-2 py-1.5 text-[12px]" : "px-2.5 py-1.5 text-[13px]"
-                            }`}
-                            onClick={() => onOpenSkill(skill)}
-                            style={{ paddingLeft: (compact ? 8 : 12) + (compact ? 24 : 32) }}
-                            title={skill.name}
-                            type="button"
-                          >
-                            <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent-strong)]">
-                              <SkillNodeIcon />
-                            </span>
-                            <span className="truncate">{skill.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+    return (
+      <div key={folderId} className="space-y-1">
+        <button
+          className={`flex w-full items-center gap-2 rounded-[11px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
+            compact ? "px-2 py-1.5 text-[12px]" : "px-2.5 py-1.5 text-[13px]"
+          }`}
+          onClick={() => toggleFolder(groupKey, nodeKey)}
+          onContextMenu={contextPath ? (e) => {
+            e.preventDefault();
+            setContextMenu({ x: e.clientX, y: e.clientY, path: contextPath });
+          } : undefined}
+          style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
+          title={path || label}
+          type="button"
+        >
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
+            <ExpandIcon expanded={folderExpanded} />
+          </span>
+          <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--violet)]">
+            <FolderNodeIcon expanded={folderExpanded} name={label} path={path || label} />
+          </span>
+          <span className="truncate">{label}</span>
+        </button>
+
+        {folderExpanded ? content : null}
+      </div>
+    );
+  }
+
+  function renderFolder(group: ProviderSkillGroup, folder: ProviderSkillFolderGroup) {
+    return renderFolderNode({
+      groupKey: group.key,
+      nodeKey: folder.key,
+      label: folder.label,
+      path: folder.path,
+      depth: 1,
+      skills: folder.skills,
+    });
+  }
+
+  function renderGlobalFolders(group: ProviderSkillGroup) {
+    const globalFolders = group.folders.filter((folder) => folder.section === "global");
+    if (globalFolders.length === 0) {
+      return null;
+    }
+
+    const globalRoots = new Map<string, {
+      key: string;
+      label: string;
+      path: string;
+      folders: ProviderSkillFolderGroup[];
+    }>();
+
+    for (const folder of globalFolders) {
+      const rootKey = (folder.globalRootLabel ?? folder.label).toLowerCase();
+      const existing = globalRoots.get(rootKey) ?? {
+        key: rootKey,
+        label: folder.globalRootLabel ?? folder.label,
+        path: folder.globalRootLabel ?? folder.label,
+        folders: [],
+      };
+
+      existing.folders.push(folder);
+      globalRoots.set(rootKey, existing);
+    }
+
+    const rootChildren = [...globalRoots.values()]
+      .sort((left, right) => left.label.localeCompare(right.label, undefined, { sensitivity: "base" }))
+      .map((root) => {
+        const directSkills = root.folders
+          .filter((folder) => !folder.globalRelativePath)
+          .flatMap((folder) => folder.skills)
+          .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base" }));
+        const nestedFolders = root.folders
+          .filter((folder) => folder.globalRelativePath)
+          .sort((left, right) =>
+            (left.globalRelativePath ?? "").localeCompare(right.globalRelativePath ?? "", undefined, {
+              sensitivity: "base",
+            }),
+          );
+
+        return renderFolderNode({
+          groupKey: group.key,
+          nodeKey: `global-root:${root.key}`,
+          label: root.label,
+          path: root.path,
+          depth: 2,
+          children: (
+            <div className="space-y-1">
+              {directSkills.length > 0 ? renderSkillRows(directSkills, 3) : null}
+              {nestedFolders.map((folder) =>
+                renderFolderNode({
+                  groupKey: group.key,
+                  nodeKey: `global-path:${folder.key}`,
+                  label: folder.globalRelativePath ?? folder.label,
+                  path: folder.path,
+                  depth: 3,
+                  skills: folder.skills,
+                }),
+              )}
             </div>
-          ) : null}
-        </div>
-      ))}
-    </div>
+          ),
+        });
+      });
+
+    return renderFolderNode({
+      groupKey: group.key,
+      nodeKey: "global",
+      label: "Global",
+      path: "",
+      depth: 1,
+      contextPath: null,
+      children: <div className="space-y-1.5">{rootChildren}</div>,
+    });
+  }
+
+  return (
+    <>
+      <div className="space-y-1.5">
+        {groups.map((group) => (
+          <div key={group.key} className="space-y-1">
+            <button
+              className={`flex w-full items-center gap-2 rounded-[12px] border border-transparent text-left text-[var(--text)] transition hover:border-white/[0.04] hover:bg-white/[0.03] ${
+                compact ? "px-2 py-1.5 text-[13px]" : "px-2.5 py-2 text-sm"
+              }`}
+              onClick={() => toggleProvider(group.key)}
+              title={group.label}
+              type="button"
+            >
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-[6px] bg-white/[0.02] text-[var(--violet-strong)]">
+                <ExpandIcon expanded={searchActive || expandedProviderIds.has(group.key)} />
+              </span>
+              <span className="inline-flex h-[18px] w-[18px] items-center justify-center text-[var(--accent-strong)]">
+                {group.assetPath ? (
+                  <img
+                    alt={`${group.label} provider`}
+                    className="h-[18px] w-[18px] object-contain"
+                    src={group.assetPath}
+                  />
+                ) : (
+                  <FolderNodeIcon expanded={searchActive || expandedProviderIds.has(group.key)} name={group.label} root />
+                )}
+              </span>
+              <span className="truncate">{group.label}</span>
+              <span className="ml-auto shrink-0 rounded-full border border-[var(--border)] bg-white/[0.03] px-2 py-0.5 text-[10px] text-[var(--text)]">
+                {group.folders.reduce((total, folder) => total + folder.skills.length, 0)}
+              </span>
+            </button>
+
+            {(searchActive || expandedProviderIds.has(group.key)) ? (
+              <div className="space-y-1.5">
+                {group.folders.filter((folder) => folder.section === "project").map((folder) => renderFolder(group, folder))}
+                {renderGlobalFolders(group)}
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={[
+            {
+              label: "Abrir en explorador",
+              icon: <FolderOpenIcon />,
+              onClick: () => {
+                void invoke("reveal_in_file_explorer", { path: contextMenu.path });
+              },
+            },
+          ]}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+    </>
   );
 }

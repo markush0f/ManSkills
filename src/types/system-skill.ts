@@ -10,4 +10,5 @@ export type SystemSkill = {
   rootPath: string;
   source: SystemSkillSource | string;
   marketplaceInstall?: MarketplaceInstallMetadata | null;
+  gitRepositoryRootPath?: string | null;
 };

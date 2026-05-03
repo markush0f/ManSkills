@@ -1,10 +1,11 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 import { SidebarFooter } from "./sidebar/SidebarFooter";
 import { LocalTreeList } from "./sidebar/LocalTreeList";
 import { ProviderSkillList } from "./sidebar/ProviderSkillList";
 import { SidebarSearch } from "./sidebar/SidebarSearch";
 import { ExpandIcon } from "./sidebar/SidebarTreeIcons";
+import { SystemSkillFiltersModal } from "./sidebar/SystemSkillFiltersModal";
 import { SystemSkillTreeList } from "./sidebar/SystemSkillTreeList";
 import { useIde } from "../../contexts/IdeContext";
 import { useIdeLayout } from "../../contexts/IdeLayoutContext";
@@ -57,6 +58,7 @@ export function Sidebar() {
     openingSystemSkillIds,
     openSystemSkill,
     openSystemSkillFile,
+    preferences,
     refreshSystemSkillTree,
     systemSkillActionError,
     systemSkills,
@@ -67,9 +69,12 @@ export function Sidebar() {
   const {
     expandedSystemSkillNodeIds,
     fileById,
+    filteredGlobalSkillTree,
     hasFilteredProviderSkills,
+    hasFilteredGlobalSkills,
     filteredSystemSkillTree,
     filteredTree,
+    globalExpanded,
     hasFilteredSystemSkills,
     hasFilteredWorkspaceFiles,
     hasWorkspaceFiles,
@@ -82,20 +87,29 @@ export function Sidebar() {
     toggleSystemSkillNode,
     workspaceExpanded,
   } = useSidebarState();
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
 
   return (
     <aside
       className={`${shellPanelClass} relative flex h-full min-h-0 flex-col overflow-hidden bg-[image:var(--sidebar-bg)] text-[13px]`}
       style={{ fontFamily: "var(--font-soft)" }}
     >
-      <div className="relative z-[1] grid h-[var(--app-header-height)] grid-cols-[minmax(0,1fr)_72px] items-center gap-1.5 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
+      <div className="relative z-[1] grid h-[var(--app-header-height)] grid-cols-[minmax(0,1fr)_100px] items-center gap-1.5 border-b border-[var(--border)] bg-[image:var(--topbar-bg)] px-2 shadow-[var(--topbar-shadow)]">
         <div className="min-w-0">
           <SidebarSearch />
         </div>
-        <div className="w-[72px] shrink-0">
-          <SidebarFooter placement="header" />
+        <div className="w-[100px] shrink-0">
+          <SidebarFooter
+            filtersActive={preferences.systemSkillsOnlyGitProjects}
+            onOpenFilters={() => setFiltersModalOpen(true)}
+            placement="header"
+          />
         </div>
       </div>
+
+      {filtersModalOpen && (
+        <SystemSkillFiltersModal onClose={() => setFiltersModalOpen(false)} />
+      )}
 
       <div
         className={`relative z-[1] flex-1 overflow-auto border-r border-[var(--border)] bg-[var(--sidebar-surface)] ${compact ? "px-2 pb-2 pt-0" : "px-2 pb-2 pt-0"}`}
@@ -206,6 +220,61 @@ export function Sidebar() {
                   Clear
                 </button>
               </div>
+            )}
+          </SidebarSection>
+
+          <SidebarSection
+            expanded={globalExpanded}
+            onToggle={() => toggleSection("global")}
+            title="Global"
+          >
+            {systemSkillsLoading ? (
+              <div className="space-y-3 rounded-[12px] border border-dashed border-[var(--border)] bg-black/10 px-3 py-3">
+                <SkeletonBlock className="h-3 w-20" />
+                <SkeletonBlock className="h-3 w-full" />
+              </div>
+            ) : systemSkillsError ? (
+              <div className="space-y-3 rounded-[12px] border border-dashed border-[#cf5e4f]/25 bg-[#cf5e4f]/10 px-3 py-3">
+                <p className="text-xs leading-5 text-[#ffb3a7]">{systemSkillsError}</p>
+                <button
+                  className={ghostButtonClass}
+                  onClick={() => void refreshSystemSkillTree()}
+                  type="button"
+                >
+                  Retry scan
+                </button>
+              </div>
+            ) : hasFilteredGlobalSkills ? (
+              <SystemSkillTreeList
+                activeFileId={activeFileId}
+                compact={compact}
+                expandedNodeIds={expandedSystemSkillNodeIds}
+                nodes={filteredGlobalSkillTree}
+                onListSkillFiles={listSystemSkillFiles}
+                onOpenSkill={openSystemSkill}
+                onOpenSkillFile={openSystemSkillFile}
+                openingSystemSkillIds={openingSystemSkillIds}
+                searchActive={searchActive}
+                listingSystemSkillIds={listingSystemSkillIds}
+                onToggleNode={toggleSystemSkillNode}
+              />
+            ) : (
+              <EmptyState
+                action={
+                  searchActive ? (
+                    <button className={ghostButtonClass} onClick={() => setQuery("")} type="button">
+                      Clear search
+                    </button>
+                  ) : undefined
+                }
+                eyebrow="Global"
+                message={
+                  searchActive
+                    ? "No global skills match the current search."
+                    : "No global provider skills were found."
+                }
+                title={searchActive ? "No global matches" : "No global skills found"}
+              />
             )}
           </SidebarSection>
 
