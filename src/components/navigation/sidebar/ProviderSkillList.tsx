@@ -4,19 +4,25 @@ import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import type { SystemSkill } from "../../../types";
 import { ContextMenu } from "../../shared/ContextMenu";
 import { ExpandIcon, FolderNodeIcon, SkillNodeIcon } from "./SidebarTreeIcons";
-import type { ProviderSkillFolderGroup, ProviderSkillGroup } from "./sidebarTreeUtils";
+import { getPathLeafName, type ProviderSkillFolderGroup, type ProviderSkillGroup } from "./sidebarTreeUtils";
 
 type ProviderSkillListProps = {
   compact: boolean;
   groups: ProviderSkillGroup[];
+  hiddenDirectoryNames: string[];
+  onHideDirectory: (directoryName: string) => Promise<unknown>;
   onOpenSkill: (skill: SystemSkill) => void;
+  onShowDirectory: (directoryName: string) => Promise<unknown>;
   searchActive: boolean;
 };
 
 export function ProviderSkillList({
   compact,
   groups,
+  hiddenDirectoryNames,
+  onHideDirectory,
   onOpenSkill,
+  onShowDirectory,
   searchActive,
 }: ProviderSkillListProps) {
   const [expandedProviderIds, setExpandedProviderIds] = useState<Set<string>>(
@@ -76,6 +82,27 @@ export function ProviderSkillList({
         ))}
       </div>
     );
+  }
+
+  function buildFolderContextItems(path: string) {
+    const directoryName = getPathLeafName(path);
+    const isHidden = hiddenDirectoryNames.some((value) => value.toLowerCase() === directoryName.toLowerCase());
+
+    return [
+      {
+        label: "Abrir en explorador",
+        icon: <FolderOpenIcon />,
+        onClick: () => {
+          void invoke("reveal_in_file_explorer", { path });
+        },
+      },
+      {
+        label: `${isHidden ? "Mostrar" : "Ocultar"} carpeta \"${directoryName}\"`,
+        onClick: () => {
+          void (isHidden ? onShowDirectory(directoryName) : onHideDirectory(directoryName));
+        },
+      },
+    ];
   }
 
   function renderFolderNode({
@@ -267,15 +294,7 @@ export function ProviderSkillList({
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
-          items={[
-            {
-              label: "Abrir en explorador",
-              icon: <FolderOpenIcon />,
-              onClick: () => {
-                void invoke("reveal_in_file_explorer", { path: contextMenu.path });
-              },
-            },
-          ]}
+          items={buildFolderContextItems(contextMenu.path)}
           onClose={() => setContextMenu(null)}
         />
       )}

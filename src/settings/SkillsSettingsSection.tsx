@@ -47,6 +47,12 @@ function createDraft(settings: {
   };
 }
 
+function removeDraftEntry(value: string, entryToRemove: string) {
+  return toDraftValue(
+    parseDraftValue(value).filter((entry) => entry.toLowerCase() !== entryToRemove.toLowerCase()),
+  );
+}
+
 export function SkillsSettingsSection() {
   const {
     query,
@@ -67,6 +73,7 @@ export function SkillsSettingsSection() {
     () => hasSkillsSettingsResults(query),
     [query],
   );
+  const hiddenDirectoryEntries = useMemo(() => parseDraftValue(draft.hiddenDirectories), [draft.hiddenDirectories]);
 
   if (!hasAnyVisibleSettings) {
     return null;
@@ -157,6 +164,7 @@ export function SkillsSettingsSection() {
           <p className="text-[13px] text-[var(--text)]">Skills: Hidden Directories</p>
           <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">
             One per line. These directories are skipped during skill scanning and file listing.
+            You can also add entries here by right-clicking folders in the skills sidebar.
           </p>
           <div className="mt-3">
             <TextareaInput
@@ -166,6 +174,27 @@ export function SkillsSettingsSection() {
               value={draft.hiddenDirectories}
             />
           </div>
+          {hiddenDirectoryEntries.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)]">Current Entries</p>
+              <div className="flex flex-wrap gap-2">
+                {hiddenDirectoryEntries.map((entry) => (
+                  <button
+                    key={entry}
+                    className="rounded-full border border-[var(--border)] bg-white/[0.04] px-2.5 py-1 text-[11px] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-white/[0.07]"
+                    onClick={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        hiddenDirectories: removeDraftEntry(current.hiddenDirectories, entry),
+                      }))}
+                    type="button"
+                  >
+                    {entry} x
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 

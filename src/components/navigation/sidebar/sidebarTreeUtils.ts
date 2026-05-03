@@ -55,6 +55,12 @@ export function getSystemSkillSourceLabel(source: SystemSkill["source"]) {
   return "System";
 }
 
+export function getPathLeafName(path: string) {
+  const normalizedPath = path.replace(/\\/g, "/").replace(/\/+$|^\/?\?\//g, "");
+  const parts = normalizedPath.split("/").filter(Boolean);
+  return parts[parts.length - 1] ?? path;
+}
+
 export function matchesSidebarQuery(query: string, ...values: Array<string | undefined>) {
   const normalizedQuery = query.trim().toLowerCase();
 

@@ -4,6 +4,7 @@ import {
   buildProjectSystemSkillTree,
   buildProviderSkillGroups,
   classifySystemSkillSection,
+  getPathLeafName,
   reshapeSystemSkillRootsForDisplay,
 } from "./sidebarTreeUtils";
 
@@ -260,6 +261,12 @@ test("compacts WSL project paths using the distro home prefix", () => {
   expect(groups).toHaveLength(1);
   expect(groups[0]?.folders[0]?.label).toBe("abram/project-one");
   expect(groups[0]?.folders[0]?.section).toBe("project");
+});
+
+test("extracts leaf directory names from native and UNC paths", () => {
+  expect(getPathLeafName("C:/Users/abram/.claude")).toBe(".claude");
+  expect(getPathLeafName("//wsl$/Ubuntu/home/abram/project-one/.agents")).toBe(".agents");
+  expect(getPathLeafName("//?/C:/Users/abram/.codex/tmp/plugins")).toBe("plugins");
 });
 
 function createSkillsRoot(id: string, path: string, children: SystemSkillTreeNode[]): SystemSkillTreeNode {

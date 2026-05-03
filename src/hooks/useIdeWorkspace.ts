@@ -644,6 +644,56 @@ export function useIdeWorkspace() {
       );
   }
 
+  function hideSkillDirectory(directoryName: string) {
+    const normalizedDirectoryName = directoryName.trim();
+    if (!normalizedDirectoryName) {
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    const alreadyHidden = skillClassificationSettings.hiddenDirectories.some(
+      (value) => value.toLowerCase() === normalizedDirectoryName.toLowerCase(),
+    );
+
+    if (alreadyHidden) {
+      pushToast({
+        description: `${normalizedDirectoryName} is already listed in hidden directories.`,
+        kind: "info",
+        title: "Folder already hidden",
+      });
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    return saveSkillClassificationSettings({
+      ...skillClassificationSettings,
+      hiddenDirectories: [...skillClassificationSettings.hiddenDirectories, normalizedDirectoryName],
+    });
+  }
+
+  function showSkillDirectory(directoryName: string) {
+    const normalizedDirectoryName = directoryName.trim();
+    if (!normalizedDirectoryName) {
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    const nextHiddenDirectories = skillClassificationSettings.hiddenDirectories.filter(
+      (value) => value.toLowerCase() !== normalizedDirectoryName.toLowerCase(),
+    );
+
+    if (nextHiddenDirectories.length === skillClassificationSettings.hiddenDirectories.length) {
+      pushToast({
+        description: `${normalizedDirectoryName} is not currently hidden.`,
+        kind: "info",
+        title: "Folder already visible",
+      });
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    return saveSkillClassificationSettings({
+      ...skillClassificationSettings,
+      hiddenDirectories: nextHiddenDirectories,
+    });
+  }
+
   return {
     activeFile,
     activeFileId,
@@ -680,12 +730,14 @@ export function useIdeWorkspace() {
     openingSystemSkillIds,
     preferences,
     refreshMarketplace,
+    hideSkillDirectory,
     refreshSkillClassificationSettings,
     searchMarketplace,
     selectedMarketplaceSkill,
     refreshSystemSkillTree,
     saveActiveFile,
     saveSkillClassificationSettings,
+    showSkillDirectory,
     skillClassificationSettings,
     skillClassificationSettingsError,
     skillClassificationSettingsLoading,

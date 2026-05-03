@@ -52,6 +52,7 @@ export function Sidebar() {
   const {
     activeFileId,
     clearSystemSkillActionError,
+    hideSkillDirectory,
     listSystemSkillFiles,
     listingSystemSkillIds,
     openFile,
@@ -60,6 +61,8 @@ export function Sidebar() {
     openSystemSkillFile,
     preferences,
     refreshSystemSkillTree,
+    showSkillDirectory,
+    skillClassificationSettings,
     systemSkillActionError,
     systemSkills,
     systemSkillsError,
@@ -181,10 +184,13 @@ export function Sidebar() {
                 activeFileId={activeFileId}
                 compact={compact}
                 expandedNodeIds={expandedSystemSkillNodeIds}
+                hiddenDirectoryNames={skillClassificationSettings.hiddenDirectories}
                 nodes={filteredSystemSkillTree}
+                onHideDirectory={hideSkillDirectory}
                 onListSkillFiles={listSystemSkillFiles}
                 onOpenSkill={openSystemSkill}
                 onOpenSkillFile={openSystemSkillFile}
+                onShowDirectory={showSkillDirectory}
                 openingSystemSkillIds={openingSystemSkillIds}
                 searchActive={searchActive}
                 listingSystemSkillIds={listingSystemSkillIds}
@@ -249,10 +255,13 @@ export function Sidebar() {
                 activeFileId={activeFileId}
                 compact={compact}
                 expandedNodeIds={expandedSystemSkillNodeIds}
+                hiddenDirectoryNames={skillClassificationSettings.hiddenDirectories}
                 nodes={filteredGlobalSkillTree}
+                onHideDirectory={hideSkillDirectory}
                 onListSkillFiles={listSystemSkillFiles}
                 onOpenSkill={openSystemSkill}
                 onOpenSkillFile={openSystemSkillFile}
+                onShowDirectory={showSkillDirectory}
                 openingSystemSkillIds={openingSystemSkillIds}
                 searchActive={searchActive}
                 listingSystemSkillIds={listingSystemSkillIds}
@@ -292,7 +301,10 @@ export function Sidebar() {
               <ProviderSkillList
                 compact={compact}
                 groups={providerSkillGroups}
+                hiddenDirectoryNames={skillClassificationSettings.hiddenDirectories}
+                onHideDirectory={hideSkillDirectory}
                 onOpenSkill={openSystemSkill}
+                onShowDirectory={showSkillDirectory}
                 searchActive={searchActive}
               />
             ) : (
