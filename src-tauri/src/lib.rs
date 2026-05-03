@@ -45,6 +45,8 @@ pub fn run() {
             tauri_commands::load_system_skill,
             tauri_commands::list_system_skill_files,
             tauri_commands::save_system_skill_file,
+            tauri_commands::load_skill_classification_settings,
+            tauri_commands::save_skill_classification_settings,
             tauri_commands::reveal_in_file_explorer
         ])
         .run(tauri::generate_context!())

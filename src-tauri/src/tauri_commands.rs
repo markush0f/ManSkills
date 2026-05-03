@@ -1,10 +1,11 @@
 use crate::{
     models::{
         BackendLogSnapshot, MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill,
-        MarketplaceSource, MarketplaceUninstallResult, SkillScanResponse, SkillTreeResponse,
-        SystemSkillContentResponse, SystemSkillTreeFile, SystemSkillTreeNode,
+        MarketplaceSource, MarketplaceUninstallResult, SkillClassificationSettings,
+        SkillScanResponse, SkillTreeResponse, SystemSkillContentResponse, SystemSkillTreeFile,
+        SystemSkillTreeNode,
     },
-    services::{BackendLogService, MarketplaceService, SkillService},
+    services::{BackendLogService, MarketplaceService, SkillClassificationService, SkillService},
 };
 
 #[tauri::command]
@@ -235,6 +236,28 @@ pub fn save_system_skill_file(
 #[tauri::command]
 pub fn read_backend_logs() -> Result<BackendLogSnapshot, String> {
     BackendLogService::shared().read_snapshot()
+}
+
+#[tauri::command]
+pub fn load_skill_classification_settings() -> Result<SkillClassificationSettings, String> {
+    SkillClassificationService::new().load()
+}
+
+#[tauri::command]
+pub fn save_skill_classification_settings(
+    settings: SkillClassificationSettings,
+) -> Result<SkillClassificationSettings, String> {
+    let logger = BackendLogService::shared();
+    logger.info("save_skill_classification_settings requested");
+
+    let result = SkillClassificationService::new().save(settings);
+    if let Err(error) = &result {
+        logger.error(format!(
+            "save_skill_classification_settings failed: {error}"
+        ));
+    }
+
+    result
 }
 
 #[tauri::command]
