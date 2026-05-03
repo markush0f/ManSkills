@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useSkillClassificationState } from "../contexts/SkillClassificationContext";
 import { useUiShell } from "../contexts/UiShellContext";
 import { useMarketplaceState } from "../contexts/MarketplaceStateContext";
 import { usePreferences } from "../contexts/PreferencesContext";
@@ -14,6 +15,7 @@ import {
 import type {
   MarketplaceInstallResult,
   MarketplaceSkill,
+  SkillClassificationSettings,
   MarketplaceUninstallResult,
   SystemSkill,
   SystemSkillWatchEvent,
@@ -58,6 +60,13 @@ export function useIdeWorkspace() {
     () => new Set(),
   );
   const { preferences, updatePreferences } = usePreferences();
+  const {
+    refreshSkillClassificationSettings,
+    saveSkillClassificationSettings: persistSkillClassificationSettings,
+    skillClassificationSettings,
+    skillClassificationSettingsError,
+    skillClassificationSettingsLoading,
+  } = useSkillClassificationState();
   const marketplaceState = useMarketplaceState();
   const workspaceFiles = useWorkspaceState();
   const systemSkillsState = useSystemSkillsState();
@@ -619,6 +628,22 @@ export function useIdeWorkspace() {
       });
   }
 
+  function saveSkillClassificationSettings(settings: SkillClassificationSettings) {
+    return persistSkillClassificationSettings(settings)
+      .then((savedSettings) =>
+        refreshSystemSkillTree()
+          .then(() => {
+            pushToast({
+              description: "Skill discovery rules were refreshed.",
+              kind: "success",
+              title: "Skill settings saved",
+            });
+            return savedSettings;
+          })
+          .catch(() => savedSettings),
+      );
+  }
+
   return {
     activeFile,
     activeFileId,
@@ -655,10 +680,15 @@ export function useIdeWorkspace() {
     openingSystemSkillIds,
     preferences,
     refreshMarketplace,
+    refreshSkillClassificationSettings,
     searchMarketplace,
     selectedMarketplaceSkill,
     refreshSystemSkillTree,
     saveActiveFile,
+    saveSkillClassificationSettings,
+    skillClassificationSettings,
+    skillClassificationSettingsError,
+    skillClassificationSettingsLoading,
     systemSkillActionError,
     systemSkillScanMs,
     systemSkillTree,

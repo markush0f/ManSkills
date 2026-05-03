@@ -9,7 +9,19 @@ import { SettingsTabsHeader } from "../../settings/SettingsTabsHeader";
 import { countSkills } from "../../settings/settingsUtils";
 
 export function SettingsWorkspace() {
-  const { activeFile, openFiles, preferences, systemSkillScanMs, systemSkillTree, updatePreferences } = useIde();
+  const {
+    activeFile,
+    openFiles,
+    preferences,
+    refreshSkillClassificationSettings,
+    saveSkillClassificationSettings,
+    skillClassificationSettings,
+    skillClassificationSettingsError,
+    skillClassificationSettingsLoading,
+    systemSkillScanMs,
+    systemSkillTree,
+    updatePreferences,
+  } = useIde();
   const { resetSidebarWidth, sidebarWidth } = useIdeLayout();
   const systemSkillCount = countSkills(systemSkillTree);
   const activeFilePath = activeFile?.path ?? "No file selected";
@@ -34,11 +46,16 @@ export function SettingsWorkspace() {
     preferences,
     query,
     resetSidebarWidth,
+    refreshSkillClassificationSettings,
+    saveSkillClassificationSettings,
     selectedCategory,
     selectedCategoryLabel,
     setQuery,
     setSelectedCategory,
     sidebarWidth,
+    skillClassificationSettings,
+    skillClassificationSettingsError,
+    skillClassificationSettingsLoading,
     systemSkillCount,
     systemSkillScanMs,
     updatePreferences,

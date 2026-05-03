@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { IdePreferences } from "../types";
+import type { SkillClassificationSettings } from "../types";
 import type { SettingsCategory } from "./settingsCategories";
 import type { UpdatePreferences } from "./settingsTypes";
 
@@ -10,11 +11,18 @@ export type SettingsContextValue = {
   preferences: IdePreferences;
   query: string;
   resetSidebarWidth: () => void;
+  refreshSkillClassificationSettings: () => Promise<SkillClassificationSettings>;
+  saveSkillClassificationSettings: (
+    settings: SkillClassificationSettings,
+  ) => Promise<SkillClassificationSettings>;
   selectedCategory: SettingsCategory;
   selectedCategoryLabel: string;
   setQuery: (value: string) => void;
   setSelectedCategory: (category: SettingsCategory) => void;
   sidebarWidth: number;
+  skillClassificationSettings: SkillClassificationSettings;
+  skillClassificationSettingsError: string | null;
+  skillClassificationSettingsLoading: boolean;
   systemSkillCount: number;
   systemSkillScanMs: number | null;
   updatePreferences: UpdatePreferences;

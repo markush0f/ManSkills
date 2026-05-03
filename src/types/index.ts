@@ -21,6 +21,7 @@ export type {
 export type { SaveShortcut } from "./save-shortcut";
 export type { SidebarView } from "./sidebar-view";
 export type { SkillScanResponse } from "./skill-scan-response";
+export type { SkillClassificationSettings } from "./skill-classification-settings";
 export type { SkillTreeResponse } from "./skill-tree-response";
 export type { SystemSkill } from "./system-skill";
 export type { SystemSkillContentResponse } from "./system-skill-content-response";
