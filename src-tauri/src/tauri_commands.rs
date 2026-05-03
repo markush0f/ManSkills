@@ -238,6 +238,41 @@ pub fn read_backend_logs() -> Result<BackendLogSnapshot, String> {
 }
 
 #[tauri::command]
+pub fn reveal_in_file_explorer(path: String) -> Result<(), String> {
+    let path = std::path::Path::new(&path);
+    let dir = if path.is_file() {
+        path.parent()
+    } else {
+        Some(path)
+    }
+    .ok_or("Invalid path")?;
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open explorer: {e}"))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open finder: {e}"))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open file manager: {e}"))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn clear_backend_logs() -> Result<(), String> {
     BackendLogService::shared().clear()
 }
