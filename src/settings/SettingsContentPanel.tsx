@@ -1,5 +1,6 @@
 import { CursorSettingsSection } from "./CursorSettingsSection";
 import { DisplaySettingsSection } from "./DisplaySettingsSection";
+import { SkillsSettingsSection } from "./SkillsSettingsSection";
 import { useSettings } from "./SettingsContext";
 import { TextEditorSettingsSection } from "./TextEditorSettingsSection";
 import { WorkspaceSettingsSection } from "./WorkspaceSettingsSection";
@@ -32,6 +33,7 @@ export function SettingsContentPanel() {
                 {selectedCategory === "text" && <TextEditorSettingsSection />}
                 {selectedCategory === "cursor" && <CursorSettingsSection />}
                 {selectedCategory === "display" && <DisplaySettingsSection />}
+                {selectedCategory === "skills" && <SkillsSettingsSection />}
                 {selectedCategory === "workspace" && <WorkspaceSettingsSection />}
               </>
             ) : (

@@ -1,6 +1,6 @@
 export type PersistedWorkspaceView = "editor" | "settings" | "marketplace";
 export type PersistedEditorPreviewMode = "preview" | "code" | "split";
-export type PersistedSettingsCategory = "text" | "cursor" | "display" | "workspace";
+export type PersistedSettingsCategory = "text" | "cursor" | "display" | "workspace" | "skills";
 
 export type PersistedWorkspaceTab = {
   relativePath: string;

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useUiShell } from "../contexts/UiShellContext";
 import { hasCursorSettingsResults } from "../settings/CursorSettingsSection";
 import { hasDisplaySettingsResults } from "../settings/DisplaySettingsSection";
+import { hasSkillsSettingsResults } from "../settings/SkillsSettingsSection";
 import { SETTINGS_CATEGORIES, type SettingsCategory } from "../settings/settingsCategories";
 import { hasTextEditorSettingsResults } from "../settings/TextEditorSettingsSection";
 import { hasWorkspaceSettingsResults } from "../settings/WorkspaceSettingsSection";
@@ -39,6 +40,8 @@ export function useSettingsSearch({
         return hasCursorSettingsResults(query);
       case "display":
         return hasDisplaySettingsResults(query);
+      case "skills":
+        return hasSkillsSettingsResults(query);
       case "workspace":
         return hasWorkspaceSettingsResults(
           query,
