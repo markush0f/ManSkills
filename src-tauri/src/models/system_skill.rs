@@ -13,4 +13,5 @@ pub struct SystemSkill {
     pub root_path: String,
     pub source: String,
     pub marketplace_install: Option<MarketplaceInstallMetadata>,
+    pub git_repository_root_path: Option<String>,
 }

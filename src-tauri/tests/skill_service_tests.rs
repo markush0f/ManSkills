@@ -1,6 +1,6 @@
 use std::{
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -26,7 +26,7 @@ fn scan_normalizes_skill_slug_from_directory_name() {
     let skill = response
         .skills
         .iter()
-        .find(|skill| skill.root_path == skill_root.to_string_lossy())
+        .find(|skill| normalized_path_key(Path::new(&skill.root_path)) == normalized_path_key(&skill_root))
         .expect("expected scanned skill");
 
     assert_eq!(skill.slug, "my-skill");
@@ -48,7 +48,7 @@ fn scan_uses_first_plain_text_line_as_summary() {
     let skill = response
         .skills
         .iter()
-        .find(|skill| skill.root_path == skill_root.to_string_lossy())
+        .find(|skill| normalized_path_key(Path::new(&skill.root_path)) == normalized_path_key(&skill_root))
         .expect("expected scanned skill");
 
     assert_eq!(skill.summary, "Short summary line");
@@ -87,7 +87,7 @@ fn scan_marks_supported_provider_skill_directories_as_managed() {
         let skill = response
             .skills
             .iter()
-            .find(|skill| PathBuf::from(&skill.root_path) == *skill_root)
+            .find(|skill| normalized_path_key(Path::new(&skill.root_path)) == normalized_path_key(skill_root))
             .expect("expected scanned skill");
 
         assert_eq!(skill.source, "managed");
@@ -131,7 +131,7 @@ fn scan_surfaces_marketplace_install_metadata_when_present() {
     let skill = response
         .skills
         .iter()
-        .find(|skill| skill.root_path == skill_root.to_string_lossy())
+        .find(|skill| normalized_path_key(Path::new(&skill.root_path)) == normalized_path_key(&skill_root))
         .expect("expected scanned skill");
 
     let metadata = skill
@@ -165,7 +165,10 @@ fn scan_ignores_skill_directories_without_manifest_under_agents_or_skills() {
         response
             .skills
             .iter()
-            .all(|skill| skill.root_path != directory_without_manifest.to_string_lossy()),
+            .all(|skill| {
+                normalized_path_key(Path::new(&skill.root_path))
+                    != normalized_path_key(&directory_without_manifest)
+            }),
         "directory without SKILL.md should not be scanned",
     );
 }
@@ -190,7 +193,7 @@ fn scan_ignores_agents_or_skills_container_directories_without_manifest() {
         response
             .skills
             .iter()
-            .all(|skill| skill.root_path != skills_container.to_string_lossy()),
+            .all(|skill| normalized_path_key(Path::new(&skill.root_path)) != normalized_path_key(&skills_container)),
         "skills container without SKILL.md should not be scanned",
     );
 }
@@ -221,4 +224,78 @@ impl Drop for TestWorkspace {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.path);
     }
+}
+
+#[test]
+fn scan_reports_git_repository_root_for_skills_inside_git_repos() {
+    let workspace = TestWorkspace::new("scan_git_repo");
+    let project_root = workspace.path.join("my-project");
+    let skill_root = project_root.join(".agents").join("skills").join("my-skill");
+
+    fs::create_dir_all(&skill_root).expect("should create skill directory");
+    fs::write(
+        skill_root.join("SKILL.md"),
+        "# My Skill\nSummary line\n",
+    )
+    .expect("should write manifest");
+    fs::create_dir_all(project_root.join(".git")).expect("should create .git directory");
+
+    let response = SkillService::new()
+        .scan(Some(vec![workspace.path_string()]))
+        .expect("scan should succeed");
+
+    let skill = response
+        .skills
+        .iter()
+        .find(|skill| normalized_path_key(Path::new(&skill.root_path)) == normalized_path_key(&skill_root))
+        .expect("expected scanned skill");
+
+    assert_eq!(
+        normalized_path_key(Path::new(skill.git_repository_root_path.as_ref().unwrap())),
+        normalized_path_key(&project_root),
+        "skill inside a git repo should have git_repository_root_path set"
+    );
+}
+
+#[test]
+fn scan_reports_no_git_repository_root_for_skills_outside_git_repos() {
+    let workspace = TestWorkspace::new("scan_no_git");
+    let skill_root = workspace.path.join("standalone-skill");
+
+    fs::create_dir_all(&skill_root).expect("should create skill directory");
+    fs::write(
+        skill_root.join("SKILL.md"),
+        "# Standalone Skill\nSummary\n",
+    )
+    .expect("should write manifest");
+
+    let response = SkillService::new()
+        .scan(Some(vec![workspace.path_string()]))
+        .expect("scan should succeed");
+
+    let skill = response
+        .skills
+        .iter()
+        .find(|skill| normalized_path_key(Path::new(&skill.root_path)) == normalized_path_key(&skill_root))
+        .expect("expected scanned skill");
+
+    assert_eq!(
+        skill.git_repository_root_path.as_ref(),
+        None,
+        "skill outside a git repo should have git_repository_root_path as None"
+    );
+}
+
+fn normalized_path_key(path: &Path) -> String {
+    let mut normalized = path.to_string_lossy().replace('\\', "/").to_ascii_lowercase();
+
+    if let Some(stripped) = normalized.strip_prefix("//?/") {
+        normalized = stripped.to_string();
+    }
+
+    while normalized.len() > 1 && normalized.ends_with('/') {
+        normalized.pop();
+    }
+
+    normalized
 }

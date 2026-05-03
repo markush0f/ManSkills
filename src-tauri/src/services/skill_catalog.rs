@@ -18,6 +18,17 @@ use crate::{
 
 use super::marketplace::MARKETPLACE_INSTALL_METADATA_FILE_NAME;
 
+const GIT_DIR: &str = ".git";
+
+fn find_git_repository_root(skill_root: &Path) -> Option<PathBuf> {
+    for ancestor in skill_root.ancestors() {
+        if ancestor.join(GIT_DIR).exists() || ancestor.join(".git").is_file() {
+            return Some(ancestor.to_path_buf());
+        }
+    }
+    None
+}
+
 pub struct SkillCatalogService;
 
 impl SkillCatalogService {
@@ -142,7 +153,10 @@ fn read_marketplace_install_metadata(root_path: &Path) -> Option<MarketplaceInst
     serde_json::from_str(&content).ok()
 }
 
-fn scan_root_directories(root: &Path, results: &mut HashMap<String, SystemSkill>) {
+fn scan_root_directories(
+    root: &Path,
+    results: &mut HashMap<String, SystemSkill>,
+) {
     let mut stack = vec![root.to_path_buf()];
     let mut visited_directories = HashSet::<String>::new();
 
@@ -165,6 +179,8 @@ fn scan_root_directories(root: &Path, results: &mut HashMap<String, SystemSkill>
         if manifest_path.is_file() {
             let preview = read_skill_preview(&manifest_path, &current_dir);
             let marketplace_install = read_marketplace_install_metadata(&current_dir);
+            let git_repository_root_path =
+                find_git_repository_root(&current_dir).map(|p| p.to_string_lossy().into_owned());
             let skill = SystemSkill {
                 id: format!("{current_key}:manifest"),
                 slug: slugify_path(&current_dir),
@@ -174,6 +190,7 @@ fn scan_root_directories(root: &Path, results: &mut HashMap<String, SystemSkill>
                 root_path: current_key.clone(),
                 source: classify_source(&current_dir),
                 marketplace_install,
+                git_repository_root_path,
             };
 
             results.insert(current_normalized_key, skill);
