@@ -9,11 +9,11 @@ export function IdeWorkbench() {
   const { isMarketplaceView, isSettingsView } = useIde();
   const showSidebar = true;
   const {
+    effectiveWidth,
     isResizing,
     layoutRef,
     resizerWidth,
     resetSidebarWidth,
-    sidebarWidth,
     startSidebarResize,
   } = useIdeLayout();
 
@@ -23,7 +23,7 @@ export function IdeWorkbench() {
         ref={layoutRef}
         className="relative grid h-screen w-full bg-[var(--workbench-surface)]"
         style={{
-          gridTemplateColumns: showSidebar ? `${sidebarWidth}px minmax(0, 1fr)` : "0px minmax(0, 1fr)",
+          gridTemplateColumns: showSidebar ? `${effectiveWidth}px minmax(0, 1fr)` : "0px minmax(0, 1fr)",
         }}
       >
         {showSidebar && (
@@ -57,7 +57,7 @@ export function IdeWorkbench() {
               startSidebarResize();
             }}
             style={{
-              left: `${sidebarWidth - resizerWidth / 2}px`,
+              left: `${effectiveWidth - resizerWidth / 2}px`,
               width: `${resizerWidth}px`,
             }}
             title="Arrastra para cambiar el tamaño"

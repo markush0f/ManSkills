@@ -18,5 +18,6 @@ export type IdePreferences = {
   saveShortcut: SaveShortcut;
   scrollBeyondLastLine: boolean;
   smoothScrolling: boolean;
+  systemSkillsOnlyGitProjects: boolean;
   tabSize: number;
 };

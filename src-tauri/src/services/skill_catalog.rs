@@ -1,22 +1,33 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
+    fs,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
     time::Instant,
 };
 
-use ignore::WalkBuilder;
-
 use crate::{
-    models::{SkillScanResponse, SystemSkill},
+    models::{MarketplaceInstallMetadata, SkillScanResponse, SystemSkill},
     services::support::{
-        build_scan_roots, classify_source, is_skill_manifest, is_summary_candidate,
-        should_skip_directory, slugify_path, SkillPreview, DEFAULT_SUMMARY, MAX_RESULTS,
-        PREVIEW_BYTES,
+        build_scan_roots, build_skip_directory_names, classify_source, is_summary_candidate,
+        normalized_path_key, should_skip_directory, slugify_path, SkillPreview, DEFAULT_SUMMARY,
+        MAX_RESULTS, PREVIEW_BYTES, SKILL_MANIFEST_NAME,
     },
 };
+
+use super::marketplace::MARKETPLACE_INSTALL_METADATA_FILE_NAME;
+
+const GIT_DIR: &str = ".git";
+
+fn find_git_repository_root(skill_root: &Path) -> Option<PathBuf> {
+    for ancestor in skill_root.ancestors() {
+        if ancestor.join(GIT_DIR).exists() || ancestor.join(".git").is_file() {
+            return Some(ancestor.to_path_buf());
+        }
+    }
+    None
+}
 
 pub struct SkillCatalogService;
 
@@ -53,79 +64,18 @@ impl SkillCatalogService {
     }
 
     fn discover_skills(&self, roots: &[PathBuf]) -> Result<Vec<SystemSkill>, String> {
-        let results = Arc::new(Mutex::new(Vec::<SystemSkill>::new()));
-        let seen_manifests = Arc::new(Mutex::new(HashSet::<String>::new()));
-        let thread_count = std::thread::available_parallelism()
-            .map(|value| value.get())
-            .unwrap_or(4);
+        let mut results = HashMap::<String, SystemSkill>::new();
+        let skip_directory_names = build_skip_directory_names();
 
         for root in roots {
-            let results = Arc::clone(&results);
-            let seen_manifests = Arc::clone(&seen_manifests);
+            if results.len() >= MAX_RESULTS {
+                break;
+            }
 
-            WalkBuilder::new(root)
-                .hidden(false)
-                .follow_links(false)
-                .git_ignore(true)
-                .git_global(true)
-                .git_exclude(true)
-                .threads(thread_count)
-                .filter_entry(|entry| !should_skip_directory(entry.path()))
-                .build_parallel()
-                .run(|| {
-                    let results = Arc::clone(&results);
-                    let seen_manifests = Arc::clone(&seen_manifests);
-
-                    Box::new(move |entry_result| {
-                        let Ok(entry) = entry_result else {
-                            return ignore::WalkState::Continue;
-                        };
-
-                        let path = entry.path();
-                        if !is_skill_manifest(path) {
-                            return ignore::WalkState::Continue;
-                        }
-
-                        let manifest_key = path.to_string_lossy().into_owned();
-
-                        {
-                            let mut seen = seen_manifests.lock().expect("manifest set poisoned");
-                            if !seen.insert(manifest_key.clone()) {
-                                return ignore::WalkState::Continue;
-                            }
-                        }
-
-                        let Some(root_path) = path.parent() else {
-                            return ignore::WalkState::Continue;
-                        };
-
-                        let preview = read_skill_preview(path, root_path);
-                        let skill = SystemSkill {
-                            id: manifest_key.clone(),
-                            slug: slugify_path(root_path),
-                            name: preview.name,
-                            summary: preview.summary,
-                            manifest_path: manifest_key,
-                            root_path: root_path.to_string_lossy().into_owned(),
-                            source: classify_source(root_path),
-                        };
-
-                        let mut results = results.lock().expect("results poisoned");
-                        if results.len() >= MAX_RESULTS {
-                            return ignore::WalkState::Quit;
-                        }
-
-                        results.push(skill);
-                        ignore::WalkState::Continue
-                    })
-                });
+            scan_root_directories(root, &skip_directory_names, &mut results);
         }
 
-        let results = results
-            .lock()
-            .map_err(|_| "scan results lock poisoned".to_string())?;
-
-        Ok(results.clone())
+        Ok(results.values().cloned().collect())
     }
 }
 
@@ -195,4 +145,77 @@ fn sort_skills(skills: &mut [SystemSkill]) {
             .cmp(&right.name.to_ascii_lowercase())
             .then_with(|| left.root_path.cmp(&right.root_path))
     });
+}
+
+fn read_marketplace_install_metadata(root_path: &Path) -> Option<MarketplaceInstallMetadata> {
+    let metadata_path = root_path.join(MARKETPLACE_INSTALL_METADATA_FILE_NAME);
+    let content = fs::read_to_string(metadata_path).ok()?;
+
+    serde_json::from_str(&content).ok()
+}
+
+fn scan_root_directories(
+    root: &Path,
+    skip_directory_names: &HashSet<String>,
+    results: &mut HashMap<String, SystemSkill>,
+) {
+    let mut stack = vec![root.to_path_buf()];
+    let mut visited_directories = HashSet::<String>::new();
+
+    while let Some(current_dir) = stack.pop() {
+        if !current_dir.is_dir() {
+            continue;
+        }
+
+        if should_skip_directory(&current_dir, skip_directory_names) {
+            continue;
+        }
+
+        let current_key = current_dir.to_string_lossy().into_owned();
+        let current_normalized_key = normalized_path_key(&current_dir);
+        if !visited_directories.insert(current_normalized_key.clone()) {
+            continue;
+        }
+
+        let manifest_path = current_dir.join(SKILL_MANIFEST_NAME);
+        if manifest_path.is_file() {
+            let preview = read_skill_preview(&manifest_path, &current_dir);
+            let marketplace_install = read_marketplace_install_metadata(&current_dir);
+            let git_repository_root_path =
+                find_git_repository_root(&current_dir).map(|p| p.to_string_lossy().into_owned());
+            let skill = SystemSkill {
+                id: format!("{current_key}:manifest"),
+                slug: slugify_path(&current_dir),
+                name: preview.name,
+                summary: preview.summary,
+                manifest_path: manifest_path.to_string_lossy().into_owned(),
+                root_path: current_key.clone(),
+                source: classify_source(&current_dir),
+                marketplace_install,
+                git_repository_root_path,
+            };
+
+            results.insert(current_normalized_key, skill);
+        }
+
+        if results.len() >= MAX_RESULTS {
+            break;
+        }
+
+        let Ok(entries) = fs::read_dir(&current_dir) else {
+            continue;
+        };
+
+        for entry in entries.flatten() {
+            let Ok(file_type) = entry.file_type() else {
+                continue;
+            };
+
+            if !file_type.is_dir() || file_type.is_symlink() {
+                continue;
+            }
+
+            stack.push(entry.path());
+        }
+    }
 }

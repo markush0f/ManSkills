@@ -8,8 +8,8 @@ use ignore::WalkBuilder;
 use crate::{
     models::{SystemSkillContentResponse, SystemSkillFile, SystemSkillTreeFile},
     services::support::{
-        detect_language, normalize_relative_path, prioritize_skill_manifest, should_skip_directory,
-        MAX_FILE_BYTES, MAX_SKILL_FILES,
+        build_skip_directory_names, detect_language, normalize_relative_path,
+        prioritize_skill_manifest, should_skip_directory,
     },
 };
 
@@ -80,6 +80,7 @@ impl SkillContentService {
 
     fn load_skill_files(&self, root: &Path) -> Vec<SystemSkillFile> {
         let mut discovered_files = Vec::new();
+        let skip_directory_names = build_skip_directory_names();
 
         for entry_result in WalkBuilder::new(root)
             .hidden(false)
@@ -87,7 +88,7 @@ impl SkillContentService {
             .git_ignore(false)
             .git_global(false)
             .git_exclude(false)
-            .filter_entry(|entry| !should_skip_directory(entry.path()))
+            .filter_entry(move |entry| !should_skip_directory(entry.path(), &skip_directory_names))
             .build()
         {
             let Ok(entry) = entry_result else {
@@ -102,14 +103,6 @@ impl SkillContentService {
             let Ok(relative_path) = path.strip_prefix(root) else {
                 continue;
             };
-
-            let Ok(metadata) = entry.metadata() else {
-                continue;
-            };
-
-            if metadata.len() > MAX_FILE_BYTES {
-                continue;
-            }
 
             let Ok(bytes) = fs::read(path) else {
                 continue;
@@ -124,10 +117,6 @@ impl SkillContentService {
                 language: detect_language(path).to_string(),
                 content,
             });
-
-            if discovered_files.len() >= MAX_SKILL_FILES {
-                break;
-            }
         }
 
         discovered_files
@@ -135,6 +124,7 @@ impl SkillContentService {
 
     fn list_skill_files(&self, root: &Path) -> Vec<SystemSkillTreeFile> {
         let mut discovered_files = Vec::new();
+        let skip_directory_names = build_skip_directory_names();
 
         for entry_result in WalkBuilder::new(root)
             .hidden(false)
@@ -142,7 +132,7 @@ impl SkillContentService {
             .git_ignore(false)
             .git_global(false)
             .git_exclude(false)
-            .filter_entry(|entry| !should_skip_directory(entry.path()))
+            .filter_entry(move |entry| !should_skip_directory(entry.path(), &skip_directory_names))
             .build()
         {
             let Ok(entry) = entry_result else {
@@ -158,14 +148,6 @@ impl SkillContentService {
                 continue;
             };
 
-            let Ok(metadata) = entry.metadata() else {
-                continue;
-            };
-
-            if metadata.len() > MAX_FILE_BYTES {
-                continue;
-            }
-
             let relative_path = normalize_relative_path(relative_path);
 
             discovered_files.push(SystemSkillTreeFile {
@@ -173,10 +155,6 @@ impl SkillContentService {
                 relative_path,
                 language: detect_language(path).to_string(),
             });
-
-            if discovered_files.len() >= MAX_SKILL_FILES {
-                break;
-            }
         }
 
         discovered_files

@@ -1,11 +1,17 @@
 import { invoke } from "@tauri-apps/api/core";
 import { startTransition, useEffect, useState } from "react";
-import type { MarketplaceSearchResponse, MarketplaceSkill } from "../types";
+import type { MarketplaceSearchResponse, MarketplaceSkill, MarketplaceSource } from "../types";
 
 function requestMarketplaceSearch(query: string, page: number, limit: number) {
   return invoke<MarketplaceSearchResponse>("search_marketplace_skills", {
     query,
     page,
+    limit,
+  });
+}
+
+function requestMarketplaceTopSources(limit: number) {
+  return invoke<MarketplaceSource[]>("load_marketplace_top_sources", {
     limit,
   });
 }
@@ -31,6 +37,7 @@ function applyMarketplaceResponse(
 
 export function useSkillMarketplace() {
   const [marketplaceSkills, setMarketplaceSkills] = useState<MarketplaceSkill[]>([]);
+  const [marketplaceTopSources, setMarketplaceTopSources] = useState<MarketplaceSource[]>([]);
   const [marketplaceHasSearched, setMarketplaceHasSearched] = useState(false);
   const [marketplaceSearchMs, setMarketplaceSearchMs] = useState<number | null>(null);
   const [marketplaceTotal, setMarketplaceTotal] = useState<number | null>(0);
@@ -66,7 +73,7 @@ export function useSkillMarketplace() {
             ? error
             : error instanceof Error
               ? error.message
-              : "No se pudo cargar el marketplace remoto.",
+              : "No se pudo cargar el marketplace desde la Skills API local.",
         );
         setMarketplaceLoading(false);
         throw error;
@@ -76,14 +83,25 @@ export function useSkillMarketplace() {
   useEffect(() => {
     let cancelled = false;
 
-    requestMarketplaceSearch("", 1, 20)
-      .then((response) => {
-        if (cancelled) {
-          return;
-        }
+    Promise.allSettled([
+      requestMarketplaceTopSources(12),
+      requestMarketplaceSearch("", 1, 20),
+    ]).then((results) => {
+      if (cancelled) {
+        return;
+      }
 
+      const [sourcesResult, skillsResult] = results;
+
+      if (sourcesResult.status === "fulfilled") {
+        setMarketplaceTopSources(sourcesResult.value);
+      } else {
+        setMarketplaceTopSources([]);
+      }
+
+      if (skillsResult.status === "fulfilled") {
         applyMarketplaceResponse(
-          response,
+          skillsResult.value,
           setMarketplaceSkills,
           setMarketplaceHasSearched,
           setMarketplaceSearchMs,
@@ -91,18 +109,20 @@ export function useSkillMarketplace() {
           setMarketplaceError,
           setMarketplaceLoading,
         );
-      })
-      .catch(() => {
-        if (cancelled) {
-          return;
-        }
+        return;
+      }
 
-        setMarketplaceSkills([]);
-        setMarketplaceHasSearched(true);
-        setMarketplaceSearchMs(null);
-        setMarketplaceTotal(0);
-        setMarketplaceLoading(false);
-      });
+      setMarketplaceSkills([]);
+      setMarketplaceHasSearched(true);
+      setMarketplaceSearchMs(null);
+      setMarketplaceTotal(0);
+      setMarketplaceLoading(false);
+      setMarketplaceError(
+        sourcesResult.status === "fulfilled"
+          ? null
+          : "No se pudo cargar el marketplace desde la Skills API local.",
+      );
+    });
 
     return () => {
       cancelled = true;
@@ -116,6 +136,7 @@ export function useSkillMarketplace() {
     marketplaceQuery,
     marketplaceSearchMs,
     marketplaceSkills,
+    marketplaceTopSources,
     marketplaceTotal,
     refreshMarketplace: () => searchMarketplace(),
     searchMarketplace,

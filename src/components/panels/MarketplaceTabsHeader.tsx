@@ -1,23 +1,10 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react/dist/csr/ArrowLeft";
 import { BagSimpleIcon } from "@phosphor-icons/react/dist/csr/BagSimple";
-import type { IdeFile } from "../../types";
+import { useIde } from "../../contexts/IdeContext";
 import { WorkbenchTabsBar } from "../layout/WorkbenchTabsBar";
+export function MarketplaceTabsHeader() {
+  const { closeFile, openEditor, openFile, openFiles, openMarketplace } = useIde();
 
-type MarketplaceTabsHeaderProps = {
-  closeFile: (fileId: string) => void;
-  openFile: (fileId: string) => void;
-  openFiles: IdeFile[];
-  openMarketplace: () => void;
-  returnToEditor: () => void;
-};
-
-export function MarketplaceTabsHeader({
-  closeFile,
-  openFile,
-  openFiles,
-  openMarketplace,
-  returnToEditor,
-}: MarketplaceTabsHeaderProps) {
   return (
     <div className="h-[var(--app-header-height)] min-w-0 overflow-hidden border-b border-[var(--border)] bg-[image:var(--topbar-bg)] shadow-[var(--topbar-shadow)]">
       <div className="flex h-full min-w-0 items-stretch">
@@ -35,7 +22,7 @@ export function MarketplaceTabsHeader({
             fileTabs={openFiles}
             onCloseTab={(tabId) => {
               if (tabId === "__marketplace__") {
-                returnToEditor();
+                openEditor();
                 return;
               }
 
@@ -56,7 +43,7 @@ export function MarketplaceTabsHeader({
           <button
             aria-label="Volver al editor"
             className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[var(--border)] bg-white/[0.02] text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            onClick={returnToEditor}
+            onClick={openEditor}
             title="Volver"
             type="button"
           >

@@ -1,6 +1,11 @@
+mod backend_log_snapshot;
+mod marketplace_install_metadata;
 mod marketplace_install_result;
 mod marketplace_search_response;
 mod marketplace_skill;
+mod marketplace_source;
+mod marketplace_uninstall_result;
+mod skill_classification_settings;
 mod skill_scan_response;
 mod skill_tree_response;
 mod skill_watch_event;
@@ -10,9 +15,14 @@ mod system_skill_file;
 mod system_skill_tree_file;
 mod system_skill_tree_node;
 
+pub use backend_log_snapshot::BackendLogSnapshot;
+pub use marketplace_install_metadata::MarketplaceInstallMetadata;
 pub use marketplace_install_result::MarketplaceInstallResult;
 pub use marketplace_search_response::MarketplaceSearchResponse;
 pub use marketplace_skill::MarketplaceSkill;
+pub use marketplace_source::MarketplaceSource;
+pub use marketplace_uninstall_result::MarketplaceUninstallResult;
+pub use skill_classification_settings::SkillClassificationSettings;
 pub use skill_scan_response::SkillScanResponse;
 pub use skill_tree_response::SkillTreeResponse;
 pub use skill_watch_event::SkillWatchEvent;

@@ -39,6 +39,38 @@
   --workbench-surface: #0a1116;
   --sidebar-bg: linear-gradient(180deg, rgba(11, 18, 24, 0.995), rgba(10, 16, 22, 0.995));
   --editor-bg: linear-gradient(180deg, rgba(14, 21, 27, 0.995), rgba(12, 18, 24, 0.995));
+  --surface-workbench: var(--workbench-surface);
+  --surface-sidebar: var(--sidebar-surface);
+  --surface-editor: var(--editor-surface);
+  --surface-panel:
+    linear-gradient(180deg, rgba(16, 23, 28, 0.95), rgba(13, 19, 24, 0.96));
+  --surface-panel-shell:
+    linear-gradient(180deg, rgba(11, 17, 22, 0.99), rgba(9, 14, 18, 0.995));
+  --border-default: var(--border);
+  --border-focus: var(--border-strong);
+  --border-danger: rgba(207, 94, 79, 0.28);
+  --text-primary: var(--text);
+  --text-muted: var(--muted);
+  --text-danger: #ffb3a7;
+  --state-info-bg: rgba(79, 168, 199, 0.1);
+  --state-success-bg: rgba(90, 185, 138, 0.12);
+  --state-error-bg: rgba(207, 94, 79, 0.12);
+  --toast-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --toast-dismiss-border: rgba(255, 255, 255, 0.08);
+  --toast-dismiss-border-hover: rgba(255, 255, 255, 0.12);
+  --toast-dismiss-bg: rgba(255, 255, 255, 0.02);
+  --toast-dismiss-bg-hover: rgba(255, 255, 255, 0.05);
+  --toast-success-bg: var(--state-success-bg);
+  --toast-success-border: rgba(90, 185, 138, 0.28);
+  --toast-success-dot: #5ab98a;
+  --toast-error-bg: var(--state-error-bg);
+  --toast-error-border: var(--border-danger);
+  --toast-error-dot: #cf5e4f;
+  --toast-info-bg: var(--state-info-bg);
+  --toast-info-border: rgba(79, 168, 199, 0.22);
+  --toast-info-dot: var(--cyan);
+  --skeleton-base: rgba(255, 255, 255, 0.04);
+  --skeleton-highlight: rgba(255, 255, 255, 0.09);
   --app-header-height: 50px;
   --editor-chrome: rgba(8, 12, 16, 0.98);
   --topbar-bg: linear-gradient(180deg, rgba(12, 18, 23, 0.99), rgba(12, 18, 23, 0.99));
@@ -82,7 +114,7 @@ body {
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 32%),
     linear-gradient(180deg, #070c10 0%, #0a1116 48%, #0b1217 100%);
-  color: var(--text);
+  color: var(--text-primary);
   font-family: "Aptos", "Segoe UI Variable", "Trebuchet MS", sans-serif;
   background-attachment: fixed;
 }

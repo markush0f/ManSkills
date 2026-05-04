@@ -1,5 +1,6 @@
 import { TextInput } from "../components/shared/formControls";
-import type { SettingsCategory } from "./settingsCategories";
+import { useSettings } from "./SettingsContext";
+import { SETTINGS_CATEGORIES } from "./settingsCategories";
 
 function CategoryButton({
   active,
@@ -30,19 +31,8 @@ function CategoryButton({
   );
 }
 
-export function SettingsCategoryNav({
-  categories,
-  query,
-  selectedCategory,
-  setQuery,
-  setSelectedCategory,
-}: {
-  categories: Array<{ id: SettingsCategory; label: string }>;
-  query: string;
-  selectedCategory: SettingsCategory;
-  setQuery: (value: string) => void;
-  setSelectedCategory: (category: SettingsCategory) => void;
-}) {
+export function SettingsCategoryNav() {
+  const { query, selectedCategory, setQuery, setSelectedCategory } = useSettings();
   return (
     <aside className="border-b border-[var(--border)] bg-[image:var(--settings-nav-bg)] xl:border-b-0 xl:border-r">
       <div className="border-b border-[var(--border)] px-3 py-3">
@@ -74,7 +64,7 @@ export function SettingsCategoryNav({
       </div>
 
       <div className="space-y-1 py-2">
-        {categories.map((category) => (
+        {SETTINGS_CATEGORIES.map((category) => (
           <CategoryButton
             key={category.id}
             active={selectedCategory === category.id}

@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes } from "react";
+import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 const controlBaseClass =
   "w-full rounded-[10px] border border-[var(--border)] bg-white/[0.02] text-[12px] text-[var(--text)] outline-none shadow-none transition placeholder:text-[var(--muted)] focus:border-[var(--control-focus-border)] focus:bg-white/[0.03] focus:shadow-none";
@@ -16,6 +16,22 @@ export function TextInput({
       className={joinClasses(
         controlBaseClass,
         "h-9 px-3",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function TextareaInput({
+  className,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className={joinClasses(
+        controlBaseClass,
+        "min-h-[104px] px-3 py-2.5 leading-5 resize-y",
         className,
       )}
       {...props}

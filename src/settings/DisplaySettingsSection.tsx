@@ -1,13 +1,6 @@
-import type { IdePreferences } from "../types";
 import { matchesSearch } from "./settingsUtils";
-import type { UpdatePreferences } from "./settingsTypes";
 import { CheckboxSetting, Section, SelectSetting } from "./SettingsRows";
-
-type DisplaySettingsSectionProps = {
-  preferences: IdePreferences;
-  query: string;
-  updatePreferences: UpdatePreferences;
-};
+import { useSettings } from "./SettingsContext";
 
 export function hasDisplaySettingsResults(query: string) {
   return (
@@ -20,11 +13,9 @@ export function hasDisplaySettingsResults(query: string) {
   );
 }
 
-export function DisplaySettingsSection({
-  preferences,
-  query,
-  updatePreferences,
-}: DisplaySettingsSectionProps) {
+export function DisplaySettingsSection() {
+  const { preferences, query, updatePreferences } = useSettings();
+
   if (!hasDisplaySettingsResults(query)) {
     return null;
   }

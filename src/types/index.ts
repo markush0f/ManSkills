@@ -1,3 +1,4 @@
+export type { BackendLogSnapshot } from "./backend-log-snapshot";
 export type { BottomPanelView } from "./bottom-panel-view";
 export type { CursorPosition } from "./cursor-position";
 export type { Diagnostic } from "./diagnostic";
@@ -5,12 +6,22 @@ export type { DiagnosticLevel } from "./diagnostic-level";
 export type { IdeFile } from "./ide-file";
 export type { IdePreferences } from "./ide-preferences";
 export type { Language } from "./language";
-export type { MarketplaceInstallResult, MarketplaceInstallTarget } from "./marketplace-install-result";
+export type { MarketplaceInstallMetadata } from "./marketplace-install-metadata";
+export type { MarketplaceInstallResult, MarketplaceInstallTarget, MarketplaceUninstallResult } from "./marketplace-install-result";
 export type { MarketplaceSearchResponse } from "./marketplace-search-response";
 export type { MarketplaceSkill } from "./marketplace-skill";
+export type { MarketplaceSource } from "./marketplace-source";
+export type {
+  PersistedEditorPreviewMode,
+  PersistedSettingsCategory,
+  PersistedUiStateV1,
+  PersistedWorkspaceTab,
+  PersistedWorkspaceView,
+} from "./persisted-ui-state";
 export type { SaveShortcut } from "./save-shortcut";
 export type { SidebarView } from "./sidebar-view";
 export type { SkillScanResponse } from "./skill-scan-response";
+export type { SkillClassificationSettings } from "./skill-classification-settings";
 export type { SkillTreeResponse } from "./skill-tree-response";
 export type { SystemSkill } from "./system-skill";
 export type { SystemSkillContentResponse } from "./system-skill-content-response";
@@ -22,3 +33,4 @@ export type { SystemSkillTreeNodeKind } from "./system-skill-tree-node-kind";
 export type { SystemSkillWatchEvent } from "./system-skill-watch-event";
 export type { TreeBranch } from "./tree-branch";
 export type { TreeNode } from "./tree-node";
+export type { Toast, ToastKind } from "./toast";

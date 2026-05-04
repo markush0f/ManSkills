@@ -1,5 +1,10 @@
+import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import type { SystemSkill, SystemSkillTreeNode } from "../../../types";
+import { ContextMenu } from "../../shared/ContextMenu";
 import {
+  getPathLeafName,
   getSystemSkillSourceLabel,
 } from "./sidebarTreeUtils";
 import { ExpandIcon, FileNodeIcon, FolderNodeIcon, SkillNodeIcon } from "./SidebarTreeIcons";
@@ -55,11 +60,14 @@ type SystemSkillTreeListProps = {
   currentSkill?: SystemSkill;
   depth?: number;
   expandedNodeIds: Set<string>;
+  hiddenDirectoryNames: string[];
   listingSystemSkillIds: Set<string>;
   nodes: SystemSkillTreeNode[];
+  onHideDirectory: (directoryName: string) => Promise<unknown>;
   onListSkillFiles: (skill: SystemSkill, options?: { force?: boolean }) => Promise<unknown>;
   onOpenSkill: (skill: SystemSkill) => void;
   onOpenSkillFile: (skill: SystemSkill, relativePath: string) => void;
+  onShowDirectory: (directoryName: string) => Promise<unknown>;
   onToggleNode: (nodeId: string) => void;
   openingSystemSkillIds: Set<string>;
   searchActive: boolean;
@@ -71,15 +79,41 @@ export function SystemSkillTreeList({
   currentSkill,
   depth = 0,
   expandedNodeIds,
+  hiddenDirectoryNames,
   listingSystemSkillIds,
   nodes,
+  onHideDirectory,
   onListSkillFiles,
   onOpenSkill,
   onOpenSkillFile,
+  onShowDirectory,
   onToggleNode,
   openingSystemSkillIds,
   searchActive,
 }: SystemSkillTreeListProps) {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string } | null>(null);
+
+  function buildFolderContextItems(path: string) {
+    const directoryName = getPathLeafName(path);
+    const isHidden = hiddenDirectoryNames.some((value) => value.toLowerCase() === directoryName.toLowerCase());
+
+    return [
+      {
+        label: "Abrir en explorador",
+        icon: <FolderOpenIcon />,
+        onClick: () => {
+          void invoke("reveal_in_file_explorer", { path });
+        },
+      },
+      {
+        label: `${isHidden ? "Mostrar" : "Ocultar"} carpeta \"${directoryName}\"`,
+        onClick: () => {
+          void (isHidden ? onShowDirectory(directoryName) : onHideDirectory(directoryName));
+        },
+      },
+    ];
+  }
+
   return (
     <>
       {sortSystemNodesForDisplay(nodes).map((node) => {
@@ -101,6 +135,10 @@ export function SystemSkillTreeList({
                       : "gap-2 px-2.5 py-2 text-sm"
                 }`}
                 onClick={() => onToggleNode(node.id)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  setContextMenu({ x: event.clientX, y: event.clientY, path: node.path });
+                }}
                 style={{ paddingLeft: (compact ? 8 : 12) + depth * (compact ? 12 : 16) }}
                 title={node.path}
                 type="button"
@@ -134,11 +172,14 @@ export function SystemSkillTreeList({
                     currentSkill={currentSkill}
                     depth={depth + 1}
                     expandedNodeIds={expandedNodeIds}
+                    hiddenDirectoryNames={hiddenDirectoryNames}
                     listingSystemSkillIds={listingSystemSkillIds}
                     nodes={node.children}
+                    onHideDirectory={onHideDirectory}
                     onListSkillFiles={onListSkillFiles}
                     onOpenSkill={onOpenSkill}
                     onOpenSkillFile={onOpenSkillFile}
+                    onShowDirectory={onShowDirectory}
                     onToggleNode={onToggleNode}
                     openingSystemSkillIds={openingSystemSkillIds}
                     searchActive={searchActive}
@@ -214,11 +255,14 @@ export function SystemSkillTreeList({
                     currentSkill={skill}
                     depth={depth + 1}
                     expandedNodeIds={expandedNodeIds}
+                    hiddenDirectoryNames={hiddenDirectoryNames}
                     listingSystemSkillIds={listingSystemSkillIds}
                     nodes={node.children}
+                    onHideDirectory={onHideDirectory}
                     onListSkillFiles={onListSkillFiles}
                     onOpenSkill={onOpenSkill}
                     onOpenSkillFile={onOpenSkillFile}
+                    onShowDirectory={onShowDirectory}
                     onToggleNode={onToggleNode}
                     openingSystemSkillIds={openingSystemSkillIds}
                     searchActive={searchActive}
@@ -268,6 +312,14 @@ export function SystemSkillTreeList({
 
         return null;
       })}
+      {contextMenu ? (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={buildFolderContextItems(contextMenu.path)}
+          onClose={() => setContextMenu(null)}
+        />
+      ) : null}
     </>
   );
 }

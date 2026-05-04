@@ -1,18 +1,22 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useSkillClassificationState } from "../contexts/SkillClassificationContext";
+import { useUiShell } from "../contexts/UiShellContext";
+import { useMarketplaceState } from "../contexts/MarketplaceStateContext";
+import { usePreferences } from "../contexts/PreferencesContext";
+import { useSystemSkillsState } from "../contexts/SystemSkillsContext";
+import { useWorkspaceState } from "../contexts/WorkspaceStateContext";
 import {
   buildSystemSkillFiles,
   getSystemSkillFileId,
   getSystemSkillMainFileId,
 } from "../ide/systemSkills";
-import { useSkillMarketplace } from "./useSkillMarketplace";
-import { useIdePreferences } from "./useIdePreferences";
-import { useSystemSkills } from "./useSystemSkills";
-import { useWorkspaceFiles } from "./useWorkspaceFiles";
 import type {
   MarketplaceInstallResult,
   MarketplaceSkill,
+  SkillClassificationSettings,
+  MarketplaceUninstallResult,
   SystemSkill,
   SystemSkillWatchEvent,
 } from "../types";
@@ -26,21 +30,48 @@ function matchesChangedPath(rootPath: string, changedPaths: string[]) {
   return changedPaths.some((path) => path === rootPath || path.startsWith(`${rootPath}/`));
 }
 
+function parseMarketplaceTimestamp(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const seconds = Number(value);
+  const date = Number.isNaN(seconds) ? new Date(value) : new Date(seconds * 1000);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.getTime();
+}
+
 export function useIdeWorkspace() {
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("editor");
+  const { pushToast, uiState, updateUiState } = useUiShell();
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(uiState.workspaceView);
   const [isSavingActiveFile, setIsSavingActiveFile] = useState(false);
-  const [activeFileSaveError, setActiveFileSaveError] = useState<string | null>(null);
   const [selectedMarketplaceSkill, setSelectedMarketplaceSkill] = useState<MarketplaceSkill | null>(null);
   const [installingMarketplaceSkillIds, setInstallingMarketplaceSkillIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [marketplaceInstallMessage, setMarketplaceInstallMessage] = useState<string | null>(null);
-  const [marketplaceInstallError, setMarketplaceInstallError] = useState<string | null>(null);
-  const { preferences, updatePreferences } = useIdePreferences();
-  const marketplaceState = useSkillMarketplace();
-  const workspaceFiles = useWorkspaceFiles();
-  const systemSkillsState = useSystemSkills();
+  const [updatingMarketplaceSkillIds, setUpdatingMarketplaceSkillIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [uninstallingMarketplaceSkillIds, setUninstallingMarketplaceSkillIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const { preferences, updatePreferences } = usePreferences();
+  const {
+    refreshSkillClassificationSettings,
+    saveSkillClassificationSettings: persistSkillClassificationSettings,
+    skillClassificationSettings,
+    skillClassificationSettingsError,
+    skillClassificationSettingsLoading,
+  } = useSkillClassificationState();
+  const marketplaceState = useMarketplaceState();
+  const workspaceFiles = useWorkspaceState();
+  const systemSkillsState = useSystemSkillsState();
   const pendingWatchPathsRef = useRef<Set<string>>(new Set());
+  const hasRestoredWorkspaceSessionRef = useRef(false);
 
   const {
     activeFile,
@@ -52,7 +83,10 @@ export function useIdeWorkspace() {
     mergeFiles,
     mergeFilesAndOpen,
     openFile: openWorkspaceFile,
+    openFileIds,
     openFiles,
+    setActiveFileId,
+    setOpenFileIds,
     tree,
     updateActiveFile,
   } = workspaceFiles;
@@ -79,6 +113,7 @@ export function useIdeWorkspace() {
     marketplaceQuery,
     marketplaceSearchMs,
     marketplaceSkills,
+    marketplaceTopSources,
     marketplaceTotal,
     refreshMarketplace,
     searchMarketplace,
@@ -92,6 +127,46 @@ export function useIdeWorkspace() {
     const baseTitle = "Skills IDE";
     document.title = hasUnsavedChanges ? `* ${baseTitle}` : baseTitle;
   }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    updateUiState((current) => {
+      const nextOpenTabs = openFiles
+        .filter((file): file is typeof file & { relativePath: string; rootPath: string } => Boolean(file.rootPath && file.relativePath))
+        .map((file) => ({
+          relativePath: file.relativePath,
+          rootPath: file.rootPath,
+        }));
+      const nextActiveTab =
+        activeFile?.rootPath && activeFile.relativePath
+          ? {
+              relativePath: activeFile.relativePath,
+              rootPath: activeFile.rootPath,
+            }
+          : null;
+
+      const hasSameOpenTabs =
+        current.workspace.openTabs.length === nextOpenTabs.length &&
+        current.workspace.openTabs.every((tab, index) => {
+          const nextTab = nextOpenTabs[index];
+          return tab.relativePath === nextTab?.relativePath && tab.rootPath === nextTab?.rootPath;
+        });
+      const hasSameActiveTab =
+        current.workspace.activeTab?.relativePath === nextActiveTab?.relativePath &&
+        current.workspace.activeTab?.rootPath === nextActiveTab?.rootPath;
+
+      if (hasSameOpenTabs && hasSameActiveTab) {
+        return current;
+      }
+
+      return {
+        ...current,
+        workspace: {
+          activeTab: nextActiveTab,
+          openTabs: nextOpenTabs,
+        },
+      };
+    });
+  }, [activeFile, openFiles, updateUiState]);
 
   const refreshAffectedSystemSkills = useEffectEvent(async (changedPaths: string[]) => {
     const loadedRootPaths = new Set(
@@ -169,34 +244,152 @@ export function useIdeWorkspace() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (hasRestoredWorkspaceSessionRef.current || systemSkillsLoading) {
+      return;
+    }
+
+    hasRestoredWorkspaceSessionRef.current = true;
+
+    if (openFileIds.length > 0 || uiState.workspace.openTabs.length === 0) {
+      return;
+    }
+
+    void Promise.all(
+      uiState.workspace.openTabs.map(async (tab) => {
+        const skill = systemSkillByRootPath.get(tab.rootPath);
+        if (!skill) {
+          return null;
+        }
+
+        const response = await loadSystemSkillFiles(skill);
+        const createdFiles = buildSystemSkillFiles(skill, response);
+        const targetFileId =
+          createdFiles.find((file) => file.relativePath === tab.relativePath)?.id ??
+          createdFiles.find((file) => file.id === getSystemSkillMainFileId(skill))?.id ??
+          createdFiles[0]?.id;
+
+        return {
+          files: createdFiles,
+          targetFileId,
+          tab,
+        };
+      }),
+    )
+      .then((results) => {
+        if (cancelled) {
+          return;
+        }
+
+        const restored = results.filter((result): result is NonNullable<typeof result> => Boolean(result?.targetFileId));
+        if (restored.length === 0) {
+          return;
+        }
+
+        mergeFiles(restored.flatMap((result) => result.files));
+        setOpenFileIds(restored.map((result) => result.targetFileId));
+
+        const activeTab = uiState.workspace.activeTab;
+        const activeFileId =
+          restored.find(
+            (result) =>
+              result.tab.relativePath === activeTab?.relativePath && result.tab.rootPath === activeTab?.rootPath,
+          )?.targetFileId ?? restored[restored.length - 1]?.targetFileId ?? "";
+
+        setActiveFileId(activeFileId);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadSystemSkillFiles,
+    mergeFiles,
+    openFileIds.length,
+    setActiveFileId,
+    setOpenFileIds,
+    systemSkillByRootPath,
+    systemSkillsLoading,
+    uiState.workspace.activeTab,
+    uiState.workspace.openTabs,
+  ]);
+
   function openEditor() {
-    setActiveFileSaveError(null);
     setWorkspaceView("editor");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "editor",
+    }));
   }
 
   function openSettings() {
     setWorkspaceView("settings");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "settings",
+    }));
   }
 
   function openMarketplace() {
-    setActiveFileSaveError(null);
     setWorkspaceView("marketplace");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "marketplace",
+    }));
   }
 
   function openMarketplaceSkillDetail(skill: MarketplaceSkill) {
-    setMarketplaceInstallError(null);
-    setMarketplaceInstallMessage(null);
     setSelectedMarketplaceSkill(skill);
     setWorkspaceView("marketplace");
+    updateUiState((current) => ({
+      ...current,
+      workspaceView: "marketplace",
+    }));
   }
 
   function closeMarketplaceSkillDetail() {
     setSelectedMarketplaceSkill(null);
   }
 
+  function findInstalledMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedBySkillId = systemSkills.find(
+      (systemSkill) => systemSkill.marketplaceInstall?.skillId === skill.id,
+    );
+    if (installedBySkillId) {
+      return installedBySkillId;
+    }
+
+    return systemSkills.find((systemSkill) => {
+      const metadata = systemSkill.marketplaceInstall;
+      return Boolean(
+        metadata?.githubUrl &&
+        skill.githubUrl &&
+        metadata.githubUrl === skill.githubUrl &&
+        metadata.slug === skill.slug,
+      );
+    }) ?? null;
+  }
+
+  function isMarketplaceSkillUpdateAvailable(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill?.marketplaceInstall?.remoteUpdatedAt) {
+      return false;
+    }
+
+    const installedUpdatedAt = parseMarketplaceTimestamp(installedSkill.marketplaceInstall.remoteUpdatedAt);
+    const remoteUpdatedAt = parseMarketplaceTimestamp(skill.updatedAt);
+
+    if (installedUpdatedAt === null || remoteUpdatedAt === null) {
+      return false;
+    }
+
+    return remoteUpdatedAt > installedUpdatedAt;
+  }
+
   function installMarketplaceSkill(skill: MarketplaceSkill) {
-    setMarketplaceInstallError(null);
-    setMarketplaceInstallMessage(null);
     setInstallingMarketplaceSkillIds((current) => {
       const next = new Set(current);
       next.add(skill.id);
@@ -209,17 +402,26 @@ export function useIdeWorkspace() {
       target: preferences.marketplaceInstallTarget,
     })
       .then((result) => {
-        setMarketplaceInstallMessage(`Skill instalada en ${result.installedPath}`);
+        pushToast({
+          description: result.installedPath,
+          kind: "success",
+          title: `Installed ${skill.name}`,
+        });
         return refreshSystemSkillTree();
       })
       .catch((error: unknown) => {
-        setMarketplaceInstallError(
+        const message =
           typeof error === "string"
             ? error
             : error instanceof Error
               ? error.message
-              : "No se pudo instalar la skill.",
-        );
+              : "No se pudo instalar la skill.";
+        pushToast({
+          description: message,
+          kind: "error",
+          sticky: true,
+          title: `Failed to install ${skill.name}`,
+        });
         throw error;
       })
       .finally(() => {
@@ -231,8 +433,111 @@ export function useIdeWorkspace() {
       });
   }
 
+  function updateMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill) {
+      return Promise.reject(new Error("La skill no esta instalada."));
+    }
+
+    setUpdatingMarketplaceSkillIds((current) => {
+      const next = new Set(current);
+      next.add(skill.id);
+      return next;
+    });
+
+    return invoke<MarketplaceInstallResult>("update_marketplace_skill", {
+      rootPath: installedSkill.rootPath,
+      skill,
+    })
+      .then((result) => {
+        pushToast({
+          description: result.installedPath,
+          kind: "success",
+          title: `Updated ${skill.name}`,
+        });
+        return refreshSystemSkillTree();
+      })
+      .catch((error: unknown) => {
+        const message =
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+              ? error.message
+              : "No se pudo actualizar la skill.";
+        pushToast({
+          description: message,
+          kind: "error",
+          sticky: true,
+          title: `Failed to update ${skill.name}`,
+        });
+        throw error;
+      })
+      .finally(() => {
+        setUpdatingMarketplaceSkillIds((current) => {
+          const next = new Set(current);
+          next.delete(skill.id);
+          return next;
+        });
+      });
+  }
+
+  function uninstallMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill) {
+      return Promise.reject(new Error("La skill no esta instalada."));
+    }
+
+    setUninstallingMarketplaceSkillIds((current) => {
+      const next = new Set(current);
+      next.add(skill.id);
+      return next;
+    });
+
+    return invoke<MarketplaceUninstallResult>("uninstall_marketplace_skill", {
+      rootPath: installedSkill.rootPath,
+    })
+      .then((result) => {
+        pushToast({
+          description: result.removedPath,
+          kind: "success",
+          title: `Removed ${skill.name}`,
+        });
+        return refreshSystemSkillTree();
+      })
+      .catch((error: unknown) => {
+        const message =
+          typeof error === "string"
+            ? error
+            : error instanceof Error
+              ? error.message
+              : "No se pudo eliminar la skill.";
+        pushToast({
+          description: message,
+          kind: "error",
+          sticky: true,
+          title: `Failed to remove ${skill.name}`,
+        });
+        throw error;
+      })
+      .finally(() => {
+        setUninstallingMarketplaceSkillIds((current) => {
+          const next = new Set(current);
+          next.delete(skill.id);
+          return next;
+        });
+      });
+  }
+
+  function openInstalledMarketplaceSkill(skill: MarketplaceSkill) {
+    const installedSkill = findInstalledMarketplaceSkill(skill);
+    if (!installedSkill) {
+      return;
+    }
+
+    openSystemSkill(installedSkill);
+  }
+
   function openFile(fileId: string) {
-    setActiveFileSaveError(null);
     openWorkspaceFile(fileId);
     setWorkspaceView("editor");
   }
@@ -274,8 +579,6 @@ export function useIdeWorkspace() {
     const contentToSave = nextContent ?? fileToSave.content;
 
     setIsSavingActiveFile(true);
-    setActiveFileSaveError(null);
-
     return invoke("save_system_skill_file", {
       rootPath: fileToSave.rootPath,
       relativePath: fileToSave.relativePath,
@@ -294,48 +597,129 @@ export function useIdeWorkspace() {
           return;
         }
 
-        return loadSystemSkillFiles(activeSkill)
-          .then((response) => {
-            mergeFiles(buildSystemSkillFiles(activeSkill, response));
-            return refreshSystemSkillTree();
-          })
-          .catch(() => {
-            setActiveFileSaveError("Archivo guardado, pero no se pudo refrescar la skill.");
-          });
+          return loadSystemSkillFiles(activeSkill)
+            .then((response) => {
+              mergeFiles(buildSystemSkillFiles(activeSkill, response));
+              pushToast({
+                kind: "success",
+                title: `Saved ${fileToSave.relativePath}`,
+              });
+              return refreshSystemSkillTree();
+            })
+            .catch(() => {
+              pushToast({
+                description: fileToSave.relativePath,
+                kind: "error",
+                sticky: true,
+                title: "Saved file but failed to refresh skill",
+              });
+            });
       })
       .catch(() => {
-        setActiveFileSaveError("No se pudo guardar el archivo.");
+        pushToast({
+          description: fileToSave.relativePath,
+          kind: "error",
+          sticky: true,
+          title: "Failed to save file",
+        });
       })
       .finally(() => {
         setIsSavingActiveFile(false);
       });
   }
 
+  function saveSkillClassificationSettings(settings: SkillClassificationSettings) {
+    return persistSkillClassificationSettings(settings)
+      .then((savedSettings) =>
+        refreshSystemSkillTree()
+          .then(() => {
+            pushToast({
+              description: "Skill discovery rules were refreshed.",
+              kind: "success",
+              title: "Skill settings saved",
+            });
+            return savedSettings;
+          })
+          .catch(() => savedSettings),
+      );
+  }
+
+  function hideSkillDirectory(directoryName: string) {
+    const normalizedDirectoryName = directoryName.trim();
+    if (!normalizedDirectoryName) {
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    const alreadyHidden = skillClassificationSettings.hiddenDirectories.some(
+      (value) => value.toLowerCase() === normalizedDirectoryName.toLowerCase(),
+    );
+
+    if (alreadyHidden) {
+      pushToast({
+        description: `${normalizedDirectoryName} is already listed in hidden directories.`,
+        kind: "info",
+        title: "Folder already hidden",
+      });
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    return saveSkillClassificationSettings({
+      ...skillClassificationSettings,
+      hiddenDirectories: [...skillClassificationSettings.hiddenDirectories, normalizedDirectoryName],
+    });
+  }
+
+  function showSkillDirectory(directoryName: string) {
+    const normalizedDirectoryName = directoryName.trim();
+    if (!normalizedDirectoryName) {
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    const nextHiddenDirectories = skillClassificationSettings.hiddenDirectories.filter(
+      (value) => value.toLowerCase() !== normalizedDirectoryName.toLowerCase(),
+    );
+
+    if (nextHiddenDirectories.length === skillClassificationSettings.hiddenDirectories.length) {
+      pushToast({
+        description: `${normalizedDirectoryName} is not currently hidden.`,
+        kind: "info",
+        title: "Folder already visible",
+      });
+      return Promise.resolve(skillClassificationSettings);
+    }
+
+    return saveSkillClassificationSettings({
+      ...skillClassificationSettings,
+      hiddenDirectories: nextHiddenDirectories,
+    });
+  }
+
   return {
     activeFile,
     activeFileId,
-    activeFileSaveError,
     clearSystemSkillActionError,
     closeFile,
     files,
     isSavingActiveFile,
     isMarketplaceView: workspaceView === "marketplace",
     isSettingsView: workspaceView === "settings",
+    isMarketplaceSkillUpdateAvailable,
     installingMarketplaceSkillIds,
     installMarketplaceSkill,
+    findInstalledMarketplaceSkill,
     listSystemSkillFiles,
     listedSystemSkillIds,
     listingSystemSkillIds,
     marketplaceError,
     marketplaceHasSearched,
-    marketplaceInstallError,
-    marketplaceInstallMessage,
     marketplaceLoading,
     marketplaceQuery,
     marketplaceSearchMs,
     marketplaceSkills,
+    marketplaceTopSources,
     marketplaceTotal,
     openMarketplaceSkillDetail,
+    openInstalledMarketplaceSkill,
     openEditor,
     openFile,
     openFiles,
@@ -346,10 +730,17 @@ export function useIdeWorkspace() {
     openingSystemSkillIds,
     preferences,
     refreshMarketplace,
+    hideSkillDirectory,
+    refreshSkillClassificationSettings,
     searchMarketplace,
     selectedMarketplaceSkill,
     refreshSystemSkillTree,
     saveActiveFile,
+    saveSkillClassificationSettings,
+    showSkillDirectory,
+    skillClassificationSettings,
+    skillClassificationSettingsError,
+    skillClassificationSettingsLoading,
     systemSkillActionError,
     systemSkillScanMs,
     systemSkillTree,
@@ -357,8 +748,12 @@ export function useIdeWorkspace() {
     systemSkillsError,
     systemSkillsLoading,
     tree,
+    uninstallMarketplaceSkill,
     updateActiveFile,
+    updateMarketplaceSkill,
+    updatingMarketplaceSkillIds,
     updatePreferences,
+    uninstallingMarketplaceSkillIds,
     workspaceView,
     closeMarketplaceSkillDetail,
   };

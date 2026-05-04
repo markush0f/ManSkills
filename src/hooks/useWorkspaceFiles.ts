@@ -82,6 +82,7 @@ export function useWorkspaceFiles() {
     openFileIds,
     openFiles,
     setActiveFileId,
+    setOpenFileIds,
     tree,
     updateActiveFile,
   };
