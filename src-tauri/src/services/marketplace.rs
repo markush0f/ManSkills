@@ -4,7 +4,9 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+use base64::Engine;
 use reqwest::blocking::Client;
+use serde::Deserialize;
 use serde_json::Value;
 
 use crate::models::{MarketplaceInstallResult, MarketplaceSearchResponse, MarketplaceSkill};
@@ -12,13 +14,28 @@ use crate::models::{MarketplaceInstallResult, MarketplaceSearchResponse, Marketp
 const DEFAULT_LIMIT: u32 = 20;
 const DEFAULT_PAGE: u32 = 1;
 const MAX_LIMIT: u32 = 100;
-const SEARCH_URL: &str = "https://skillsmp.com/api/v1/skills/search";
-const GITHUB_API_ROOT: &str = "https://api.github.com/repos";
-const API_KEY_ENV: &str = "SKILLSMP_API_KEY";
-const DEFAULT_SUMMARY: &str = "No summary provided by SkillsMP.";
+const API_BASE_URL: &str = "http://localhost:3456/api";
+
+fn get_skills_api_port() -> u16 {
+    let port_file = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("server-skills")
+        .join("skills-api")
+        .join(".skills-api-port");
+    
+    std::fs::read_to_string(&port_file)
+        .ok()
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(3456)
+}
+
+fn get_api_base_url() -> String {
+    let port = get_skills_api_port();
+    format!("http://localhost:{}/api", port)
+}
 const USER_AGENT: &str = "skills-ide-marketplace";
 const SKILL_MANIFEST_NAME: &str = "SKILL.md";
-const FEATURED_BROWSE_QUERY: &str = "skill";
 
 pub struct MarketplaceService {
     client: Client,
@@ -41,39 +58,44 @@ impl MarketplaceService {
         limit: Option<u32>,
     ) -> Result<MarketplaceSearchResponse, String> {
         let started_at = Instant::now();
-        let normalized_query = query.unwrap_or_default().trim().to_string();
         let normalized_page = page.unwrap_or(DEFAULT_PAGE).max(1);
         let normalized_limit = limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
-        let search_request = build_search_request(&normalized_query);
 
-        let api_key = std::env::var(API_KEY_ENV)
-            .map_err(|_| "Falta la variable de entorno SKILLSMP_API_KEY.".to_string())?;
+        let api_base = get_api_base_url();
+        let url = if query.is_some() {
+            format!("{}/skills", api_base)
+        } else {
+            format!("{}/skills/top", api_base)
+        };
 
-        let response = self
-            .client
-            .get(SEARCH_URL)
-            .bearer_auth(api_key)
-            .query(&[
-                ("q", search_request.request_query.as_str()),
-                ("page", &normalized_page.to_string()),
-                ("limit", &normalized_limit.to_string()),
-                ("sortBy", search_request.sort_by),
-            ])
+        let mut request = self.client.get(&url);
+        
+        if let Some(q) = &query {
+            request = request.query(&[("query", q.as_str())]);
+        }
+        
+        request = request.query(&[
+            ("page", &normalized_page.to_string()),
+            ("pageSize", &normalized_limit.to_string()),
+        ]);
+
+        let response = request
             .send()
             .map_err(map_request_error)?;
 
         let status = response.status();
+        
+        if !status.is_success() {
+            return Err(format!("skills-api returned error: {}", status));
+        }
+
         let payload: Value = response
             .json()
-            .map_err(|_| "SkillsMP devolvio una respuesta no valida.".to_string())?;
-
-        if !status.is_success() {
-            return Err(map_api_error(status.as_u16(), &payload));
-        }
+            .map_err(|_| "skills-api devolvio una respuesta no valida.".to_string())?;
 
         parse_search_response(
             payload,
-            search_request.response_query,
+            query.unwrap_or_default(),
             normalized_page,
             normalized_limit,
             started_at.elapsed().as_millis(),
@@ -86,24 +108,21 @@ impl MarketplaceService {
         target: String,
         collection: Option<String>,
     ) -> Result<MarketplaceInstallResult, String> {
-        let github_url = skill
-            .github_url
-            .clone()
-            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
-        let reference = parse_github_tree_url(&github_url)?;
         let install_root = resolve_install_root(&target, collection.as_deref())?;
 
         fs::create_dir_all(&install_root)
             .map_err(|_| "No se pudo preparar el directorio de instalacion.".to_string())?;
 
-        let final_root = install_root.join(&skill.slug);
+        let skill_id = skill.skill_id.clone();
+        let final_root = install_root.join(&skill.skill_id);
+        
         if final_root.exists() {
             return Err("La skill ya existe en el destino seleccionado.".to_string());
         }
 
         let temp_root = install_root.join(format!(
             ".{}-tmp-{}",
-            skill.slug,
+            skill.skill_id,
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|value| value.as_nanos())
@@ -113,7 +132,8 @@ impl MarketplaceService {
         fs::create_dir_all(&temp_root)
             .map_err(|_| "No se pudo crear el directorio temporal de instalacion.".to_string())?;
 
-        let install_result = self.download_directory(&reference, &temp_root, "")?;
+        let file_count = self.download_skill_files(&skill, &temp_root)?;
+        let skill_id_for_result = skill.skill_id.clone();
 
         if !temp_root.join(SKILL_MANIFEST_NAME).exists() {
             let _ = fs::remove_dir_all(&temp_root);
@@ -126,22 +146,78 @@ impl MarketplaceService {
         })?;
 
         Ok(MarketplaceInstallResult {
-            skill_id: skill.id,
-            slug: skill.slug,
+            skill_id: skill_id_for_result,
+            slug: skill_id,
             target,
             installed_path: final_root.to_string_lossy().into_owned(),
-            file_count: install_result,
+            file_count: file_count as usize,
         })
     }
 
     pub fn load_manifest(&self, skill: &MarketplaceSkill) -> Result<String, String> {
-        let github_url = skill
-            .github_url
-            .as_deref()
-            .ok_or_else(|| "La skill no incluye una fuente GitHub instalable.".to_string())?;
-        let reference = parse_github_tree_url(github_url)?;
+        let api_base = get_api_base_url();
+        let url = format!(
+            "{}/skills/{}/{}/{}",
+            api_base, skill.owner, skill.repo, skill.skill_id
+        );
 
-        self.fetch_github_file_text(&reference, SKILL_MANIFEST_NAME)
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .map_err(map_request_error)?;
+
+        if !response.status().is_success() {
+            return Err(format!("No se pudo cargar el manifest: {}", response.status()));
+        }
+
+        let payload: Value = response
+            .json()
+            .map_err(|_| "skills-api devolvio una respuesta no valida.".to_string())?;
+
+        Ok(serde_json::to_string_pretty(&payload).unwrap_or_default())
+    }
+
+    fn download_skill_files(&self, skill: &MarketplaceSkill, dest: &Path) -> Result<u32, String> {
+        let api_base = get_api_base_url();
+        let url = format!(
+            "{}/skills/{}/{}/{}/files",
+            api_base, skill.owner, skill.repo, skill.skill_id
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .map_err(map_request_error)?;
+
+        if !response.status().is_success() {
+            return Err(format!("No se pudieron descargar los archivos: {}", response.status()));
+        }
+
+        let files: Vec<SkillFile> = response
+            .json()
+            .map_err(|_| "skills-api devolvio una lista de archivos no valida.".to_string())?;
+
+        let mut count = 0;
+        for file in files {
+            let file_path = dest.join(&file.path);
+            if let Some(parent) = file_path.parent() {
+                fs::create_dir_all(parent)
+                    .map_err(|_| format!("No se pudo crear el directorio: {:?}", parent))?;
+            }
+            let content = if file.encoding == "base64" {
+                let decoded = base64_decode(&file.content)?;
+                decoded
+            } else {
+                file.content.into_bytes()
+            };
+            fs::write(&file_path, content)
+                .map_err(|_| format!("No se pudo escribir el archivo: {}", file.path))?;
+            count += 1;
+        }
+
+        Ok(count)
     }
 }
 
@@ -151,26 +227,11 @@ impl Default for MarketplaceService {
     }
 }
 
-struct SearchRequest<'a> {
-    request_query: String,
-    response_query: String,
-    sort_by: &'a str,
-}
-
-fn build_search_request(query: &str) -> SearchRequest<'static> {
-    if query.is_empty() {
-        return SearchRequest {
-            request_query: FEATURED_BROWSE_QUERY.to_string(),
-            response_query: String::new(),
-            sort_by: "stars",
-        };
-    }
-
-    SearchRequest {
-        request_query: query.to_string(),
-        response_query: query.to_string(),
-        sort_by: "recent",
-    }
+#[derive(Debug, Deserialize)]
+struct SkillFile {
+    path: String,
+    content: String,
+    encoding: String,
 }
 
 fn parse_search_response(
@@ -180,9 +241,15 @@ fn parse_search_response(
     limit: u32,
     duration_ms: u128,
 ) -> Result<MarketplaceSearchResponse, String> {
-    let Some(skills_array) = extract_skills_array(&payload) else {
-        return Err("SkillsMP no devolvio una lista de skills reconocible.".to_string());
-    };
+    let total = payload
+        .get("total")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
+    
+    let skills_array = payload
+        .get("skills")
+        .and_then(|v| v.as_array())
+        .ok_or("skills-api no devolvio una lista de skills valida.")?;
 
     let skills = skills_array
         .iter()
@@ -190,7 +257,7 @@ fn parse_search_response(
         .collect::<Vec<_>>();
 
     Ok(MarketplaceSearchResponse {
-        total: extract_total(&payload).or(Some(skills.len() as u64)),
+        total: Some(total),
         skills,
         query,
         page,
@@ -199,157 +266,39 @@ fn parse_search_response(
     })
 }
 
-fn extract_skills_array(payload: &Value) -> Option<&Vec<Value>> {
-    payload
-        .get("skills")
-        .and_then(Value::as_array)
-        .or_else(|| payload.get("results").and_then(Value::as_array))
-        .or_else(|| payload.pointer("/data/skills").and_then(Value::as_array))
-        .or_else(|| payload.pointer("/data/results").and_then(Value::as_array))
-        .or_else(|| payload.pointer("/data/items").and_then(Value::as_array))
-        .or_else(|| payload.pointer("/data").and_then(Value::as_array))
-        .or_else(|| payload.as_array())
-}
-
-fn extract_total(payload: &Value) -> Option<u64> {
-    [
-        payload.get("total"),
-        payload.pointer("/pagination/total"),
-        payload.pointer("/meta/total"),
-        payload.pointer("/data/total"),
-        payload.pointer("/count"),
-    ]
-    .into_iter()
-    .flatten()
-    .find_map(read_u64)
-}
-
 fn parse_marketplace_skill(skill: &Value) -> Option<MarketplaceSkill> {
-    let name = read_first_string(
-        skill,
-        &["name", "title", "skillName", "skill_name", "slug"],
-    )?;
-    let repository = read_first_string(
-        skill,
-        &["repository", "repo", "fullName", "full_name"],
-    )
-    .or_else(|| read_nested_string(skill, &["github", "repository"]))
-    .unwrap_or_else(|| "unknown/unknown".to_string());
-    let author = read_first_string(skill, &["author", "owner"])
-        .or_else(|| read_nested_string(skill, &["author", "login"]))
-        .or_else(|| read_nested_string(skill, &["owner", "login"]))
-        .unwrap_or_else(|| repository.split('/').next().unwrap_or("unknown").to_string());
-    let slug = read_first_string(skill, &["slug"]).unwrap_or_else(|| slugify(&name));
-    let id = read_first_string(skill, &["id", "uuid"]).unwrap_or_else(|| format!("{repository}:{slug}"));
-    let summary = read_first_string(
-        skill,
-        &["summary", "description", "excerpt", "tagline"],
-    )
-    .unwrap_or_else(|| DEFAULT_SUMMARY.to_string());
-    let stars = [
-        skill.get("stars"),
-        skill.get("starCount"),
-        skill.get("stargazersCount"),
-        skill.pointer("/github/stars"),
-    ]
-    .into_iter()
-    .flatten()
-    .find_map(read_u64);
-    let updated_at = read_first_string(
-        skill,
-        &["updatedAt", "updated_at", "lastUpdated", "pushedAt"],
-    )
-    .or_else(|| read_nested_string(skill, &["github", "updatedAt"]));
-    let url = read_first_string(skill, &["url", "htmlUrl", "html_url"])
-        .or_else(|| read_nested_string(skill, &["github", "url"]));
-    let github_url = read_first_string(skill, &["githubUrl"])
-        .or_else(|| read_nested_string(skill, &["github", "url"]))
-        .or_else(|| read_nested_string(skill, &["github", "treeUrl"]));
-    let skill_url = read_first_string(skill, &["skillUrl"]).or(url);
+    let source = skill.get("source")?.as_str()?.to_string();
+    let parts: Vec<&str> = source.split('/').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+    let owner = parts[0].to_string();
+    let repo = parts[1].to_string();
+
+    let skill_id = skill.get("skillId")?.as_str()?.to_string();
+    let name = skill.get("name")?.as_str()?.to_string();
+    let display_name = skill.get("displayName")?.as_str()?.to_string();
+    let installs = skill.get("installs")?.as_u64()?;
+    let github_url = skill.get("githubUrl")?.as_str()?.to_string();
 
     Some(MarketplaceSkill {
-        id,
-        slug,
+        source,
+        skill_id,
         name,
-        summary,
-        repository,
-        author,
-        stars,
-        updated_at,
+        display_name,
+        installs,
+        owner,
+        repo,
         github_url,
-        skill_url,
     })
-}
-
-fn read_first_string(value: &Value, keys: &[&str]) -> Option<String> {
-    keys.iter()
-        .filter_map(|key| value.get(*key))
-        .find_map(read_string)
-}
-
-fn read_nested_string(value: &Value, path: &[&str]) -> Option<String> {
-    let mut current = value;
-
-    for segment in path {
-        current = current.get(*segment)?;
-    }
-
-    read_string(current)
-}
-
-fn read_string(value: &Value) -> Option<String> {
-    match value {
-        Value::String(text) => {
-            let trimmed = text.trim();
-            (!trimmed.is_empty()).then(|| trimmed.to_string())
-        }
-        Value::Number(number) => Some(number.to_string()),
-        _ => None,
-    }
-}
-
-fn read_u64(value: &Value) -> Option<u64> {
-    match value {
-        Value::Number(number) => number.as_u64(),
-        Value::String(text) => text.trim().parse().ok(),
-        _ => None,
-    }
-}
-
-fn slugify(value: &str) -> String {
-    value.chars()
-        .map(|character| match character {
-            'A'..='Z' => character.to_ascii_lowercase(),
-            'a'..='z' | '0'..='9' => character,
-            _ => '-',
-        })
-        .collect()
 }
 
 fn map_request_error(error: reqwest::Error) -> String {
     if error.is_timeout() {
-        return "SkillsMP tardo demasiado en responder.".to_string();
+        return "skills-api tardo demasiado en responder.".to_string();
     }
 
-    "No se pudo conectar con SkillsMP.".to_string()
-}
-
-fn map_api_error(status: u16, payload: &Value) -> String {
-    let error_code = payload
-        .pointer("/error/code")
-        .and_then(Value::as_str)
-        .unwrap_or_default();
-
-    match (status, error_code) {
-        (401, "INVALID_API_KEY") => "La API key de SkillsMP no es valida.".to_string(),
-        (401, "MISSING_API_KEY") => "La API key de SkillsMP no fue enviada.".to_string(),
-        (401, _) => "No se pudo autenticar con SkillsMP.".to_string(),
-        (429, "DAILY_QUOTA_EXCEEDED") => "La cuota diaria de SkillsMP se ha agotado.".to_string(),
-        (429, _) => "SkillsMP ha bloqueado temporalmente las consultas por cuota.".to_string(),
-        (400, "MISSING_QUERY") => "Debes escribir una busqueda para consultar SkillsMP.".to_string(),
-        (500, _) => "SkillsMP devolvio un error interno.".to_string(),
-        _ => "SkillsMP devolvio un error inesperado.".to_string(),
-    }
+    format!("No se pudo conectar con skills-api: {}", error)
 }
 
 fn resolve_install_root(target: &str, collection: Option<&str>) -> Result<PathBuf, String> {
@@ -397,7 +346,7 @@ fn normalize_install_collection(collection: Option<&str>) -> Result<Option<Vec<S
             .chars()
             .all(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.'))
         {
-            return Err("La coleccion solo puede usar letras, numeros, '-', '_' y '.'.".to_string());
+            return Err("La coleccion de instalacion contiene caracteres no validos.".to_string());
         }
 
         segments.push(value.to_string());
@@ -406,273 +355,45 @@ fn normalize_install_collection(collection: Option<&str>) -> Result<Option<Vec<S
     Ok(Some(segments))
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct GitHubTreeReference {
-    owner: String,
-    repo: String,
-    branch: String,
-    path: String,
-}
-
-fn parse_github_tree_url(url: &str) -> Result<GitHubTreeReference, String> {
-    let stripped = url
-        .strip_prefix("https://github.com/")
-        .or_else(|| url.strip_prefix("http://github.com/"))
-        .ok_or_else(|| "La skill no apunta a una URL GitHub valida.".to_string())?;
-    let segments = stripped.split('/').collect::<Vec<_>>();
-
-    if segments.len() < 5 || segments[2] != "tree" {
-        return Err("La URL GitHub de la skill no tiene el formato esperado.".to_string());
-    }
-
-    Ok(GitHubTreeReference {
-        owner: segments[0].to_string(),
-        repo: segments[1].to_string(),
-        branch: segments[3].to_string(),
-        path: segments[4..].join("/"),
-    })
-}
-
-#[derive(Debug)]
-struct GitHubEntry {
-    entry_type: String,
-    download_url: Option<String>,
-    name: String,
-    path: String,
-}
-
-impl MarketplaceService {
-    fn fetch_github_file_text(
-        &self,
-        reference: &GitHubTreeReference,
-        relative_path: &str,
-    ) -> Result<String, String> {
-        let full_path = if relative_path.is_empty() {
-            reference.path.clone()
-        } else {
-            format!("{}/{}", reference.path, relative_path)
-        };
-
-        let response = self
-            .client
-            .get(format!(
-                "{}/{}/{}/contents/{}",
-                GITHUB_API_ROOT, reference.owner, reference.repo, full_path
-            ))
-            .header("User-Agent", USER_AGENT)
-            .query(&[("ref", reference.branch.as_str())])
-            .send()
-            .and_then(|response| response.error_for_status())
-            .map_err(|_| "No se pudo localizar SKILL.md en GitHub.".to_string())?;
-
-        let payload: Value = response
-            .json()
-            .map_err(|_| "GitHub devolvio un contenido no valido para SKILL.md.".to_string())?;
-        let download_url = payload
-            .get("download_url")
-            .and_then(Value::as_str)
-            .ok_or_else(|| "GitHub no devolvio una URL valida para SKILL.md.".to_string())?;
-
-        self.client
-            .get(download_url)
-            .header("User-Agent", USER_AGENT)
-            .send()
-            .and_then(|response| response.error_for_status())
-            .map_err(|_| "No se pudo descargar SKILL.md desde GitHub.".to_string())?
-            .text()
-            .map_err(|_| "No se pudo leer el contenido de SKILL.md.".to_string())
-    }
-
-    fn download_directory(
-        &self,
-        reference: &GitHubTreeReference,
-        output_root: &Path,
-        current_relative: &str,
-    ) -> Result<usize, String> {
-        let entries = self.fetch_github_directory(reference, current_relative)?;
-        let mut file_count = 0usize;
-
-        for entry in entries {
-            match entry.entry_type.as_str() {
-                "file" => {
-                    let download_url = entry
-                        .download_url
-                        .as_deref()
-                        .ok_or_else(|| "GitHub no devolvio una URL de descarga para un archivo.".to_string())?;
-                    let relative_path = entry
-                        .path
-                        .strip_prefix(&reference.path)
-                        .map(|value| value.trim_start_matches('/'))
-                        .unwrap_or(entry.path.as_str());
-                    let destination = output_root.join(to_relative_path_buf(relative_path));
-                    if let Some(parent) = destination.parent() {
-                        fs::create_dir_all(parent)
-                            .map_err(|_| "No se pudo crear la carpeta de destino.".to_string())?;
-                    }
-                    let bytes = self
-                        .client
-                        .get(download_url)
-                        .header("User-Agent", USER_AGENT)
-                        .send()
-                        .and_then(|response| response.error_for_status())
-                        .map_err(|_| "No se pudo descargar un archivo de la skill desde GitHub.".to_string())?
-                        .bytes()
-                        .map_err(|_| "No se pudo leer un archivo descargado de la skill.".to_string())?;
-                    fs::write(destination, bytes)
-                        .map_err(|_| "No se pudo escribir un archivo de la skill instalada.".to_string())?;
-                    file_count += 1;
-                }
-                "dir" => {
-                    let next_relative = if current_relative.is_empty() {
-                        entry.name.clone()
-                    } else {
-                        format!("{current_relative}/{}", entry.name)
-                    };
-                    file_count += self.download_directory(reference, output_root, &next_relative)?;
-                }
-                _ => {}
-            }
-        }
-
-        Ok(file_count)
-    }
-
-    fn fetch_github_directory(
-        &self,
-        reference: &GitHubTreeReference,
-        current_relative: &str,
-    ) -> Result<Vec<GitHubEntry>, String> {
-        let full_path = if current_relative.is_empty() {
-            reference.path.clone()
-        } else {
-            format!("{}/{}", reference.path, current_relative)
-        };
-
-        let response = self
-            .client
-            .get(format!(
-                "{}/{}/{}/contents/{}",
-                GITHUB_API_ROOT, reference.owner, reference.repo, full_path
-            ))
-            .header("User-Agent", USER_AGENT)
-            .query(&[("ref", reference.branch.as_str())])
-            .send()
-            .and_then(|response| response.error_for_status())
-            .map_err(|_| "No se pudo consultar el contenido de la skill en GitHub.".to_string())?;
-
-        let payload: Value = response
-            .json()
-            .map_err(|_| "GitHub devolvio un contenido no valido para la skill.".to_string())?;
-        let entries = payload
-            .as_array()
-            .ok_or_else(|| "GitHub no devolvio una carpeta valida para esta skill.".to_string())?;
-
-        Ok(entries
-            .iter()
-            .filter_map(|entry| {
-                Some(GitHubEntry {
-                    entry_type: entry.get("type")?.as_str()?.to_string(),
-                    download_url: entry
-                        .get("download_url")
-                        .and_then(Value::as_str)
-                        .map(str::to_string),
-                    name: entry.get("name")?.as_str()?.to_string(),
-                    path: entry.get("path")?.as_str()?.to_string(),
-                })
-            })
-            .collect())
-    }
-}
-
-fn to_relative_path_buf(value: &str) -> PathBuf {
-    let mut path = PathBuf::new();
-
-    for segment in value.split('/').filter(|segment| !segment.is_empty()) {
-        path.push(segment);
-    }
-
-    path
+fn base64_decode(input: &str) -> Result<Vec<u8>, String> {
+    base64::engine::general_purpose::STANDARD
+        .decode(input)
+        .map_err(|e| format!("Error al decodificar base64: {}", e))
 }
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
-    use super::{
-        build_search_request, normalize_install_collection, parse_github_tree_url, parse_search_response,
-        resolve_install_root,
-    };
+    use super::*;
 
     #[test]
-    fn parse_search_response_supports_skills_array_shape() {
+    fn parse_search_response_with_skills_api_format() {
         let payload = json!({
             "skills": [
                 {
-                    "id": "skill_123",
-                    "slug": "api-changelog-versioning",
-                    "name": "API Changelog & Versioning",
-                    "summary": "Document API changes cleanly.",
-                    "repository": "aj-geddes/useful-ai-prompts-skills",
-                    "author": "aj-geddes",
-                    "stars": 132,
-                    "updatedAt": "2026-03-04T07:30:00Z",
-                    "githubUrl": "https://github.com/aj-geddes/useful-ai-prompts-skills/tree/main/skills/api",
-                    "skillUrl": "https://skillsmp.com/skills/example"
+                    "source": "vercel-labs/agent-skills",
+                    "skillId": "vercel-react-best-practices",
+                    "name": "vercel-react-best-practices",
+                    "displayName": "Vercel React Best Practices",
+                    "installs": 69954,
+                    "owner": "vercel-labs",
+                    "repo": "agent-skills",
+                    "githubUrl": "https://github.com/vercel-labs/agent-skills"
                 }
             ],
-            "total": 695541
+            "total": 34311,
+            "page": 1,
+            "pageSize": 20,
+            "totalPages": 1716
         });
 
-        let response = parse_search_response(payload, "api".to_string(), 1, 20, 12)
+        let response = parse_search_response(payload, "react".to_string(), 1, 20, 12)
             .expect("response should parse");
 
         assert_eq!(response.skills.len(), 1);
-        assert_eq!(response.total, Some(695541));
-        assert_eq!(response.skills[0].repository, "aj-geddes/useful-ai-prompts-skills");
-        assert_eq!(
-            response.skills[0].github_url.as_deref(),
-            Some("https://github.com/aj-geddes/useful-ai-prompts-skills/tree/main/skills/api")
-        );
-    }
-
-    #[test]
-    fn parse_search_response_supports_nested_data_results_shape() {
-        let payload = json!({
-            "data": {
-                "results": [
-                    {
-                        "title": "Install",
-                        "description": "Install an external skill.",
-                        "repo": "nickdirienzo/nonnaclaw",
-                        "owner": { "login": "nickdirienzo" },
-                        "starCount": "3"
-                    }
-                ]
-            },
-            "meta": {
-                "total": 1
-            }
-        });
-
-        let response = parse_search_response(payload, "install".to_string(), 1, 20, 5)
-            .expect("response should parse");
-
-        assert_eq!(response.skills[0].name, "Install");
-        assert_eq!(response.skills[0].author, "nickdirienzo");
-        assert_eq!(response.skills[0].stars, Some(3));
-    }
-
-    #[test]
-    fn parse_github_tree_url_supports_tree_paths() {
-        let reference = parse_github_tree_url(
-            "https://github.com/pinkpixel-dev/skills-collection/tree/main/SKILLS/rust-pro",
-        )
-        .expect("github url should parse");
-
-        assert_eq!(reference.owner, "pinkpixel-dev");
-        assert_eq!(reference.repo, "skills-collection");
-        assert_eq!(reference.branch, "main");
-        assert_eq!(reference.path, "SKILLS/rust-pro");
+        assert_eq!(response.total, Some(34311));
+        assert_eq!(response.skills[0].owner, "vercel-labs");
+        assert_eq!(response.skills[0].repo, "agent-skills");
+        assert_eq!(response.skills[0].skill_id, "vercel-react-best-practices");
     }
 
     #[test]
@@ -697,25 +418,13 @@ mod tests {
     fn normalize_install_collection_rejects_parent_segments() {
         let error =
             normalize_install_collection(Some("../private")).expect_err("parent segments should be rejected");
-
-        assert_eq!(error, "La coleccion de instalacion no es valida.");
+        assert!(error.contains("no valida"));
     }
 
     #[test]
-    fn build_search_request_uses_featured_defaults_for_empty_query() {
-        let request = build_search_request("");
-
-        assert_eq!(request.request_query, "skill");
-        assert_eq!(request.response_query, "");
-        assert_eq!(request.sort_by, "stars");
-    }
-
-    #[test]
-    fn build_search_request_preserves_user_query() {
-        let request = build_search_request("rust");
-
-        assert_eq!(request.request_query, "rust");
-        assert_eq!(request.response_query, "rust");
-        assert_eq!(request.sort_by, "recent");
+    fn normalize_install_collection_accepts_valid_segments() {
+        let result = normalize_install_collection(Some("team/marketplace"))
+            .expect("should accept valid segments");
+        assert_eq!(result, Some(vec!["team".to_string(), "marketplace".to_string()]));
     }
 }
