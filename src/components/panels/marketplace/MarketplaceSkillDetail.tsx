@@ -24,20 +24,20 @@ import { useMarketplace } from "./MarketplaceContext";
 export function MarketplaceSkillDetail() {
   const {
     closeMarketplaceSkillDetail,
-    installMarketplaceSkill,
+    openInstallCommand,
+    selectedCollectionLabel,
     selectedSkillManifest,
     selectedSkillManifestError,
     selectedSkillManifestLoading,
+    selectedSkillState,
+    selectedTargetLabel,
     onUninstall,
     onUpdate,
     openInstalledMarketplaceSkill,
-    selectedCollectionLabel,
     selectedInstalledCollectionLabel,
     selectedInstalledPath,
     selectedInstalledTargetLabel,
     selectedMarketplaceSkill,
-    selectedSkillState,
-    selectedTargetLabel,
   } = useMarketplace();
 
   if (!selectedMarketplaceSkill) {
@@ -60,12 +60,11 @@ export function MarketplaceSkillDetail() {
 
         <div className="flex flex-wrap items-center gap-2">
           {selectedSkillState === "not_installed" ? (
-            <ActionButton onClick={() => installMarketplaceSkill(skill)} tone="primary">
+            <ActionButton onClick={() => openInstallCommand(skill)} tone="primary">
               <DownloadSimpleIcon className="mr-2 h-4 w-4" weight="bold" />
-              Descargar
+              Abrir terminal
             </ActionButton>
           ) : null}
-          {selectedSkillState === "installing" ? <ActionButton disabled>Descargando...</ActionButton> : null}
           {selectedSkillState === "installed" ? (
             <>
               <ActionButton onClick={() => openInstalledMarketplaceSkill(skill)} tone="primary">

@@ -389,6 +389,30 @@ export function useIdeWorkspace() {
     return remoteUpdatedAt > installedUpdatedAt;
   }
 
+  function openInstallCommand(skill: MarketplaceSkill) {
+    const source = skill.repository;
+    const skillId = skill.slug;
+    invoke("open_skill_install_command", {
+      source,
+      skillId,
+      target: preferences.marketplaceInstallTarget,
+      collection: preferences.marketplaceInstallCollection,
+    }).catch((error: unknown) => {
+      const message =
+        typeof error === "string"
+          ? error
+          : error instanceof Error
+            ? error.message
+            : "No se pudo abrir el comando de instalacion.";
+      pushToast({
+        description: message,
+        kind: "error",
+        sticky: true,
+        title: `Failed to open install command for ${skill.name}`,
+      });
+    });
+  }
+
   function installMarketplaceSkill(skill: MarketplaceSkill) {
     setInstallingMarketplaceSkillIds((current) => {
       const next = new Set(current);
@@ -718,6 +742,7 @@ export function useIdeWorkspace() {
     marketplaceSkills,
     marketplaceTopSources,
     marketplaceTotal,
+    openInstallCommand,
     openMarketplaceSkillDetail,
     openInstalledMarketplaceSkill,
     openEditor,

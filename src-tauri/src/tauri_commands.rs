@@ -300,6 +300,79 @@ pub fn clear_backend_logs() -> Result<(), String> {
     BackendLogService::shared().clear()
 }
 
+#[tauri::command]
+pub fn open_skill_install_command(
+    source: String,
+    skill_id: String,
+    target: String,
+    collection: Option<String>,
+) -> Result<(), String> {
+    let logger = BackendLogService::shared();
+    logger.info(format!(
+        "open_skill_install_command source={} skill_id={} target={} collection={:?}",
+        source, skill_id, target, collection
+    ));
+
+    let install_path = if let Some(coll) = collection {
+        format!("{}/{}/{}", target, coll, skill_id)
+    } else {
+        format!("{}/{}", target, skill_id)
+    };
+
+    let skill_ref = format!("{}/{}", source, skill_id);
+    let command = format!("npx skills add {}", skill_ref);
+
+    #[cfg(target_os = "windows")]
+    {
+        fn clean_windows_path(path: &str) -> String {
+            path.replace("\\\\?\\", "").replace("\\\\", "\\")
+        }
+
+        let workspace_dir = std::env::current_dir()
+            .map(|p| clean_windows_path(&p.to_string_lossy().to_string()))
+            .unwrap_or_else(|_| {
+                dirs::home_dir()
+                    .map(|h| clean_windows_path(&h.to_string_lossy().into_owned()))
+                    .unwrap_or_else(|| "C:\\Users\\Public".to_string())
+            });
+
+        let full_command = format!(
+            "cd /d \"{}\" && {}",
+            workspace_dir,
+            command
+        );
+
+        logger.info(format!("Opening terminal with: {}", full_command));
+
+        std::process::Command::new("cmd.exe")
+            .args(["/c", "start", "cmd", "/k", &full_command])
+            .spawn()
+            .map_err(|e| format!("Failed to spawn cmd.exe: {e}"))?;
+
+        logger.info("Terminal spawned successfully");
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let workspace_dir = std::env::current_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| "~".to_string());
+
+        let full_command = format!("cd \"{}\" && {}", workspace_dir, command);
+
+        logger.info(format!("Opening terminal with: {}", full_command));
+
+        std::process::Command::new("x-terminal-emulator")
+            .args(["-e", &full_command])
+            .spawn()
+            .map_err(|e| format!("Failed to spawn terminal: {e}"))?;
+
+        logger.info("Terminal spawned successfully");
+        Ok(())
+    }
+}
+
 fn count_skill_nodes(nodes: &[SystemSkillTreeNode]) -> usize {
     nodes
         .iter()

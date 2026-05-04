@@ -26,6 +26,7 @@ export function useMarketplaceDetail() {
     marketplaceSkills,
     marketplaceTopSources,
     marketplaceTotal,
+    openInstallCommand,
     openInstalledMarketplaceSkill,
     openMarketplaceSkillDetail,
     preferences,
@@ -209,6 +210,7 @@ export function useMarketplaceDetail() {
       onUpdate: (skill: MarketplaceSkill) => {
         void updateMarketplaceSkill(skill);
       },
+      openInstallCommand,
       openInstalledMarketplaceSkill,
       openMarketplaceSkillDetail,
       preferences,

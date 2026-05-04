@@ -23,6 +23,7 @@ export type MarketplaceContextValue = {
   onSearch: () => void;
   onUninstall: (skill: MarketplaceSkill) => void;
   onUpdate: (skill: MarketplaceSkill) => void;
+  openInstallCommand: (skill: MarketplaceSkill) => void;
   openInstalledMarketplaceSkill: (skill: MarketplaceSkill) => void;
   openMarketplaceSkillDetail: (skill: MarketplaceSkill) => void;
   query: string;
