@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { MarketplaceSkillState } from "./types";
 
 function parseMarketplaceTimestamp(value: string | null) {
@@ -85,9 +85,10 @@ export function DetailMeta({ icon, label, value }: DetailMetaProps) {
 }
 
 type ActionButtonProps = {
-  children: ReactNode;
+  children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
+  size?: "sm" | "md";
   tone?: "primary" | "secondary" | "danger";
 };
 
@@ -95,6 +96,7 @@ export function ActionButton({
   children,
   disabled,
   onClick,
+  size = "md",
   tone = "secondary",
 }: ActionButtonProps) {
   const toneClass =
@@ -104,9 +106,11 @@ export function ActionButton({
         ? "border-[rgba(207,94,79,0.28)] text-[#ffb3a7] hover:bg-[rgba(207,94,79,0.08)]"
         : "border-[var(--border)] text-[var(--muted)] hover:bg-white/[0.03] hover:text-[var(--text)]";
 
+  const sizeClass = size === "sm" ? "px-2 py-1.5 text-xs gap-1.5" : "px-3 py-2 text-sm gap-2";
+
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-[10px] border px-3 py-2 text-sm transition ${disabled ? "cursor-not-allowed opacity-60" : toneClass}`}
+      className={`inline-flex items-center justify-center rounded-[10px] border transition ${disabled ? "cursor-not-allowed opacity-60" : toneClass} ${sizeClass}`}
       disabled={disabled}
       onClick={onClick}
       type="button"
