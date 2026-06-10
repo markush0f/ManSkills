@@ -13,13 +13,8 @@ use std::{
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::{
-    models::SkillWatchEvent,
-    services::{
-        support::{build_watch_roots, normalize_relative_path, SKILL_MANIFEST_NAME},
-        BackendLogService,
-    },
-};
+use crate::{models::SkillWatchEvent, services::BackendLogService};
+use skills_core::services::{build_watch_roots, normalize_relative_path, SKILL_MANIFEST_NAME};
 
 const DEFAULT_WATCH_DEBOUNCE: Duration = Duration::from_millis(400);
 const WATCH_POLL_INTERVAL: Duration = Duration::from_millis(100);

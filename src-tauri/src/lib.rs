@@ -1,4 +1,3 @@
-mod constants;
 pub mod models;
 pub mod services;
 mod tauri_commands;
