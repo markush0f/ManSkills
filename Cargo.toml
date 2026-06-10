@@ -2,6 +2,7 @@
 members = [
     "crates/skills-core",
     "crates/skills-cli",
+    "crates/skills-tui",
     "src-tauri",
 ]
 resolver = "2"
